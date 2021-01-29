@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 3.17)
 project(python_rgbcx)
 
-# Setup pybind
-add_subdirectory(extern/pybind11)
-
 # Make the python_rgbcx module
-add_library(python_rgbcx MODULE src/main.cpp src/rgbcx.cpp)
+set(C_FILES
+        src/main.cpp
+        src/rgbcx.cpp
+        src/tables.cpp
+        )
+add_library(python_rgbcx MODULE ${C_FILES})
 
 # Link to Pybind
+add_subdirectory(extern/pybind11)
 target_link_libraries(python_rgbcx PRIVATE pybind11::module pybind11::lto)
 
 pybind11_extension(python_rgbcx)

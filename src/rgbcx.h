@@ -47,18 +47,19 @@
 //
 // - chan0 and chan1 are the source channels. Typically they will be 0 and 1.
 //
-// All encoding and decoding functions are threade-safe.
+// All encoding and decoding functions are thread-safe.
 //
 // To reduce the compiled size of the encoder, set #define RGBCX_USE_SMALLER_TABLES to 1 before including this header.
 //
-#ifndef RGBCX_INCLUDE_H
-#define RGBCX_INCLUDE_H
+#pragma once
 
 #include <algorithm>
-#include <assert.h>
-#include <limits.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include <cassert>
+#include <climits>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include "tables.h"
 
 // By default, the table used to accelerate cluster fit on 4 color blocks uses a 969x128 entry table.
 // To reduce the executable size, set RGBCX_USE_SMALLER_TABLES to 1, which selects the smaller 969x32 entry table.
@@ -151,14 +152,6 @@ enum {
     cEncodeBC1EndpointSearchRoundsMask = 1023U << cEncodeBC1EndpointSearchRoundsShift,
 };
 
-const uint32_t MIN_TOTAL_ORDERINGS = 1;
-const uint32_t MAX_TOTAL_ORDERINGS3 = 32;
-
-#if RGBCX_USE_SMALLER_TABLES
-const uint32_t MAX_TOTAL_ORDERINGS4 = 32;
-#else
-const uint32_t MAX_TOTAL_ORDERINGS4 = 128;
-#endif
 
 // DEFAULT_TOTAL_ORDERINGS_TO_TRY is around 3x faster than libsquish at slightly higher average quality. 10-16 is a good range to start to compete against
 // libsquish.
@@ -171,7 +164,7 @@ const uint32_t DEFAULT_TOTAL_ORDERINGS_TO_TRY3 = 1;
 // The pixels are in RGBA format, where R is first in memory. The BC1 encoder completely ignores the alpha channel (i.e. there is no punchthrough alpha
 // support). This is the recommended function to use for BC1 encoding, becuase it configures the encoder for you in the best possible way (on average). Note
 // that the 3 color modes won't be used at all until level 5 or higher. No transparency supported, however if you set use_transparent_texels_for_black to true
-// the encocer will use transparent selectors on very dark/black texels to reduce MSE.
+// the encoder will use transparent selectors on very dark/black texels to reduce MSE.
 const uint32_t MIN_LEVEL = 0, MAX_LEVEL = 18;
 void encode_bc1(uint32_t level, void *pDst, const uint8_t *pPixels, bool allow_3color, bool use_transparent_texels_for_black);
 
@@ -210,7 +203,6 @@ bool unpack_bc3(const void *pBlock_bits, void *pPixels, bc1_approx_mode mode = b
 
 void unpack_bc5(const void *pBlock_bits, void *pPixels, uint32_t chan0 = 0, uint32_t chan1 = 1, uint32_t stride = 4);
 } // namespace rgbcx
-#endif // #ifndef RGBCX_INCLUDE_H
 
 /*
 ------------------------------------------------------------------------------
