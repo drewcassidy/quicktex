@@ -59,6 +59,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include "tables.h"
 
 // By default, the table used to accelerate cluster fit on 4 color blocks uses a 969x128 entry table.
