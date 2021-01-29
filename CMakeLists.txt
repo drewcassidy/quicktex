@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.17)
 project(python_rgbcx)
 
-set(CMAKE_CXX_STANDARD 14)
+# Setup pybind
+add_subdirectory(extern/pybind11)
 
-add_executable(python_rgbcx src/main.cpp)
+# Make the pybind module
+pybind11_add_module(python_rgbcx src/main.cpp)
+
+# Set module features, like C/C++ standards
+target_compile_features(python_rgbcx PUBLIC cxx_std_14 c_std_11)
