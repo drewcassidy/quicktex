@@ -21,6 +21,7 @@
 
 #include "util.h"
 #include <cassert>
+#include <cstdlib>
 #include <cstdint>
 
 constexpr inline uint8_t DXT1SelectorBits = 2U;
