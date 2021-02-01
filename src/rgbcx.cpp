@@ -1,189 +1,18 @@
 // rgbcx.h v1.12
 // High-performance scalar BC1-5 encoders. Public Domain or MIT license (you choose - see below), written by Richard Geldreich 2020 <richgel99@gmail.com>.
 
+#include <algorithm>
+#include <cassert>
+#include <climits>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
+#include "util.h"
+#include "tables.h"
+#include "blocks.h"
 #include "rgbcx.h"
+
 namespace rgbcx {
-
-static inline uint32_t iabs(int32_t i) { return (i < 0) ? static_cast<uint32_t>(-i) : static_cast<uint32_t>(i); }
-static inline uint64_t iabs(int64_t i) { return (i < 0) ? static_cast<uint64_t>(-i) : static_cast<uint64_t>(i); }
-
-static inline uint8_t to_5(uint32_t v) {
-    v = v * 31 + 128;
-    return (uint8_t)((v + (v >> 8)) >> 8);
-}
-static inline uint8_t to_6(uint32_t v) {
-    v = v * 63 + 128;
-    return (uint8_t)((v + (v >> 8)) >> 8);
-}
-
-template <typename S> inline S maximum(S a, S b) { return (a > b) ? a : b; }
-template <typename S> inline S maximum(S a, S b, S c) { return maximum(maximum(a, b), c); }
-template <typename S> inline S maximum(S a, S b, S c, S d) { return maximum(maximum(maximum(a, b), c), d); }
-
-template <typename S> inline S minimum(S a, S b) { return (a < b) ? a : b; }
-template <typename S> inline S minimum(S a, S b, S c) { return minimum(minimum(a, b), c); }
-template <typename S> inline S minimum(S a, S b, S c, S d) { return minimum(minimum(minimum(a, b), c), d); }
-
-template <typename T> inline T square(T a) { return a * a; }
-
-static inline float clampf(float value, float low, float high) {
-    if (value < low)
-        value = low;
-    else if (value > high)
-        value = high;
-    return value;
-}
-static inline uint8_t clamp255(int32_t i) { return (uint8_t)((i & 0xFFFFFF00U) ? (~(i >> 31)) : i); }
-
-template <typename S> inline S clamp(S value, S low, S high) { return (value < low) ? low : ((value > high) ? high : value); }
-static inline int32_t clampi(int32_t value, int32_t low, int32_t high) {
-    if (value < low)
-        value = low;
-    else if (value > high)
-        value = high;
-    return value;
-}
-
-static inline int squarei(int a) { return a * a; }
-static inline int absi(int a) { return (a < 0) ? -a : a; }
-
-template <typename F> inline F lerp(F a, F b, F s) { return a + (b - a) * s; }
-
-enum class eNoClamp { cNoClamp };
-
-struct color32 {
-    union {
-        struct {
-            uint8_t r;
-            uint8_t g;
-            uint8_t b;
-            uint8_t a;
-        };
-
-        uint8_t c[4];
-
-        uint32_t m;
-    };
-
-    color32() {}
-
-    color32(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) { set(vr, vg, vb, va); }
-    color32(eNoClamp unused, uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) {
-        (void)unused;
-        set_noclamp_rgba(vr, vg, vb, va);
-    }
-
-    void set(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) {
-        c[0] = static_cast<uint8_t>(vr);
-        c[1] = static_cast<uint8_t>(vg);
-        c[2] = static_cast<uint8_t>(vb);
-        c[3] = static_cast<uint8_t>(va);
-    }
-
-    void set_noclamp_rgb(uint32_t vr, uint32_t vg, uint32_t vb) {
-        c[0] = static_cast<uint8_t>(vr);
-        c[1] = static_cast<uint8_t>(vg);
-        c[2] = static_cast<uint8_t>(vb);
-    }
-    void set_noclamp_rgba(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) { set(vr, vg, vb, va); }
-
-    void set_clamped(int vr, int vg, int vb, int va) {
-        c[0] = clamp255(vr);
-        c[1] = clamp255(vg);
-        c[2] = clamp255(vb);
-        c[3] = clamp255(va);
-    }
-
-    uint8_t operator[](uint32_t idx) const {
-        assert(idx < 4);
-        return c[idx];
-    }
-    uint8_t &operator[](uint32_t idx) {
-        assert(idx < 4);
-        return c[idx];
-    }
-
-    bool operator==(const color32 &rhs) const { return m == rhs.m; }
-
-    void set_rgb(const color32 &other) {
-        c[0] = static_cast<uint8_t>(other.c[0]);
-        c[1] = static_cast<uint8_t>(other.c[1]);
-        c[2] = static_cast<uint8_t>(other.c[2]);
-    }
-
-    static color32 comp_min(const color32 &a, const color32 &b) {
-        return color32(eNoClamp::cNoClamp, std::min(a[0], b[0]), std::min(a[1], b[1]), std::min(a[2], b[2]), std::min(a[3], b[3]));
-    }
-    static color32 comp_max(const color32 &a, const color32 &b) {
-        return color32(eNoClamp::cNoClamp, std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]), std::max(a[3], b[3]));
-    }
-};
-
-enum dxt_constants {
-    cDXT1SelectorBits = 2U,
-    cDXT1SelectorValues = 1U << cDXT1SelectorBits,
-    cDXT1SelectorMask = cDXT1SelectorValues - 1U,
-    cDXT5SelectorBits = 3U,
-    cDXT5SelectorValues = 1U << cDXT5SelectorBits,
-    cDXT5SelectorMask = cDXT5SelectorValues - 1U,
-};
-
-struct bc1_block {
-    enum { cTotalEndpointBytes = 2, cTotalSelectorBytes = 4 };
-
-    uint8_t m_low_color[cTotalEndpointBytes];
-    uint8_t m_high_color[cTotalEndpointBytes];
-    uint8_t m_selectors[cTotalSelectorBytes];
-
-    inline uint32_t get_low_color() const { return m_low_color[0] | (m_low_color[1] << 8U); }
-    inline uint32_t get_high_color() const { return m_high_color[0] | (m_high_color[1] << 8U); }
-    inline bool is_3color() const { return get_low_color() <= get_high_color(); }
-    inline void set_low_color(uint16_t c) {
-        m_low_color[0] = static_cast<uint8_t>(c & 0xFF);
-        m_low_color[1] = static_cast<uint8_t>((c >> 8) & 0xFF);
-    }
-    inline void set_high_color(uint16_t c) {
-        m_high_color[0] = static_cast<uint8_t>(c & 0xFF);
-        m_high_color[1] = static_cast<uint8_t>((c >> 8) & 0xFF);
-    }
-    inline uint32_t get_selector(uint32_t x, uint32_t y) const {
-        assert((x < 4U) && (y < 4U));
-        return (m_selectors[y] >> (x * cDXT1SelectorBits)) & cDXT1SelectorMask;
-    }
-    inline void set_selector(uint32_t x, uint32_t y, uint32_t val) {
-        assert((x < 4U) && (y < 4U) && (val < 4U));
-        m_selectors[y] &= (~(cDXT1SelectorMask << (x * cDXT1SelectorBits)));
-        m_selectors[y] |= (val << (x * cDXT1SelectorBits));
-    }
-
-    static inline uint16_t pack_color(const color32 &color, bool scaled, uint32_t bias = 127U) {
-        uint32_t r = color.r, g = color.g, b = color.b;
-        if (scaled) {
-            r = (r * 31U + bias) / 255U;
-            g = (g * 63U + bias) / 255U;
-            b = (b * 31U + bias) / 255U;
-        }
-        return static_cast<uint16_t>(minimum(b, 31U) | (minimum(g, 63U) << 5U) | (minimum(r, 31U) << 11U));
-    }
-
-    static inline uint16_t pack_unscaled_color(uint32_t r, uint32_t g, uint32_t b) { return static_cast<uint16_t>(b | (g << 5U) | (r << 11U)); }
-
-    static inline void unpack_color(uint32_t c, uint32_t &r, uint32_t &g, uint32_t &b) {
-        r = (c >> 11) & 31;
-        g = (c >> 5) & 63;
-        b = c & 31;
-
-        r = (r << 3) | (r >> 2);
-        g = (g << 2) | (g >> 4);
-        b = (b << 3) | (b >> 2);
-    }
-
-    static inline void unpack_color_unscaled(uint32_t c, uint32_t &r, uint32_t &g, uint32_t &b) {
-        r = (c >> 11) & 31;
-        g = (c >> 5) & 63;
-        b = c & 31;
-    }
-};
 
 static const uint32_t TOTAL_ORDER_4_0_16 = 15;
 static const uint32_t TOTAL_ORDER_4_1_16 = 700;
@@ -284,9 +113,6 @@ struct bc1_match_entry {
 static bc1_approx_mode g_bc1_approx_mode;
 static bc1_match_entry g_bc1_match5_equals_1[256], g_bc1_match6_equals_1[256];
 static bc1_match_entry g_bc1_match5_half[256], g_bc1_match6_half[256];
-
-static inline int scale_5_to_8(int v) { return (v << 3) | (v >> 2); }
-static inline int scale_6_to_8(int v) { return (v << 2) | (v >> 4); }
 
 // v0, v1 = unexpanded DXT1 endpoint values (5/6-bits)
 // c0, c1 = expanded DXT1 endpoint values (8-bits)
@@ -2387,60 +2213,6 @@ void encode_bc1(void *pDst, const uint8_t *pPixels, uint32_t flags, uint32_t tot
 }
 
 // BC3-5
-
-struct bc4_block {
-    enum { cBC4SelectorBits = 3, cTotalSelectorBytes = 6, cMaxSelectorValues = 8 };
-    uint8_t m_endpoints[2];
-
-    uint8_t m_selectors[cTotalSelectorBytes];
-
-    inline uint32_t get_low_alpha() const { return m_endpoints[0]; }
-    inline uint32_t get_high_alpha() const { return m_endpoints[1]; }
-    inline bool is_alpha6_block() const { return get_low_alpha() <= get_high_alpha(); }
-
-    inline uint64_t get_selector_bits() const {
-        return ((uint64_t)((uint32_t)m_selectors[0] | ((uint32_t)m_selectors[1] << 8U) | ((uint32_t)m_selectors[2] << 16U) |
-                           ((uint32_t)m_selectors[3] << 24U))) |
-               (((uint64_t)m_selectors[4]) << 32U) | (((uint64_t)m_selectors[5]) << 40U);
-    }
-
-    inline uint32_t get_selector(uint32_t x, uint32_t y, uint64_t selector_bits) const {
-        assert((x < 4U) && (y < 4U));
-        return (selector_bits >> (((y * 4) + x) * cBC4SelectorBits)) & (cMaxSelectorValues - 1);
-    }
-
-    static inline uint32_t get_block_values6(uint8_t *pDst, uint32_t l, uint32_t h) {
-        pDst[0] = static_cast<uint8_t>(l);
-        pDst[1] = static_cast<uint8_t>(h);
-        pDst[2] = static_cast<uint8_t>((l * 4 + h) / 5);
-        pDst[3] = static_cast<uint8_t>((l * 3 + h * 2) / 5);
-        pDst[4] = static_cast<uint8_t>((l * 2 + h * 3) / 5);
-        pDst[5] = static_cast<uint8_t>((l + h * 4) / 5);
-        pDst[6] = 0;
-        pDst[7] = 255;
-        return 6;
-    }
-
-    static inline uint32_t get_block_values8(uint8_t *pDst, uint32_t l, uint32_t h) {
-        pDst[0] = static_cast<uint8_t>(l);
-        pDst[1] = static_cast<uint8_t>(h);
-        pDst[2] = static_cast<uint8_t>((l * 6 + h) / 7);
-        pDst[3] = static_cast<uint8_t>((l * 5 + h * 2) / 7);
-        pDst[4] = static_cast<uint8_t>((l * 4 + h * 3) / 7);
-        pDst[5] = static_cast<uint8_t>((l * 3 + h * 4) / 7);
-        pDst[6] = static_cast<uint8_t>((l * 2 + h * 5) / 7);
-        pDst[7] = static_cast<uint8_t>((l + h * 6) / 7);
-        return 8;
-    }
-
-    static inline uint32_t get_block_values(uint8_t *pDst, uint32_t l, uint32_t h) {
-        if (l > h)
-            return get_block_values8(pDst, l, h);
-        else
-            return get_block_values6(pDst, l, h);
-    }
-};
-
 void encode_bc4(void *pDst, const uint8_t *pPixels, uint32_t stride) {
     assert(g_initialized);
 
@@ -2640,43 +2412,43 @@ bool unpack_bc1(const void *pBlock_bits, void *pPixels, bool set_alpha, bc1_appr
     bool used_punchthrough = false;
 
     if (l > h) {
-        c[0].set_noclamp_rgba(r0, g0, b0, 255);
-        c[1].set_noclamp_rgba(r1, g1, b1, 255);
+        c[0].set(r0, g0, b0, 255);
+        c[1].set(r1, g1, b1, 255);
         switch (mode) {
         case bc1_approx_mode::cBC1Ideal:
-            c[2].set_noclamp_rgba((r0 * 2 + r1) / 3, (g0 * 2 + g1) / 3, (b0 * 2 + b1) / 3, 255);
-            c[3].set_noclamp_rgba((r1 * 2 + r0) / 3, (g1 * 2 + g0) / 3, (b1 * 2 + b0) / 3, 255);
+            c[2].set((r0 * 2 + r1) / 3, (g0 * 2 + g1) / 3, (b0 * 2 + b1) / 3, 255);
+            c[3].set((r1 * 2 + r0) / 3, (g1 * 2 + g0) / 3, (b1 * 2 + b0) / 3, 255);
             break;
         case bc1_approx_mode::cBC1IdealRound4:
-            c[2].set_noclamp_rgba((r0 * 2 + r1 + 1) / 3, (g0 * 2 + g1 + 1) / 3, (b0 * 2 + b1 + 1) / 3, 255);
-            c[3].set_noclamp_rgba((r1 * 2 + r0 + 1) / 3, (g1 * 2 + g0 + 1) / 3, (b1 * 2 + b0 + 1) / 3, 255);
+            c[2].set((r0 * 2 + r1 + 1) / 3, (g0 * 2 + g1 + 1) / 3, (b0 * 2 + b1 + 1) / 3, 255);
+            c[3].set((r1 * 2 + r0 + 1) / 3, (g1 * 2 + g0 + 1) / 3, (b1 * 2 + b0 + 1) / 3, 255);
             break;
         case bc1_approx_mode::cBC1NVidia:
-            c[2].set_noclamp_rgba(interp_5_nv(cr0, cr1), interp_6_nv(g0, g1), interp_5_nv(cb0, cb1), 255);
-            c[3].set_noclamp_rgba(interp_5_nv(cr1, cr0), interp_6_nv(g1, g0), interp_5_nv(cb1, cb0), 255);
+            c[2].set(interp_5_nv(cr0, cr1), interp_6_nv(g0, g1), interp_5_nv(cb0, cb1), 255);
+            c[3].set(interp_5_nv(cr1, cr0), interp_6_nv(g1, g0), interp_5_nv(cb1, cb0), 255);
             break;
         case bc1_approx_mode::cBC1AMD:
-            c[2].set_noclamp_rgba(interp_5_6_amd(r0, r1), interp_5_6_amd(g0, g1), interp_5_6_amd(b0, b1), 255);
-            c[3].set_noclamp_rgba(interp_5_6_amd(r1, r0), interp_5_6_amd(g1, g0), interp_5_6_amd(b1, b0), 255);
+            c[2].set(interp_5_6_amd(r0, r1), interp_5_6_amd(g0, g1), interp_5_6_amd(b0, b1), 255);
+            c[3].set(interp_5_6_amd(r1, r0), interp_5_6_amd(g1, g0), interp_5_6_amd(b1, b0), 255);
             break;
         }
     } else {
-        c[0].set_noclamp_rgba(r0, g0, b0, 255);
-        c[1].set_noclamp_rgba(r1, g1, b1, 255);
+        c[0].set(r0, g0, b0, 255);
+        c[1].set(r1, g1, b1, 255);
         switch (mode) {
         case bc1_approx_mode::cBC1Ideal:
         case bc1_approx_mode::cBC1IdealRound4:
-            c[2].set_noclamp_rgba((r0 + r1) / 2, (g0 + g1) / 2, (b0 + b1) / 2, 255);
+            c[2].set((r0 + r1) / 2, (g0 + g1) / 2, (b0 + b1) / 2, 255);
             break;
         case bc1_approx_mode::cBC1NVidia:
-            c[2].set_noclamp_rgba(interp_half_5_nv(cr0, cr1), interp_half_6_nv(g0, g1), interp_half_5_nv(cb0, cb1), 255);
+            c[2].set(interp_half_5_nv(cr0, cr1), interp_half_6_nv(g0, g1), interp_half_5_nv(cb0, cb1), 255);
             break;
         case bc1_approx_mode::cBC1AMD:
-            c[2].set_noclamp_rgba(interp_half_5_6_amd(r0, r1), interp_half_5_6_amd(g0, g1), interp_half_5_6_amd(b0, b1), 255);
+            c[2].set(interp_half_5_6_amd(r0, r1), interp_half_5_6_amd(g0, g1), interp_half_5_6_amd(b0, b1), 255);
             break;
         }
 
-        c[3].set_noclamp_rgba(0, 0, 0, 0);
+        c[3].set(0, 0, 0, 0);
         used_punchthrough = true;
     }
 

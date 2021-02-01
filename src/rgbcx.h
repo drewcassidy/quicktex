@@ -53,14 +53,7 @@
 //
 #pragma once
 
-#include <algorithm>
-#include <cassert>
-#include <climits>
 #include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <cmath>
-#include "tables.h"
 
 // By default, the table used to accelerate cluster fit on 4 color blocks uses a 969x128 entry table.
 // To reduce the executable size, set RGBCX_USE_SMALLER_TABLES to 1, which selects the smaller 969x32 entry table.
@@ -152,7 +145,6 @@ enum {
     cEncodeBC1EndpointSearchRoundsShift = 22,
     cEncodeBC1EndpointSearchRoundsMask = 1023U << cEncodeBC1EndpointSearchRoundsShift,
 };
-
 
 // DEFAULT_TOTAL_ORDERINGS_TO_TRY is around 3x faster than libsquish at slightly higher average quality. 10-16 is a good range to start to compete against
 // libsquish.

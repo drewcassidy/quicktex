@@ -4,9 +4,10 @@ project(python_rgbcx)
 # Make the python_rgbcx module
 set(C_FILES
         src/main.cpp
-        src/rgbcx.cpp
-        src/tables.cpp
-        )
+        src/rgbcx.cpp src/rgbcx.cpp
+        src/tables.cpp src/tables.h src/table4.h
+        src/blocks.cpp src/blocks.h
+        src/util.h)
 add_library(python_rgbcx MODULE ${C_FILES})
 
 # Link to Pybind
@@ -17,4 +18,4 @@ pybind11_extension(python_rgbcx)
 pybind11_strip(python_rgbcx)
 
 # Set module features, like C/C++ standards
-target_compile_features(python_rgbcx PUBLIC cxx_std_14 c_std_11)
+target_compile_features(python_rgbcx PUBLIC cxx_std_17 c_std_11)
