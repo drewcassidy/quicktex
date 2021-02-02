@@ -21,76 +21,77 @@
 
 #include "util.h"
 #include <cassert>
-#include <cstdlib>
 #include <cstdint>
+#include <cstdlib>
 
 constexpr inline uint8_t DXT1SelectorBits = 2U;
 
-struct color32 {
+#pragma pack(push, 1)
+struct Color32 {
     union {
         struct {
-            uint8_t r;
-            uint8_t g;
-            uint8_t b;
-            uint8_t a;
+            uint8_t R;
+            uint8_t G;
+            uint8_t B;
+            uint8_t A;
         };
 
-        uint8_t c[4];
-
-        uint32_t m;
+        uint8_t C[4];
     };
 
-    color32() {}
+    Color32() {}
 
-    color32(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va);
+    Color32(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va);
 
     void set(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va);
 
-    void set_rgb(const color32 &other);
+    void set(const Color32 &other);
 
     uint8_t operator[](uint32_t idx) const;
     uint8_t &operator[](uint32_t idx);
 
-    bool operator==(const color32 &rhs) const { return m == rhs.m; }
+    bool operator==(const Color32 &rhs) const {
+        return R == rhs.R && G == rhs.G && B == rhs.B && A == rhs.A;
+    }
 
-    static color32 comp_min(const color32 &a, const color32 &b);
-    static color32 comp_max(const color32 &a, const color32 &b);
+    static Color32 min(const Color32 &a, const Color32 &b);
+    static Color32 max(const Color32 &a, const Color32 &b);
 };
 
-struct bc1_block {
+struct BC1Block {
     constexpr static inline size_t EndpointSize = 2;
     constexpr static inline size_t SelectorSize = 4;
     constexpr static inline uint8_t SelectorBits = 2;
     constexpr static inline uint8_t SelectorValues = 1 << SelectorBits;
     constexpr static inline uint8_t SelectorMask = SelectorValues - 1;
 
-    uint8_t m_low_color[EndpointSize];
-    uint8_t m_high_color[EndpointSize];
-    uint8_t m_selectors[SelectorSize];
+    uint8_t LowColor[EndpointSize];
+    uint8_t HighColor[EndpointSize];
+    uint8_t Selectors[SelectorSize];
 
-    inline uint32_t get_low_color() const { return m_low_color[0] | (m_low_color[1] << 8U); }
-    inline uint32_t get_high_color() const { return m_high_color[0] | (m_high_color[1] << 8U); }
+    inline uint32_t get_low_color() const { return LowColor[0] | (LowColor[1] << 8U); }
+    inline uint32_t get_high_color() const { return HighColor[0] | (HighColor[1] << 8U); }
     inline bool is_3color() const { return get_low_color() <= get_high_color(); }
     inline void set_low_color(uint16_t c) {
-        m_low_color[0] = static_cast<uint8_t>(c & 0xFF);
-        m_low_color[1] = static_cast<uint8_t>((c >> 8) & 0xFF);
+        LowColor[0] = static_cast<uint8_t>(c & 0xFF);
+        LowColor[1] = static_cast<uint8_t>((c >> 8) & 0xFF);
     }
     inline void set_high_color(uint16_t c) {
-        m_high_color[0] = static_cast<uint8_t>(c & 0xFF);
-        m_high_color[1] = static_cast<uint8_t>((c >> 8) & 0xFF);
+        HighColor[0] = static_cast<uint8_t>(c & 0xFF);
+        HighColor[1] = static_cast<uint8_t>((c >> 8) & 0xFF);
     }
     inline uint32_t get_selector(uint32_t x, uint32_t y) const {
         assert((x < 4U) && (y < 4U));
-        return (m_selectors[y] >> (x * SelectorBits)) & SelectorMask;
+        return (Selectors[y] >> (x * SelectorBits)) & SelectorMask;
     }
     inline void set_selector(uint32_t x, uint32_t y, uint32_t val) {
         assert((x < 4U) && (y < 4U) && (val < 4U));
-        m_selectors[y] &= (~(SelectorMask << (x * SelectorBits)));
-        m_selectors[y] |= (val << (x * DXT1SelectorBits));
+        Selectors[y] &= (~(SelectorMask << (x * SelectorBits)));
+        Selectors[y] |= (val << (x * DXT1SelectorBits));
     }
 
-    static inline uint16_t pack_color(const color32 &color, bool scaled, uint32_t bias = 127U) {
-        uint32_t r = color.r, g = color.g, b = color.b;
+    static inline uint16_t pack_color(const Color32 &color, bool scaled, uint32_t bias = 127U) {
+        uint32_t r = color.R, g = color.G, b = color.B;
         if (scaled) {
             r = (r * 31U + bias) / 255U;
             g = (g * 63U + bias) / 255U;
@@ -118,24 +119,25 @@ struct bc1_block {
     }
 };
 
-struct bc4_block {
+struct BC4Block {
     constexpr static inline size_t EndpointSize = 1;
     constexpr static inline size_t SelectorSize = 6;
     constexpr static inline uint8_t SelectorBits = 3;
     constexpr static inline uint8_t SelectorValues = 1 << SelectorBits;
     constexpr static inline uint8_t SelectorMask = SelectorValues - 1;
 
-    uint8_t m_endpoints[EndpointSize * 2];
-    uint8_t m_selectors[SelectorSize];
+    uint8_t LowAlpha;
+    uint8_t HighAlpha;
+    uint8_t Selectors[SelectorSize];
 
-    inline uint32_t get_low_alpha() const { return m_endpoints[0]; }
-    inline uint32_t get_high_alpha() const { return m_endpoints[1]; }
+    inline uint32_t get_low_alpha() const { return LowAlpha; }
+    inline uint32_t get_high_alpha() const { return HighAlpha; }
     inline bool is_alpha6_block() const { return get_low_alpha() <= get_high_alpha(); }
 
     inline uint64_t get_selector_bits() const {
-        return ((uint64_t)((uint32_t)m_selectors[0] | ((uint32_t)m_selectors[1] << 8U) | ((uint32_t)m_selectors[2] << 16U) |
-                           ((uint32_t)m_selectors[3] << 24U))) |
-               (((uint64_t)m_selectors[4]) << 32U) | (((uint64_t)m_selectors[5]) << 40U);
+        return ((uint64_t)((uint32_t)Selectors[0] | ((uint32_t)Selectors[1] << 8U) | ((uint32_t)Selectors[2] << 16U) |
+                           ((uint32_t)Selectors[3] << 24U))) |
+               (((uint64_t)Selectors[4]) << 32U) | (((uint64_t)Selectors[5]) << 40U);
     }
 
     inline uint32_t get_selector(uint32_t x, uint32_t y, uint64_t selector_bits) const {
@@ -175,12 +177,14 @@ struct bc4_block {
     }
 };
 
-struct bc3_block {
-    bc4_block alpha_block;
-    bc1_block color_block;
+struct BC3Block {
+    BC4Block AlphaBlock;
+    BC1Block ColorBlock;
 };
 
-struct bc5_block {
-    bc4_block r_block;
-    bc4_block g_block;
+struct BC5Block {
+    BC4Block RBlock;
+    BC4Block GBlock;
 };
+
+#pragma pack(pop)

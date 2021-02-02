@@ -23,11 +23,11 @@
 static inline uint32_t iabs(int32_t i) { return (i < 0) ? static_cast<uint32_t>(-i) : static_cast<uint32_t>(i); }
 static inline uint64_t iabs(int64_t i) { return (i < 0) ? static_cast<uint64_t>(-i) : static_cast<uint64_t>(i); }
 
-static inline uint8_t to_5(uint32_t v) {
+static inline uint8_t scale_8_to_5(uint32_t v) {
     v = v * 31 + 128;
     return (uint8_t)((v + (v >> 8)) >> 8);
 }
-static inline uint8_t to_6(uint32_t v) {
+static inline uint8_t scale_8_to_6(uint32_t v) {
     v = v * 63 + 128;
     return (uint8_t)((v + (v >> 8)) >> 8);
 }

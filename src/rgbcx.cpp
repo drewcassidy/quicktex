@@ -386,7 +386,7 @@ void init(bc1_approx_mode mode) {
 }
 
 void encode_bc1_solid_block(void *pDst, uint32_t fr, uint32_t fg, uint32_t fb, bool allow_3color) {
-    bc1_block *pDst_block = static_cast<bc1_block *>(pDst);
+    BC1Block *pDst_block = static_cast<BC1Block *>(pDst);
 
     uint32_t mask = 0xAA;
     int max16 = -1, min16 = 0;
@@ -436,10 +436,10 @@ void encode_bc1_solid_block(void *pDst, uint32_t fr, uint32_t fg, uint32_t fb, b
 
     pDst_block->set_low_color(static_cast<uint16_t>(max16));
     pDst_block->set_high_color(static_cast<uint16_t>(min16));
-    pDst_block->m_selectors[0] = static_cast<uint8_t>(mask);
-    pDst_block->m_selectors[1] = static_cast<uint8_t>(mask);
-    pDst_block->m_selectors[2] = static_cast<uint8_t>(mask);
-    pDst_block->m_selectors[3] = static_cast<uint8_t>(mask);
+    pDst_block->Selectors[0] = static_cast<uint8_t>(mask);
+    pDst_block->Selectors[1] = static_cast<uint8_t>(mask);
+    pDst_block->Selectors[2] = static_cast<uint8_t>(mask);
+    pDst_block->Selectors[3] = static_cast<uint8_t>(mask);
 }
 
 static const float g_midpoint5[32] = {.015686f, .047059f, .078431f, .111765f, .145098f, .176471f, .207843f, .241176f, .274510f, .305882f, .337255f,
@@ -481,12 +481,12 @@ static inline void compute_least_squares_endpoints4_rgb(vec3F *pXl, vec3F *pXh, 
     pXh->c[2] = iz10 * (float)uq00_b + iz11 * q10_b;
 }
 
-static inline bool compute_least_squares_endpoints4_rgb(const color32 *pColors, const uint8_t *pSelectors, vec3F *pXl, vec3F *pXh, int total_r, int total_g,
+static inline bool compute_least_squares_endpoints4_rgb(const Color32 *pColors, const uint8_t *pSelectors, vec3F *pXl, vec3F *pXh, int total_r, int total_g,
                                                         int total_b) {
     uint32_t uq00_r = 0, uq00_g = 0, uq00_b = 0;
     uint32_t weight_accum = 0;
     for (uint32_t i = 0; i < 16; i++) {
-        const uint8_t r = pColors[i].c[0], g = pColors[i].c[1], b = pColors[i].c[2];
+        const uint8_t r = pColors[i].C[0], g = pColors[i].C[1], b = pColors[i].C[2];
         const uint8_t sel = pSelectors[i];
 
         weight_accum += g_weight_vals4[sel];
@@ -553,12 +553,12 @@ static inline void compute_least_squares_endpoints3_rgb(vec3F *pXl, vec3F *pXh, 
     pXh->c[2] = iz10 * (float)uq00_b + iz11 * q10_b;
 }
 
-static inline bool compute_least_squares_endpoints3_rgb(bool use_black, const color32 *pColors, const uint8_t *pSelectors, vec3F *pXl, vec3F *pXh) {
+static inline bool compute_least_squares_endpoints3_rgb(bool use_black, const Color32 *pColors, const uint8_t *pSelectors, vec3F *pXl, vec3F *pXh) {
     int uq00_r = 0, uq00_g = 0, uq00_b = 0;
     uint32_t weight_accum = 0;
     int total_r = 0, total_g = 0, total_b = 0;
     for (uint32_t i = 0; i < 16; i++) {
-        const uint8_t r = pColors[i].c[0], g = pColors[i].c[1], b = pColors[i].c[2];
+        const uint8_t r = pColors[i].C[0], g = pColors[i].C[1], b = pColors[i].C[2];
         if (use_black) {
             if ((r | g | b) < 4)
                 continue;
@@ -679,7 +679,7 @@ static inline void bc1_get_block_colors3(uint32_t block_r[3], uint32_t block_g[3
     }
 }
 
-static inline void bc1_find_sels4_noerr(const color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
+static inline void bc1_find_sels4_noerr(const Color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
                                         uint8_t sels[16]) {
     uint32_t block_r[4], block_g[4], block_b[4];
     bc1_get_block_colors4(block_r, block_g, block_b, lr, lg, lb, hr, hg, hb);
@@ -699,10 +699,10 @@ static inline void bc1_find_sels4_noerr(const color32 *pSrc_pixels, uint32_t lr,
     static const uint8_t s_sels[4] = {3, 2, 1, 0};
 
     for (uint32_t i = 0; i < 16; i += 4) {
-        const int d0 = pSrc_pixels[i + 0].r * ar + pSrc_pixels[i + 0].g * ag + pSrc_pixels[i + 0].b * ab;
-        const int d1 = pSrc_pixels[i + 1].r * ar + pSrc_pixels[i + 1].g * ag + pSrc_pixels[i + 1].b * ab;
-        const int d2 = pSrc_pixels[i + 2].r * ar + pSrc_pixels[i + 2].g * ag + pSrc_pixels[i + 2].b * ab;
-        const int d3 = pSrc_pixels[i + 3].r * ar + pSrc_pixels[i + 3].g * ag + pSrc_pixels[i + 3].b * ab;
+        const int d0 = pSrc_pixels[i + 0].R * ar + pSrc_pixels[i + 0].G * ag + pSrc_pixels[i + 0].B * ab;
+        const int d1 = pSrc_pixels[i + 1].R * ar + pSrc_pixels[i + 1].G * ag + pSrc_pixels[i + 1].B * ab;
+        const int d2 = pSrc_pixels[i + 2].R * ar + pSrc_pixels[i + 2].G * ag + pSrc_pixels[i + 2].B * ab;
+        const int d3 = pSrc_pixels[i + 3].R * ar + pSrc_pixels[i + 3].G * ag + pSrc_pixels[i + 3].B * ab;
 
         sels[i + 0] = s_sels[(d0 <= t0) + (d0 < t1) + (d0 < t2)];
         sels[i + 1] = s_sels[(d1 <= t0) + (d1 < t1) + (d1 < t2)];
@@ -711,7 +711,7 @@ static inline void bc1_find_sels4_noerr(const color32 *pSrc_pixels, uint32_t lr,
     }
 }
 
-static inline uint32_t bc1_find_sels4_fasterr(const color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
+static inline uint32_t bc1_find_sels4_fasterr(const Color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
                                               uint8_t sels[16], uint32_t cur_err) {
     uint32_t block_r[4], block_g[4], block_b[4];
     bc1_get_block_colors4(block_r, block_g, block_b, lr, lg, lb, hr, hg, hb);
@@ -733,10 +733,10 @@ static inline uint32_t bc1_find_sels4_fasterr(const color32 *pSrc_pixels, uint32
     uint32_t total_err = 0;
 
     for (uint32_t i = 0; i < 16; i += 4) {
-        const int d0 = pSrc_pixels[i + 0].r * ar + pSrc_pixels[i + 0].g * ag + pSrc_pixels[i + 0].b * ab;
-        const int d1 = pSrc_pixels[i + 1].r * ar + pSrc_pixels[i + 1].g * ag + pSrc_pixels[i + 1].b * ab;
-        const int d2 = pSrc_pixels[i + 2].r * ar + pSrc_pixels[i + 2].g * ag + pSrc_pixels[i + 2].b * ab;
-        const int d3 = pSrc_pixels[i + 3].r * ar + pSrc_pixels[i + 3].g * ag + pSrc_pixels[i + 3].b * ab;
+        const int d0 = pSrc_pixels[i + 0].R * ar + pSrc_pixels[i + 0].G * ag + pSrc_pixels[i + 0].B * ab;
+        const int d1 = pSrc_pixels[i + 1].R * ar + pSrc_pixels[i + 1].G * ag + pSrc_pixels[i + 1].B * ab;
+        const int d2 = pSrc_pixels[i + 2].R * ar + pSrc_pixels[i + 2].G * ag + pSrc_pixels[i + 2].B * ab;
+        const int d3 = pSrc_pixels[i + 3].R * ar + pSrc_pixels[i + 3].G * ag + pSrc_pixels[i + 3].B * ab;
 
         uint8_t sel0 = s_sels[(d0 <= t0) + (d0 < t1) + (d0 < t2)];
         uint8_t sel1 = s_sels[(d1 <= t0) + (d1 < t1) + (d1 < t2)];
@@ -749,13 +749,13 @@ static inline uint32_t bc1_find_sels4_fasterr(const color32 *pSrc_pixels, uint32
         sels[i + 3] = sel3;
 
         total_err +=
-            squarei(pSrc_pixels[i + 0].r - block_r[sel0]) + squarei(pSrc_pixels[i + 0].g - block_g[sel0]) + squarei(pSrc_pixels[i + 0].b - block_b[sel0]);
+            squarei(pSrc_pixels[i + 0].R - block_r[sel0]) + squarei(pSrc_pixels[i + 0].G - block_g[sel0]) + squarei(pSrc_pixels[i + 0].B - block_b[sel0]);
         total_err +=
-            squarei(pSrc_pixels[i + 1].r - block_r[sel1]) + squarei(pSrc_pixels[i + 1].g - block_g[sel1]) + squarei(pSrc_pixels[i + 1].b - block_b[sel1]);
+            squarei(pSrc_pixels[i + 1].R - block_r[sel1]) + squarei(pSrc_pixels[i + 1].G - block_g[sel1]) + squarei(pSrc_pixels[i + 1].B - block_b[sel1]);
         total_err +=
-            squarei(pSrc_pixels[i + 2].r - block_r[sel2]) + squarei(pSrc_pixels[i + 2].g - block_g[sel2]) + squarei(pSrc_pixels[i + 2].b - block_b[sel2]);
+            squarei(pSrc_pixels[i + 2].R - block_r[sel2]) + squarei(pSrc_pixels[i + 2].G - block_g[sel2]) + squarei(pSrc_pixels[i + 2].B - block_b[sel2]);
         total_err +=
-            squarei(pSrc_pixels[i + 3].r - block_r[sel3]) + squarei(pSrc_pixels[i + 3].g - block_g[sel3]) + squarei(pSrc_pixels[i + 3].b - block_b[sel3]);
+            squarei(pSrc_pixels[i + 3].R - block_r[sel3]) + squarei(pSrc_pixels[i + 3].G - block_g[sel3]) + squarei(pSrc_pixels[i + 3].B - block_b[sel3]);
 
         if (total_err >= cur_err)
             break;
@@ -764,7 +764,7 @@ static inline uint32_t bc1_find_sels4_fasterr(const color32 *pSrc_pixels, uint32
     return total_err;
 }
 
-static inline uint32_t bc1_find_sels4_check2_err(const color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
+static inline uint32_t bc1_find_sels4_check2_err(const Color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
                                                  uint8_t sels[16], uint32_t cur_err) {
     uint32_t block_r[4], block_g[4], block_b[4];
     bc1_get_block_colors4(block_r, block_g, block_b, lr, lg, lb, hr, hg, hb);
@@ -776,9 +776,9 @@ static inline uint32_t bc1_find_sels4_check2_err(const color32 *pSrc_pixels, uin
     uint32_t total_err = 0;
 
     for (uint32_t i = 0; i < 16; i++) {
-        const int r = pSrc_pixels[i].r;
-        const int g = pSrc_pixels[i].g;
-        const int b = pSrc_pixels[i].b;
+        const int r = pSrc_pixels[i].R;
+        const int g = pSrc_pixels[i].G;
+        const int b = pSrc_pixels[i].B;
 
         int sel = (int)((float)((r - (int)block_r[0]) * dr + (g - (int)block_g[0]) * dg + (b - (int)block_b[0]) * db) * f + .5f);
         sel = clampi(sel, 1, 3);
@@ -807,7 +807,7 @@ static inline uint32_t bc1_find_sels4_check2_err(const color32 *pSrc_pixels, uin
     return total_err;
 }
 
-static inline uint32_t bc1_find_sels4_fullerr(const color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
+static inline uint32_t bc1_find_sels4_fullerr(const Color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
                                               uint8_t sels[16], uint32_t cur_err) {
     uint32_t block_r[4], block_g[4], block_b[4];
     bc1_get_block_colors4(block_r, block_g, block_b, lr, lg, lb, hr, hg, hb);
@@ -815,9 +815,9 @@ static inline uint32_t bc1_find_sels4_fullerr(const color32 *pSrc_pixels, uint32
     uint32_t total_err = 0;
 
     for (uint32_t i = 0; i < 16; i++) {
-        const int r = pSrc_pixels[i].r;
-        const int g = pSrc_pixels[i].g;
-        const int b = pSrc_pixels[i].b;
+        const int r = pSrc_pixels[i].R;
+        const int g = pSrc_pixels[i].G;
+        const int b = pSrc_pixels[i].B;
 
         uint32_t best_err = squarei((int)block_r[0] - (int)r) + squarei((int)block_g[0] - (int)g) + squarei((int)block_b[0] - (int)b);
         uint8_t best_sel = 0;
@@ -840,7 +840,7 @@ static inline uint32_t bc1_find_sels4_fullerr(const color32 *pSrc_pixels, uint32
     return total_err;
 }
 
-static inline uint32_t bc1_find_sels4(uint32_t flags, const color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
+static inline uint32_t bc1_find_sels4(uint32_t flags, const Color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
                                       uint8_t sels[16], uint32_t cur_err) {
     uint32_t err;
 
@@ -854,7 +854,7 @@ static inline uint32_t bc1_find_sels4(uint32_t flags, const color32 *pSrc_pixels
     return err;
 }
 
-static inline uint32_t bc1_find_sels3_fullerr(bool use_black, const color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg,
+static inline uint32_t bc1_find_sels3_fullerr(bool use_black, const Color32 *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg,
                                               uint32_t hb, uint8_t sels[16], uint32_t cur_err) {
     uint32_t block_r[3], block_g[3], block_b[3];
     bc1_get_block_colors3(block_r, block_g, block_b, lr, lg, lb, hr, hg, hb);
@@ -862,9 +862,9 @@ static inline uint32_t bc1_find_sels3_fullerr(bool use_black, const color32 *pSr
     uint32_t total_err = 0;
 
     for (uint32_t i = 0; i < 16; i++) {
-        const int r = pSrc_pixels[i].r;
-        const int g = pSrc_pixels[i].g;
-        const int b = pSrc_pixels[i].b;
+        const int r = pSrc_pixels[i].R;
+        const int g = pSrc_pixels[i].G;
+        const int b = pSrc_pixels[i].B;
 
         uint32_t best_err = squarei((int)block_r[0] - (int)r) + squarei((int)block_g[0] - (int)g) + squarei((int)block_b[0] - (int)b);
         uint32_t best_sel = 0;
@@ -943,9 +943,9 @@ static inline void precise_round_565_noscale(vec3F xl, vec3F xh, int &trial_lr, 
     precise_round_565(xl, xh, trial_lr, trial_lg, trial_lb, trial_hr, trial_hg, trial_hb);
 }
 
-static inline void bc1_encode4(bc1_block *pDst_block, int lr, int lg, int lb, int hr, int hg, int hb, const uint8_t sels[16]) {
-    uint32_t lc16 = bc1_block::pack_unscaled_color(lr, lg, lb);
-    uint32_t hc16 = bc1_block::pack_unscaled_color(hr, hg, hb);
+static inline void bc1_encode4(BC1Block *pDst_block, int lr, int lg, int lb, int hr, int hg, int hb, const uint8_t sels[16]) {
+    uint32_t lc16 = BC1Block::pack_unscaled_color(lr, lg, lb);
+    uint32_t hc16 = BC1Block::pack_unscaled_color(hr, hg, hb);
 
     // Always forbid 3 color blocks
     if (lc16 == hc16) {
@@ -967,10 +967,10 @@ static inline void bc1_encode4(bc1_block *pDst_block, int lr, int lg, int lb, in
         pDst_block->set_low_color(static_cast<uint16_t>(lc16));
         pDst_block->set_high_color(static_cast<uint16_t>(hc16));
 
-        pDst_block->m_selectors[0] = mask;
-        pDst_block->m_selectors[1] = mask;
-        pDst_block->m_selectors[2] = mask;
-        pDst_block->m_selectors[3] = mask;
+        pDst_block->Selectors[0] = mask;
+        pDst_block->Selectors[1] = mask;
+        pDst_block->Selectors[2] = mask;
+        pDst_block->Selectors[3] = mask;
     } else {
         uint8_t invert_mask = 0;
         if (lc16 < hc16) {
@@ -987,16 +987,16 @@ static inline void bc1_encode4(bc1_block *pDst_block, int lr, int lg, int lb, in
         for (uint32_t i = 0; i < 16; i++)
             packed_sels |= ((uint32_t)s_sel_trans[sels[i]] << (i * 2));
 
-        pDst_block->m_selectors[0] = (uint8_t)packed_sels ^ invert_mask;
-        pDst_block->m_selectors[1] = (uint8_t)(packed_sels >> 8) ^ invert_mask;
-        pDst_block->m_selectors[2] = (uint8_t)(packed_sels >> 16) ^ invert_mask;
-        pDst_block->m_selectors[3] = (uint8_t)(packed_sels >> 24) ^ invert_mask;
+        pDst_block->Selectors[0] = (uint8_t)packed_sels ^ invert_mask;
+        pDst_block->Selectors[1] = (uint8_t)(packed_sels >> 8) ^ invert_mask;
+        pDst_block->Selectors[2] = (uint8_t)(packed_sels >> 16) ^ invert_mask;
+        pDst_block->Selectors[3] = (uint8_t)(packed_sels >> 24) ^ invert_mask;
     }
 }
 
-static inline void bc1_encode3(bc1_block *pDst_block, int lr, int lg, int lb, int hr, int hg, int hb, const uint8_t sels[16]) {
-    uint32_t lc16 = bc1_block::pack_unscaled_color(lr, lg, lb);
-    uint32_t hc16 = bc1_block::pack_unscaled_color(hr, hg, hb);
+static inline void bc1_encode3(BC1Block *pDst_block, int lr, int lg, int lb, int hr, int hg, int hb, const uint8_t sels[16]) {
+    uint32_t lc16 = BC1Block::pack_unscaled_color(lr, lg, lb);
+    uint32_t hc16 = BC1Block::pack_unscaled_color(hr, hg, hb);
 
     bool invert_flag = false;
     if (lc16 > hc16) {
@@ -1021,10 +1021,10 @@ static inline void bc1_encode3(bc1_block *pDst_block, int lr, int lg, int lb, in
             packed_sels |= ((uint32_t)sels[i] << (i * 2));
     }
 
-    pDst_block->m_selectors[0] = (uint8_t)packed_sels;
-    pDst_block->m_selectors[1] = (uint8_t)(packed_sels >> 8);
-    pDst_block->m_selectors[2] = (uint8_t)(packed_sels >> 16);
-    pDst_block->m_selectors[3] = (uint8_t)(packed_sels >> 24);
+    pDst_block->Selectors[0] = (uint8_t)packed_sels;
+    pDst_block->Selectors[1] = (uint8_t)(packed_sels >> 8);
+    pDst_block->Selectors[2] = (uint8_t)(packed_sels >> 16);
+    pDst_block->Selectors[3] = (uint8_t)(packed_sels >> 24);
 }
 
 struct bc1_encode_results {
@@ -1034,13 +1034,13 @@ struct bc1_encode_results {
     bool m_3color;
 };
 
-static bool try_3color_block_useblack(const color32 *pSrc_pixels, uint32_t flags, uint32_t &cur_err, bc1_encode_results &results) {
+static bool try_3color_block_useblack(const Color32 *pSrc_pixels, uint32_t flags, uint32_t &cur_err, bc1_encode_results &results) {
     int total_r = 0, total_g = 0, total_b = 0;
     int max_r = 0, max_g = 0, max_b = 0;
     int min_r = 255, min_g = 255, min_b = 255;
     int total_pixels = 0;
     for (uint32_t i = 0; i < 16; i++) {
-        const int r = pSrc_pixels[i].r, g = pSrc_pixels[i].g, b = pSrc_pixels[i].b;
+        const int r = pSrc_pixels[i].R, g = pSrc_pixels[i].G, b = pSrc_pixels[i].B;
         if ((r | g | b) < 4)
             continue;
 
@@ -1069,9 +1069,9 @@ static bool try_3color_block_useblack(const color32 *pSrc_pixels, uint32_t flags
 
     int icov[6] = {0, 0, 0, 0, 0, 0};
     for (uint32_t i = 0; i < 16; i++) {
-        int r = (int)pSrc_pixels[i].r;
-        int g = (int)pSrc_pixels[i].g;
-        int b = (int)pSrc_pixels[i].b;
+        int r = (int)pSrc_pixels[i].R;
+        int g = (int)pSrc_pixels[i].G;
+        int b = (int)pSrc_pixels[i].B;
 
         if ((r | g | b) < 4)
             continue;
@@ -1122,7 +1122,7 @@ static bool try_3color_block_useblack(const color32 *pSrc_pixels, uint32_t flags
 
     int low_dot = INT_MAX, high_dot = INT_MIN;
     for (uint32_t i = 0; i < 16; i++) {
-        int r = (int)pSrc_pixels[i].r, g = (int)pSrc_pixels[i].g, b = (int)pSrc_pixels[i].b;
+        int r = (int)pSrc_pixels[i].R, g = (int)pSrc_pixels[i].G, b = (int)pSrc_pixels[i].B;
 
         if ((r | g | b) < 4)
             continue;
@@ -1138,13 +1138,13 @@ static bool try_3color_block_useblack(const color32 *pSrc_pixels, uint32_t flags
         }
     }
 
-    int lr = to_5(pSrc_pixels[low_c].r);
-    int lg = to_6(pSrc_pixels[low_c].g);
-    int lb = to_5(pSrc_pixels[low_c].b);
+    int lr = scale_8_to_5(pSrc_pixels[low_c].R);
+    int lg = scale_8_to_6(pSrc_pixels[low_c].G);
+    int lb = scale_8_to_5(pSrc_pixels[low_c].B);
 
-    int hr = to_5(pSrc_pixels[high_c].r);
-    int hg = to_6(pSrc_pixels[high_c].g);
-    int hb = to_5(pSrc_pixels[high_c].b);
+    int hr = scale_8_to_5(pSrc_pixels[high_c].R);
+    int hg = scale_8_to_6(pSrc_pixels[high_c].G);
+    int hb = scale_8_to_5(pSrc_pixels[high_c].B);
 
     uint8_t trial_sels[16];
     uint32_t trial_err = bc1_find_sels3_fullerr(true, pSrc_pixels, lr, lg, lb, hr, hg, hb, trial_sels, UINT32_MAX);
@@ -1204,7 +1204,7 @@ static bool try_3color_block_useblack(const color32 *pSrc_pixels, uint32_t flags
     return false;
 }
 
-static bool try_3color_block(const color32 *pSrc_pixels, uint32_t flags, uint32_t &cur_err, int avg_r, int avg_g, int avg_b, int lr, int lg, int lb, int hr,
+static bool try_3color_block(const Color32 *pSrc_pixels, uint32_t flags, uint32_t &cur_err, int avg_r, int avg_g, int avg_b, int lr, int lg, int lb, int hr,
                              int hg, int hb, int total_r, int total_g, int total_b, uint32_t total_orderings_to_try, bc1_encode_results &results) {
     uint8_t trial_sels[16];
     uint32_t trial_err = bc1_find_sels3_fullerr(false, pSrc_pixels, lr, lg, lb, hr, hg, hb, trial_sels, UINT32_MAX);
@@ -1267,9 +1267,9 @@ static bool try_3color_block(const color32 *pSrc_pixels, uint32_t flags, uint32_
 
         int dots[16];
         for (uint32_t i = 0; i < 16; i++) {
-            int r = pSrc_pixels[i].r;
-            int g = pSrc_pixels[i].g;
-            int b = pSrc_pixels[i].b;
+            int r = pSrc_pixels[i].R;
+            int g = pSrc_pixels[i].G;
+            int b = pSrc_pixels[i].B;
             int d = 0x1000000 + (r * ar + g * ag + b * ab);
             assert(d >= 0);
             dots[i] = (d << 4) + i;
@@ -1286,9 +1286,9 @@ static bool try_3color_block(const color32 *pSrc_pixels, uint32_t flags, uint32_
             g_sum[i] = g;
             b_sum[i] = b;
 
-            r += pSrc_pixels[p].r;
-            g += pSrc_pixels[p].g;
-            b += pSrc_pixels[p].b;
+            r += pSrc_pixels[p].R;
+            g += pSrc_pixels[p].G;
+            b += pSrc_pixels[p].B;
         }
 
         r_sum[16] = total_r;
@@ -1483,22 +1483,22 @@ void encode_bc1(uint32_t level, void *pDst, const uint8_t *pPixels, bool allow_3
     encode_bc1(pDst, pPixels, flags, total_orderings4, total_orderings3);
 }
 
-static inline void encode_bc1_pick_initial(const color32 *pSrc_pixels, uint32_t flags, bool grayscale_flag, int min_r, int min_g, int min_b, int max_r,
+static inline void encode_bc1_pick_initial(const Color32 *pSrc_pixels, uint32_t flags, bool grayscale_flag, int min_r, int min_g, int min_b, int max_r,
                                            int max_g, int max_b, int avg_r, int avg_g, int avg_b, int total_r, int total_g, int total_b, int &lr, int &lg,
                                            int &lb, int &hr, int &hg, int &hb) {
     if (grayscale_flag) {
-        const int fr = pSrc_pixels[0].r;
+        const int fr = pSrc_pixels[0].R;
 
         // Grayscale blocks are a common enough case to specialize.
         if ((max_r - min_r) < 2) {
-            lr = lb = hr = hb = to_5(fr);
-            lg = hg = to_6(fr);
+            lr = lb = hr = hb = scale_8_to_5(fr);
+            lg = hg = scale_8_to_6(fr);
         } else {
-            lr = lb = to_5(min_r);
-            lg = to_6(min_r);
+            lr = lb = scale_8_to_5(min_r);
+            lg = scale_8_to_6(min_r);
 
-            hr = hb = to_5(max_r);
-            hg = to_6(max_r);
+            hr = hb = scale_8_to_5(max_r);
+            hg = scale_8_to_6(max_r);
         }
     } else if (flags & cEncodeBC1Use2DLS) {
         //  2D Least Squares approach from Humus's example, with added inset and optimal rounding.
@@ -1513,7 +1513,7 @@ static inline void encode_bc1_pick_initial(const color32 *pSrc_pixels, uint32_t 
         vec3F l, h;
         if (big_chan == 0) {
             for (uint32_t i = 0; i < 16; i++) {
-                const int r = pSrc_pixels[i].r, g = pSrc_pixels[i].g, b = pSrc_pixels[i].b;
+                const int r = pSrc_pixels[i].R, g = pSrc_pixels[i].G, b = pSrc_pixels[i].B;
                 sum_xy_r += r * r, sum_xy_g += r * g, sum_xy_b += r * b;
             }
 
@@ -1554,7 +1554,7 @@ static inline void encode_bc1_pick_initial(const color32 *pSrc_pixels, uint32_t 
             h.c[0] = fmax_chan_val;
         } else if (big_chan == 1) {
             for (uint32_t i = 0; i < 16; i++) {
-                const int r = pSrc_pixels[i].r, g = pSrc_pixels[i].g, b = pSrc_pixels[i].b;
+                const int r = pSrc_pixels[i].R, g = pSrc_pixels[i].G, b = pSrc_pixels[i].B;
                 sum_xy_r += g * r, sum_xy_g += g * g, sum_xy_b += g * b;
             }
 
@@ -1595,7 +1595,7 @@ static inline void encode_bc1_pick_initial(const color32 *pSrc_pixels, uint32_t 
             h.c[1] = fmax_chan_val;
         } else {
             for (uint32_t i = 0; i < 16; i++) {
-                const int r = pSrc_pixels[i].r, g = pSrc_pixels[i].g, b = pSrc_pixels[i].b;
+                const int r = pSrc_pixels[i].R, g = pSrc_pixels[i].G, b = pSrc_pixels[i].B;
                 sum_xy_r += b * r, sum_xy_g += b * g, sum_xy_b += b * b;
             }
 
@@ -1663,9 +1663,9 @@ static inline void encode_bc1_pick_initial(const color32 *pSrc_pixels, uint32_t 
 
         int icov_xz = 0, icov_yz = 0;
         for (uint32_t i = 0; i < 16; i++) {
-            int r = (int)pSrc_pixels[i].r - avg_r;
-            int g = (int)pSrc_pixels[i].g - avg_g;
-            int b = (int)pSrc_pixels[i].b - avg_b;
+            int r = (int)pSrc_pixels[i].R - avg_r;
+            int g = (int)pSrc_pixels[i].G - avg_g;
+            int b = (int)pSrc_pixels[i].B - avg_b;
             icov_xz += r * b;
             icov_yz += g * b;
         }
@@ -1703,9 +1703,9 @@ static inline void encode_bc1_pick_initial(const color32 *pSrc_pixels, uint32_t 
 
         int icov_xz = 0, icov_yz = 0;
         for (uint32_t i = 0; i < 16; i++) {
-            int r = (int)pSrc_pixels[i].r - avg_r;
-            int g = (int)pSrc_pixels[i].g - avg_g;
-            int b = (int)pSrc_pixels[i].b - avg_b;
+            int r = (int)pSrc_pixels[i].R - avg_r;
+            int g = (int)pSrc_pixels[i].G - avg_g;
+            int b = (int)pSrc_pixels[i].B - avg_b;
             icov_xz += r * b;
             icov_yz += g * b;
         }
@@ -1721,22 +1721,22 @@ static inline void encode_bc1_pick_initial(const color32 *pSrc_pixels, uint32_t 
         if (icov_yz < 0)
             std::swap(y0, y1);
 
-        lr = to_5(x0);
-        lg = to_6(y0);
-        lb = to_5(min_b);
+        lr = scale_8_to_5(x0);
+        lg = scale_8_to_6(y0);
+        lb = scale_8_to_5(min_b);
 
-        hr = to_5(x1);
-        hg = to_6(y1);
-        hb = to_5(max_b);
+        hr = scale_8_to_5(x1);
+        hg = scale_8_to_6(y1);
+        hb = scale_8_to_5(max_b);
     } else {
         // Select 2 colors along the principle axis. (There must be a faster/simpler way.)
         uint32_t low_c = 0, high_c = 0;
 
         int icov[6] = {0, 0, 0, 0, 0, 0};
         for (uint32_t i = 0; i < 16; i++) {
-            int r = (int)pSrc_pixels[i].r - avg_r;
-            int g = (int)pSrc_pixels[i].g - avg_g;
-            int b = (int)pSrc_pixels[i].b - avg_b;
+            int r = (int)pSrc_pixels[i].R - avg_r;
+            int g = (int)pSrc_pixels[i].G - avg_g;
+            int b = (int)pSrc_pixels[i].B - avg_b;
             icov[0] += r * r;
             icov[1] += r * g;
             icov[2] += r * b;
@@ -1786,10 +1786,10 @@ static inline void encode_bc1_pick_initial(const color32 *pSrc_pixels, uint32_t 
         saxis_b = (int)((uint32_t)saxis_b << 4U);
 
         for (uint32_t i = 0; i < 16; i += 4) {
-            int dot0 = ((pSrc_pixels[i].r * saxis_r + pSrc_pixels[i].g * saxis_g + pSrc_pixels[i].b * saxis_b) & ~0xF) + i;
-            int dot1 = ((pSrc_pixels[i + 1].r * saxis_r + pSrc_pixels[i + 1].g * saxis_g + pSrc_pixels[i + 1].b * saxis_b) & ~0xF) + i + 1;
-            int dot2 = ((pSrc_pixels[i + 2].r * saxis_r + pSrc_pixels[i + 2].g * saxis_g + pSrc_pixels[i + 2].b * saxis_b) & ~0xF) + i + 2;
-            int dot3 = ((pSrc_pixels[i + 3].r * saxis_r + pSrc_pixels[i + 3].g * saxis_g + pSrc_pixels[i + 3].b * saxis_b) & ~0xF) + i + 3;
+            int dot0 = ((pSrc_pixels[i].R * saxis_r + pSrc_pixels[i].G * saxis_g + pSrc_pixels[i].B * saxis_b) & ~0xF) + i;
+            int dot1 = ((pSrc_pixels[i + 1].R * saxis_r + pSrc_pixels[i + 1].G * saxis_g + pSrc_pixels[i + 1].B * saxis_b) & ~0xF) + i + 1;
+            int dot2 = ((pSrc_pixels[i + 2].R * saxis_r + pSrc_pixels[i + 2].G * saxis_g + pSrc_pixels[i + 2].B * saxis_b) & ~0xF) + i + 2;
+            int dot3 = ((pSrc_pixels[i + 3].R * saxis_r + pSrc_pixels[i + 3].G * saxis_g + pSrc_pixels[i + 3].B * saxis_b) & ~0xF) + i + 3;
 
             int min_d01 = std::min(dot0, dot1);
             int max_d01 = std::max(dot0, dot1);
@@ -1806,13 +1806,13 @@ static inline void encode_bc1_pick_initial(const color32 *pSrc_pixels, uint32_t 
         low_c = low_dot & 15;
         high_c = high_dot & 15;
 
-        lr = to_5(pSrc_pixels[low_c].r);
-        lg = to_6(pSrc_pixels[low_c].g);
-        lb = to_5(pSrc_pixels[low_c].b);
+        lr = scale_8_to_5(pSrc_pixels[low_c].R);
+        lg = scale_8_to_6(pSrc_pixels[low_c].G);
+        lb = scale_8_to_5(pSrc_pixels[low_c].B);
 
-        hr = to_5(pSrc_pixels[high_c].r);
-        hg = to_6(pSrc_pixels[high_c].g);
-        hb = to_5(pSrc_pixels[high_c].b);
+        hr = scale_8_to_5(pSrc_pixels[high_c].R);
+        hg = scale_8_to_6(pSrc_pixels[high_c].G);
+        hb = scale_8_to_5(pSrc_pixels[high_c].B);
     }
 }
 
@@ -1836,7 +1836,7 @@ static const int8_t s_adjacent_voxels[16][4] = {
 };
 
 // From icbc's high quality mode.
-static inline void encode_bc1_endpoint_search(const color32 *pSrc_pixels, bool any_black_pixels, uint32_t flags, bc1_encode_results &results,
+static inline void encode_bc1_endpoint_search(const Color32 *pSrc_pixels, bool any_black_pixels, uint32_t flags, bc1_encode_results &results,
                                               uint32_t cur_err) {
     int &lr = results.lr, &lg = results.lg, &lb = results.lb, &hr = results.hr, &hg = results.hg, &hb = results.hb;
     uint8_t *sels = results.sels;
@@ -1894,16 +1894,16 @@ static inline void encode_bc1_endpoint_search(const color32 *pSrc_pixels, bool a
 void encode_bc1(void *pDst, const uint8_t *pPixels, uint32_t flags, uint32_t total_orderings_to_try, uint32_t total_orderings_to_try3) {
     assert(g_initialized);
 
-    const color32 *pSrc_pixels = (const color32 *)pPixels;
-    bc1_block *pDst_block = static_cast<bc1_block *>(pDst);
+    const Color32 *pSrc_pixels = (const Color32 *)pPixels;
+    BC1Block *pDst_block = static_cast<BC1Block *>(pDst);
 
     int avg_r, avg_g, avg_b, min_r, min_g, min_b, max_r, max_g, max_b;
 
-    const uint32_t fr = pSrc_pixels[0].r, fg = pSrc_pixels[0].g, fb = pSrc_pixels[0].b;
+    const uint32_t fr = pSrc_pixels[0].R, fg = pSrc_pixels[0].G, fb = pSrc_pixels[0].B;
 
     uint32_t j;
     for (j = 15; j >= 1; --j)
-        if ((pSrc_pixels[j].r != fr) || (pSrc_pixels[j].g != fg) || (pSrc_pixels[j].b != fb))
+        if ((pSrc_pixels[j].R != fr) || (pSrc_pixels[j].G != fg) || (pSrc_pixels[j].B != fb))
             break;
 
     if (j == 0) {
@@ -1920,7 +1920,7 @@ void encode_bc1(void *pDst, const uint8_t *pPixels, uint32_t flags, uint32_t tot
     uint32_t any_black_pixels = (fr | fg | fb) < 4;
 
     for (uint32_t i = 1; i < 16; i++) {
-        const int r = pSrc_pixels[i].r, g = pSrc_pixels[i].g, b = pSrc_pixels[i].b;
+        const int r = pSrc_pixels[i].R, g = pSrc_pixels[i].G, b = pSrc_pixels[i].B;
 
         grayscale_flag &= ((r == g) && (r == b));
         any_black_pixels |= ((r | g | b) < 4);
@@ -2109,9 +2109,9 @@ void encode_bc1(void *pDst, const uint8_t *pPixels, uint32_t flags, uint32_t tot
 
             int dots[16];
             for (uint32_t i = 0; i < 16; i++) {
-                int r = pSrc_pixels[i].r;
-                int g = pSrc_pixels[i].g;
-                int b = pSrc_pixels[i].b;
+                int r = pSrc_pixels[i].R;
+                int g = pSrc_pixels[i].G;
+                int b = pSrc_pixels[i].B;
                 int d = 0x1000000 + (r * ar + g * ag + b * ab);
                 assert(d >= 0);
                 dots[i] = (d << 4) + i;
@@ -2128,9 +2128,9 @@ void encode_bc1(void *pDst, const uint8_t *pPixels, uint32_t flags, uint32_t tot
                 g_sum[i] = g;
                 b_sum[i] = b;
 
-                r += pSrc_pixels[p].r;
-                g += pSrc_pixels[p].g;
-                b += pSrc_pixels[p].b;
+                r += pSrc_pixels[p].R;
+                g += pSrc_pixels[p].G;
+                b += pSrc_pixels[p].B;
             }
 
             r_sum[16] = total_r;
@@ -2383,17 +2383,17 @@ void encode_bc5(void *pDst, const uint8_t *pPixels, uint32_t chan0, uint32_t cha
 
 // Returns true if the block uses 3 color punchthrough alpha mode.
 bool unpack_bc1(const void *pBlock_bits, void *pPixels, bool set_alpha, bc1_approx_mode mode) {
-    color32 *pDst_pixels = static_cast<color32 *>(pPixels);
+    Color32 *pDst_pixels = static_cast<Color32 *>(pPixels);
 
-    static_assert(sizeof(bc1_block) == 8, "sizeof(bc1_block) == 8");
-    static_assert(sizeof(bc4_block) == 8, "sizeof(bc4_block) == 8");
+    static_assert(sizeof(BC1Block) == 8, "sizeof(BC1Block) == 8");
+    static_assert(sizeof(BC4Block) == 8, "sizeof(BC4Block) == 8");
 
-    const bc1_block *pBlock = static_cast<const bc1_block *>(pBlock_bits);
+    const BC1Block *pBlock = static_cast<const BC1Block *>(pBlock_bits);
 
     const uint32_t l = pBlock->get_low_color();
     const uint32_t h = pBlock->get_high_color();
 
-    color32 c[4];
+    Color32 c[4];
 
     const int cr0 = (l >> 11) & 31;
     const int cg0 = (l >> 5) & 63;
@@ -2461,10 +2461,10 @@ bool unpack_bc1(const void *pBlock_bits, void *pPixels, bool set_alpha, bc1_appr
         }
     } else {
         for (uint32_t y = 0; y < 4; y++, pDst_pixels += 4) {
-            pDst_pixels[0].set_rgb(c[pBlock->get_selector(0, y)]);
-            pDst_pixels[1].set_rgb(c[pBlock->get_selector(1, y)]);
-            pDst_pixels[2].set_rgb(c[pBlock->get_selector(2, y)]);
-            pDst_pixels[3].set_rgb(c[pBlock->get_selector(3, y)]);
+            pDst_pixels[0].set(c[pBlock->get_selector(0, y)]);
+            pDst_pixels[1].set(c[pBlock->get_selector(1, y)]);
+            pDst_pixels[2].set(c[pBlock->get_selector(2, y)]);
+            pDst_pixels[3].set(c[pBlock->get_selector(3, y)]);
         }
     }
 
@@ -2472,12 +2472,12 @@ bool unpack_bc1(const void *pBlock_bits, void *pPixels, bool set_alpha, bc1_appr
 }
 
 void unpack_bc4(const void *pBlock_bits, uint8_t *pPixels, uint32_t stride) {
-    static_assert(sizeof(bc4_block) == 8, "sizeof(bc4_block) == 8");
+    static_assert(sizeof(BC4Block) == 8, "sizeof(BC4Block) == 8");
 
-    const bc4_block *pBlock = static_cast<const bc4_block *>(pBlock_bits);
+    const BC4Block *pBlock = static_cast<const BC4Block *>(pBlock_bits);
 
     uint8_t sel_values[8];
-    bc4_block::get_block_values(sel_values, pBlock->get_low_alpha(), pBlock->get_high_alpha());
+    BC4Block::get_block_values(sel_values, pBlock->get_low_alpha(), pBlock->get_high_alpha());
 
     const uint64_t selector_bits = pBlock->get_selector_bits();
 
@@ -2491,14 +2491,14 @@ void unpack_bc4(const void *pBlock_bits, uint8_t *pPixels, uint32_t stride) {
 
 // Returns false if the block uses 3-color punchthrough alpha mode, which isn't supported on some GPU's for BC3.
 bool unpack_bc3(const void *pBlock_bits, void *pPixels, bc1_approx_mode mode) {
-    color32 *pDst_pixels = static_cast<color32 *>(pPixels);
+    Color32 *pDst_pixels = static_cast<Color32 *>(pPixels);
 
     bool success = true;
 
-    if (unpack_bc1((const uint8_t *)pBlock_bits + sizeof(bc4_block), pDst_pixels, true, mode))
+    if (unpack_bc1((const uint8_t *)pBlock_bits + sizeof(BC4Block), pDst_pixels, true, mode))
         success = false;
 
-    unpack_bc4(pBlock_bits, &pDst_pixels[0].a, sizeof(color32));
+    unpack_bc4(pBlock_bits, &pDst_pixels[0].A, sizeof(Color32));
 
     return success;
 }
@@ -2506,7 +2506,7 @@ bool unpack_bc3(const void *pBlock_bits, void *pPixels, bc1_approx_mode mode) {
 // writes RG
 void unpack_bc5(const void *pBlock_bits, void *pPixels, uint32_t chan0, uint32_t chan1, uint32_t stride) {
     unpack_bc4(pBlock_bits, (uint8_t *)pPixels + chan0, stride);
-    unpack_bc4((const uint8_t *)pBlock_bits + sizeof(bc4_block), (uint8_t *)pPixels + chan1, stride);
+    unpack_bc4((const uint8_t *)pBlock_bits + sizeof(BC4Block), (uint8_t *)pPixels + chan1, stride);
 }
 
 } // namespace rgbcx

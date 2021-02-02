@@ -21,35 +21,35 @@
 #include <algorithm>
 #include <cassert>
 
-// region color32 implementation
-color32::color32(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) { set(vr, vg, vb, va); }
+// region Color32 implementation
+Color32::Color32(uint32_t vr, uint32_t vg, uint32_t vb, uint32_t va) { set(vr, vg, vb, va); }
 
-uint8_t color32::operator[](uint32_t idx) const {
+uint8_t Color32::operator[](uint32_t idx) const {
     assert(idx < 4);
-    return c[idx];
+    return C[idx];
 }
 
-uint8_t &color32::operator[](uint32_t idx) {
+uint8_t &Color32::operator[](uint32_t idx) {
     assert(idx < 4);
-    return c[idx];
+    return C[idx];
 }
 
-void color32::set(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va) {
-    c[0] = vr;
-    c[1] = vg;
-    c[2] = vb;
-    c[3] = va;
+void Color32::set(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va) {
+    C[0] = vr;
+    C[1] = vg;
+    C[2] = vb;
+    C[3] = va;
 }
 
-void color32::set_rgb(const color32 &other) {
-    c[0] = other.c[0];
-    c[1] = other.c[1];
-    c[2] = other.c[2];
+void Color32::set(const Color32 &other) {
+    C[0] = other.C[0];
+    C[1] = other.C[1];
+    C[2] = other.C[2];
 }
-color32 color32::comp_min(const color32 &a, const color32 &b) {
-    return color32(std::min(a[0], b[0]), std::min(a[1], b[1]), std::min(a[2], b[2]), std::min(a[3], b[3]));
+Color32 Color32::min(const Color32 &a, const Color32 &b) {
+    return Color32(std::min(a[0], b[0]), std::min(a[1], b[1]), std::min(a[2], b[2]), std::min(a[3], b[3]));
 }
-color32 color32::comp_max(const color32 &a, const color32 &b) {
-    return color32(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]), std::max(a[3], b[3]));
+Color32 Color32::max(const Color32 &a, const Color32 &b) {
+    return Color32(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]), std::max(a[3], b[3]));
 }
 // endregion
