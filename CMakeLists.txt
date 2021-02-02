@@ -8,6 +8,8 @@ add_subdirectory(extern/pybind11)
 file(GLOB SOURCE_FILES "src/*.cpp")
 file(GLOB HEADER_FILES "src/*.h")
 file(GLOB PYTHON_FILES "python/*.cpp" "python/*.h")
+file(GLOB TEST_FILES "src/test/*.c" "src/test/*.cpp" "src/test/*.h")
+
 
 # Organize source files together for some IDEs
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES})
@@ -19,5 +21,11 @@ pybind11_add_module(python_rgbcx
         ${PYTHON_FILES}
         )
 
+add_executable(test_rgbcx
+        ${SOURCE_FILES}
+        ${HEADER_FILES}
+        ${TEST_FILES})
+
 # Set module features, like C/C++ standards
 target_compile_features(python_rgbcx PUBLIC cxx_std_17 c_std_11)
+target_compile_features(test_rgbcx PUBLIC cxx_std_17 c_std_11)
