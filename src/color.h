@@ -18,14 +18,11 @@
  */
 
 #pragma once
-#include "util.h"
-#include <cassert>
 #include <cstdint>
-#include <cstdlib>
 
 #pragma pack(push, 1)
 class Color32 {
-  public:
+   public:
     union {
         struct {
             uint8_t R;

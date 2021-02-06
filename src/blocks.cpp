@@ -18,8 +18,5 @@
  */
 
 #include "blocks.h"
-#include "color.h"
-#include <algorithm>
-#include <cassert>
 
 // endregion

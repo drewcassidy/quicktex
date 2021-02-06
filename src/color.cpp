@@ -18,8 +18,11 @@
  */
 
 #include "color.h"
+
 #include <algorithm>
 #include <cassert>
+
+#include "util.h"
 
 // region Color32 implementation
 Color32::Color32() { set(0, 0, 0, 0xFF); }

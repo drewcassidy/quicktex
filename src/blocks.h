@@ -25,7 +25,6 @@
 #include <cstdlib>
 
 #include "color.h"
-#include "util.h"
 
 #pragma pack(push, 1)
 class BC1Block {

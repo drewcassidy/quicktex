@@ -30,7 +30,6 @@ target_compile_features(python_rgbcx PUBLIC cxx_std_20 c_std_11)
 target_compile_features(test_rgbcx PUBLIC cxx_std_20 c_std_11)
 
 set_property(TARGET python_rgbcx test_rgbcx PROPERTY INTERPROCEDURAL_OPTIMIZATION True) #enable FLTO if available
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set_property(TARGET python_rgbcx test_rgbcx PROPERTY OSX_ARCHITECTURES_RELEASE x86_64 arm64) #Mach-O fat binary for arm and x86
 endif ()

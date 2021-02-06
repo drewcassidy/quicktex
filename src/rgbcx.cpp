@@ -4,11 +4,12 @@
 #include "rgbcx.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <climits>
 #include <cmath>
-#include <cstdlib>
 #include <cstring>
+#include <type_traits>
 
 #include "blocks.h"
 #include "color.h"
