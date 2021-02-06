@@ -20,10 +20,6 @@
 
 const int MAX_UBER_LEVEL = 5;
 
-inline int iabs(int i) { if (i < 0) i = -i; return i; }
-inline uint8_t clamp255(int32_t i) { return (uint8_t)((i & 0xFFFFFF00U) ? (~(i >> 31)) : i); }
-template <typename S> inline S clamp(S value, S low, S high) { return (value < low) ? low : ((value > high) ? high : value); }
-
 static int print_usage()
 {
 	fprintf(stderr, "bc7enc\n");
@@ -781,7 +777,7 @@ int main(int argc, char *argv[])
 			}
 			case DXGI_FORMAT_BC3_UNORM:
 			{
-				block16* pBlock = &packed_image16[bx + by * blocks_x];
+				BC3Block* pBlock = reinterpret_cast<BC3Block *>(&packed_image16[bx + by * blocks_x]);
 
 				rgbcx::encode_bc3(bc1_quality_level, pBlock, &pixels[0].m_c[0]);
 				break;
@@ -797,7 +793,7 @@ int main(int argc, char *argv[])
 			{
 				block16* pBlock = &packed_image16[bx + by * blocks_x];
 
-				rgbcx::encode_bc5(pBlock, &pixels[0].m_c[0], bc45_channel0, bc45_channel1, 4);
+				rgbcx::encode_bc5(reinterpret_cast<BC5Block *>(pBlock), &pixels[0].m_c[0], bc45_channel0, bc45_channel1, 4);
 				break;
 			}
 			case DXGI_FORMAT_BC7_UNORM:

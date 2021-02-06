@@ -55,6 +55,8 @@
 
 #include <cstdint>
 
+#include "blocks.h"
+
 // By default, the table used to accelerate cluster fit on 4 color blocks uses a 969x128 entry table.
 // To reduce the executable size, set RGBCX_USE_SMALLER_TABLES to 1, which selects the smaller 969x32 entry table.
 #ifndef RGBCX_USE_SMALLER_TABLES
@@ -173,8 +175,8 @@ void encode_bc1(void *pDst, const uint8_t *pPixels, uint32_t flags = 0, uint32_t
 // There are two encode_bc3() functions.
 // The first is the recommended function, which accepts a level parameter.
 // The second is a low-level version that allows fine control over BC1 encoding.
-void encode_bc3(uint32_t level, void *pDst, const uint8_t *pPixels);
-void encode_bc3(void *pDst, const uint8_t *pPixels, uint32_t flags = 0, uint32_t total_orderings_to_try = DEFAULT_TOTAL_ORDERINGS_TO_TRY);
+void encode_bc3(uint32_t level, BC3Block *pDst, const uint8_t *pPixels);
+void encode_bc3(BC3Block *pDst, const uint8_t *pPixels, uint32_t flags = 0, uint32_t total_orderings_to_try = DEFAULT_TOTAL_ORDERINGS_TO_TRY);
 
 // Encodes a single channel to BC4.
 // stride is the source pixel stride in bytes.
@@ -182,7 +184,7 @@ void encode_bc4(void *pDst, const uint8_t *pPixels, uint32_t stride = 4);
 
 // Encodes two channels to BC5.
 // chan0/chan1 control which channels, stride is the source pixel stride in bytes.
-void encode_bc5(void *pDst, const uint8_t *pPixels, uint32_t chan0 = 0, uint32_t chan1 = 1, uint32_t stride = 4);
+void encode_bc5(BC5Block *pDst, const uint8_t *pPixels, uint32_t chan0 = 0, uint32_t chan1 = 1, uint32_t stride = 4);
 
 // Decompression functions.
 
@@ -195,7 +197,7 @@ void unpack_bc4(const void *pBlock_bits, uint8_t *pPixels, uint32_t stride = 4);
 bool unpack_bc3(const void *pBlock_bits, void *pPixels, bc1_approx_mode mode = bc1_approx_mode::cBC1Ideal);
 
 void unpack_bc5(const void *pBlock_bits, void *pPixels, uint32_t chan0 = 0, uint32_t chan1 = 1, uint32_t stride = 4);
-} // namespace rgbcx
+}  // namespace rgbcx
 
 /*
 ------------------------------------------------------------------------------
