@@ -23,17 +23,17 @@
 static inline uint32_t iabs(int32_t i) { return (i < 0) ? static_cast<uint32_t>(-i) : static_cast<uint32_t>(i); }
 static inline uint64_t iabs(int64_t i) { return (i < 0) ? static_cast<uint64_t>(-i) : static_cast<uint64_t>(i); }
 
-static inline uint8_t scale_8_to_5(uint32_t v) {
+static inline uint8_t scale8To5(uint32_t v) {
     v = v * 31 + 128;
     return (uint8_t)((v + (v >> 8)) >> 8);
 }
-static inline uint8_t scale_8_to_6(uint32_t v) {
+static inline uint8_t scale8To6(uint32_t v) {
     v = v * 63 + 128;
     return (uint8_t)((v + (v >> 8)) >> 8);
 }
 
-static inline int scale_5_to_8(int v) { return (v << 3) | (v >> 2); }
-static inline int scale_6_to_8(int v) { return (v << 2) | (v >> 4); }
+static inline int scale5To8(int v) { return (v << 3) | (v >> 2); }
+static inline int scale6To8(int v) { return (v << 2) | (v >> 4); }
 
 template <typename S> inline S maximum(S a, S b) { return (a > b) ? a : b; }
 template <typename S> inline S maximum(S a, S b, S c) { return maximum(maximum(a, b), c); }
@@ -55,7 +55,7 @@ static inline float clampf(float value, float low, float high) {
 static inline uint8_t clamp255(int32_t i) { return (uint8_t)((i & 0xFFFFFF00U) ? (~(i >> 31)) : i); }
 
 template <typename S> inline S clamp(S value, S low, S high) { return (value < low) ? low : ((value > high) ? high : value); }
-static inline int32_t clampi(int32_t value, int32_t low, int32_t high) {
+static inline int32_t          clampi(int32_t value, int32_t low, int32_t high) {
     if (value < low)
         value = low;
     else if (value > high)
@@ -67,8 +67,3 @@ static inline int squarei(int a) { return a * a; }
 static inline int absi(int a) { return (a < 0) ? -a : a; }
 
 template <typename F> inline F lerp(F a, F b, F s) { return a + (b - a) * s; }
-
-
-
-
-

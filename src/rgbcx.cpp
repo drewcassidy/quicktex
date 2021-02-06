@@ -1,16 +1,16 @@
 // rgbcx.h v1.12
 // High-performance scalar BC1-5 encoders. Public Domain or MIT license (you choose - see below), written by Richard Geldreich 2020 <richgel99@gmail.com>.
 
+#include "rgbcx.h"
+#include "blocks.h"
+#include "color.h"
+#include "tables.h"
+#include "util.h"
 #include <algorithm>
 #include <cassert>
 #include <climits>
 #include <cstdlib>
 #include <cstring>
-#include <cmath>
-#include "util.h"
-#include "tables.h"
-#include "blocks.h"
-#include "rgbcx.h"
 
 namespace rgbcx {
 
@@ -159,7 +159,7 @@ static inline int interp_half_5_6_amd(int c0, int c1) {
 }
 
 static inline int interp_5(int v0, int v1, int c0, int c1, bc1_approx_mode mode) {
-    // assert(scale_5_to_8(v0) == c0 && scale_5_to_8(v1) == c1);
+    // assert(scale_5_to_8(v0) == c0 && scale5To8(v1) == c1);
     switch (mode) {
     case bc1_approx_mode::cBC1NVidia:
         return interp_5_nv(v0, v1);
@@ -176,7 +176,7 @@ static inline int interp_5(int v0, int v1, int c0, int c1, bc1_approx_mode mode)
 static inline int interp_6(int v0, int v1, int c0, int c1, bc1_approx_mode mode) {
     (void)v0;
     (void)v1;
-    // assert(scale_6_to_8(v0) == c0 && scale_6_to_8(v1) == c1);
+    // assert(scale_6_to_8(v0) == c0 && scale6To8(v1) == c1);
     switch (mode) {
     case bc1_approx_mode::cBC1NVidia:
         return interp_6_nv(c0, c1);
@@ -191,7 +191,7 @@ static inline int interp_6(int v0, int v1, int c0, int c1, bc1_approx_mode mode)
 }
 
 static inline int interp_half_5(int v0, int v1, int c0, int c1, bc1_approx_mode mode) {
-    assert(scale_5_to_8(v0) == c0 && scale_5_to_8(v1) == c1);
+    assert(scale5To8(v0) == c0 && scale5To8(v1) == c1);
     switch (mode) {
     case bc1_approx_mode::cBC1NVidia:
         return interp_half_5_nv(v0, v1);
@@ -207,7 +207,7 @@ static inline int interp_half_5(int v0, int v1, int c0, int c1, bc1_approx_mode 
 static inline int interp_half_6(int v0, int v1, int c0, int c1, bc1_approx_mode mode) {
     (void)v0;
     (void)v1;
-    assert(scale_6_to_8(v0) == c0 && scale_6_to_8(v1) == c1);
+    assert(scale6To8(v0) == c0 && scale6To8(v1) == c1);
     switch (mode) {
     case bc1_approx_mode::cBC1NVidia:
         return interp_half_6_nv(c0, c1);
@@ -434,12 +434,12 @@ void encode_bc1_solid_block(void *pDst, uint32_t fr, uint32_t fg, uint32_t fb, b
         }
     }
 
-    pDst_block->set_low_color(static_cast<uint16_t>(max16));
-    pDst_block->set_high_color(static_cast<uint16_t>(min16));
-    pDst_block->Selectors[0] = static_cast<uint8_t>(mask);
-    pDst_block->Selectors[1] = static_cast<uint8_t>(mask);
-    pDst_block->Selectors[2] = static_cast<uint8_t>(mask);
-    pDst_block->Selectors[3] = static_cast<uint8_t>(mask);
+    pDst_block->SetLowColor(static_cast<uint16_t>(max16));
+    pDst_block->SetHighColor(static_cast<uint16_t>(min16));
+    pDst_block->selectors[0] = static_cast<uint8_t>(mask);
+    pDst_block->selectors[1] = static_cast<uint8_t>(mask);
+    pDst_block->selectors[2] = static_cast<uint8_t>(mask);
+    pDst_block->selectors[3] = static_cast<uint8_t>(mask);
 }
 
 static const float g_midpoint5[32] = {.015686f, .047059f, .078431f, .111765f, .145098f, .176471f, .207843f, .241176f, .274510f, .305882f, .337255f,
@@ -944,8 +944,8 @@ static inline void precise_round_565_noscale(vec3F xl, vec3F xh, int &trial_lr, 
 }
 
 static inline void bc1_encode4(BC1Block *pDst_block, int lr, int lg, int lb, int hr, int hg, int hb, const uint8_t sels[16]) {
-    uint32_t lc16 = BC1Block::pack_unscaled_color(lr, lg, lb);
-    uint32_t hc16 = BC1Block::pack_unscaled_color(hr, hg, hb);
+    uint16_t lc16 = Color32::pack565Unscaled(lr, lg, lb);
+    uint16_t hc16 = Color32::pack565Unscaled(hr, hg, hb);
 
     // Always forbid 3 color blocks
     if (lc16 == hc16) {
@@ -964,13 +964,13 @@ static inline void bc1_encode4(BC1Block *pDst_block, int lr, int lg, int lb, int
         }
 
         assert(lc16 > hc16);
-        pDst_block->set_low_color(static_cast<uint16_t>(lc16));
-        pDst_block->set_high_color(static_cast<uint16_t>(hc16));
+        pDst_block->SetLowColor(static_cast<uint16_t>(lc16));
+        pDst_block->SetHighColor(static_cast<uint16_t>(hc16));
 
-        pDst_block->Selectors[0] = mask;
-        pDst_block->Selectors[1] = mask;
-        pDst_block->Selectors[2] = mask;
-        pDst_block->Selectors[3] = mask;
+        pDst_block->selectors[0] = mask;
+        pDst_block->selectors[1] = mask;
+        pDst_block->selectors[2] = mask;
+        pDst_block->selectors[3] = mask;
     } else {
         uint8_t invert_mask = 0;
         if (lc16 < hc16) {
@@ -979,24 +979,25 @@ static inline void bc1_encode4(BC1Block *pDst_block, int lr, int lg, int lb, int
         }
 
         assert(lc16 > hc16);
-        pDst_block->set_low_color((uint16_t)lc16);
-        pDst_block->set_high_color((uint16_t)hc16);
+        pDst_block->SetLowColor((uint16_t)lc16);
+        pDst_block->SetHighColor((uint16_t)hc16);
 
         uint32_t packed_sels = 0;
         static const uint8_t s_sel_trans[4] = {0, 2, 3, 1};
         for (uint32_t i = 0; i < 16; i++)
             packed_sels |= ((uint32_t)s_sel_trans[sels[i]] << (i * 2));
 
-        pDst_block->Selectors[0] = (uint8_t)packed_sels ^ invert_mask;
-        pDst_block->Selectors[1] = (uint8_t)(packed_sels >> 8) ^ invert_mask;
-        pDst_block->Selectors[2] = (uint8_t)(packed_sels >> 16) ^ invert_mask;
-        pDst_block->Selectors[3] = (uint8_t)(packed_sels >> 24) ^ invert_mask;
+        // todo: make this less silly to prevent packing and unpacking
+        pDst_block->selectors[0] = (uint8_t)packed_sels ^ invert_mask;
+        pDst_block->selectors[1] = (uint8_t)(packed_sels >> 8) ^ invert_mask;
+        pDst_block->selectors[2] = (uint8_t)(packed_sels >> 16) ^ invert_mask;
+        pDst_block->selectors[3] = (uint8_t)(packed_sels >> 24) ^ invert_mask;
     }
 }
 
 static inline void bc1_encode3(BC1Block *pDst_block, int lr, int lg, int lb, int hr, int hg, int hb, const uint8_t sels[16]) {
-    uint32_t lc16 = BC1Block::pack_unscaled_color(lr, lg, lb);
-    uint32_t hc16 = BC1Block::pack_unscaled_color(hr, hg, hb);
+    uint16_t lc16 = Color32::pack565Unscaled(lr, lg, lb);
+    uint16_t hc16 = Color32::pack565Unscaled(hr, hg, hb);
 
     bool invert_flag = false;
     if (lc16 > hc16) {
@@ -1006,8 +1007,8 @@ static inline void bc1_encode3(BC1Block *pDst_block, int lr, int lg, int lb, int
 
     assert(lc16 <= hc16);
 
-    pDst_block->set_low_color((uint16_t)lc16);
-    pDst_block->set_high_color((uint16_t)hc16);
+    pDst_block->SetLowColor((uint16_t)lc16);
+    pDst_block->SetHighColor((uint16_t)hc16);
 
     uint32_t packed_sels = 0;
 
@@ -1021,10 +1022,11 @@ static inline void bc1_encode3(BC1Block *pDst_block, int lr, int lg, int lb, int
             packed_sels |= ((uint32_t)sels[i] << (i * 2));
     }
 
-    pDst_block->Selectors[0] = (uint8_t)packed_sels;
-    pDst_block->Selectors[1] = (uint8_t)(packed_sels >> 8);
-    pDst_block->Selectors[2] = (uint8_t)(packed_sels >> 16);
-    pDst_block->Selectors[3] = (uint8_t)(packed_sels >> 24);
+    // todo: make this less silly to prevent packing and unpacking
+    pDst_block->selectors[0] = (uint8_t)packed_sels;
+    pDst_block->selectors[1] = (uint8_t)(packed_sels >> 8);
+    pDst_block->selectors[2] = (uint8_t)(packed_sels >> 16);
+    pDst_block->selectors[3] = (uint8_t)(packed_sels >> 24);
 }
 
 struct bc1_encode_results {
@@ -1138,13 +1140,13 @@ static bool try_3color_block_useblack(const Color32 *pSrc_pixels, uint32_t flags
         }
     }
 
-    int lr = scale_8_to_5(pSrc_pixels[low_c].R);
-    int lg = scale_8_to_6(pSrc_pixels[low_c].G);
-    int lb = scale_8_to_5(pSrc_pixels[low_c].B);
+    int lr = scale8To5(pSrc_pixels[low_c].R);
+    int lg = scale8To6(pSrc_pixels[low_c].G);
+    int lb = scale8To5(pSrc_pixels[low_c].B);
 
-    int hr = scale_8_to_5(pSrc_pixels[high_c].R);
-    int hg = scale_8_to_6(pSrc_pixels[high_c].G);
-    int hb = scale_8_to_5(pSrc_pixels[high_c].B);
+    int hr = scale8To5(pSrc_pixels[high_c].R);
+    int hg = scale8To6(pSrc_pixels[high_c].G);
+    int hb = scale8To5(pSrc_pixels[high_c].B);
 
     uint8_t trial_sels[16];
     uint32_t trial_err = bc1_find_sels3_fullerr(true, pSrc_pixels, lr, lg, lb, hr, hg, hb, trial_sels, UINT32_MAX);
@@ -1491,14 +1493,14 @@ static inline void encode_bc1_pick_initial(const Color32 *pSrc_pixels, uint32_t 
 
         // Grayscale blocks are a common enough case to specialize.
         if ((max_r - min_r) < 2) {
-            lr = lb = hr = hb = scale_8_to_5(fr);
-            lg = hg = scale_8_to_6(fr);
+            lr = lb = hr = hb = scale8To5(fr);
+            lg = hg = scale8To6(fr);
         } else {
-            lr = lb = scale_8_to_5(min_r);
-            lg = scale_8_to_6(min_r);
+            lr = lb = scale8To5(min_r);
+            lg = scale8To6(min_r);
 
-            hr = hb = scale_8_to_5(max_r);
-            hg = scale_8_to_6(max_r);
+            hr = hb = scale8To5(max_r);
+            hg = scale8To6(max_r);
         }
     } else if (flags & cEncodeBC1Use2DLS) {
         //  2D Least Squares approach from Humus's example, with added inset and optimal rounding.
@@ -1721,13 +1723,13 @@ static inline void encode_bc1_pick_initial(const Color32 *pSrc_pixels, uint32_t 
         if (icov_yz < 0)
             std::swap(y0, y1);
 
-        lr = scale_8_to_5(x0);
-        lg = scale_8_to_6(y0);
-        lb = scale_8_to_5(min_b);
+        lr = scale8To5(x0);
+        lg = scale8To6(y0);
+        lb = scale8To5(min_b);
 
-        hr = scale_8_to_5(x1);
-        hg = scale_8_to_6(y1);
-        hb = scale_8_to_5(max_b);
+        hr = scale8To5(x1);
+        hg = scale8To6(y1);
+        hb = scale8To5(max_b);
     } else {
         // Select 2 colors along the principle axis. (There must be a faster/simpler way.)
         uint32_t low_c = 0, high_c = 0;
@@ -1806,13 +1808,13 @@ static inline void encode_bc1_pick_initial(const Color32 *pSrc_pixels, uint32_t 
         low_c = low_dot & 15;
         high_c = high_dot & 15;
 
-        lr = scale_8_to_5(pSrc_pixels[low_c].R);
-        lg = scale_8_to_6(pSrc_pixels[low_c].G);
-        lb = scale_8_to_5(pSrc_pixels[low_c].B);
+        lr = scale8To5(pSrc_pixels[low_c].R);
+        lg = scale8To6(pSrc_pixels[low_c].G);
+        lb = scale8To5(pSrc_pixels[low_c].B);
 
-        hr = scale_8_to_5(pSrc_pixels[high_c].R);
-        hg = scale_8_to_6(pSrc_pixels[high_c].G);
-        hb = scale_8_to_5(pSrc_pixels[high_c].B);
+        hr = scale8To5(pSrc_pixels[high_c].R);
+        hg = scale8To6(pSrc_pixels[high_c].G);
+        hb = scale8To5(pSrc_pixels[high_c].B);
     }
 }
 
@@ -2349,6 +2351,7 @@ void encode_bc4(void *pDst, const uint8_t *pPixels, uint32_t stride) {
 
     const uint64_t f = a0 | a1 | a2 | a3;
 
+    // TODO: make this less silly by using the BC4Block class
     pDst_bytes[2] = (uint8_t)f;
     pDst_bytes[3] = (uint8_t)(f >> 8U);
     pDst_bytes[4] = (uint8_t)(f >> 16U);
@@ -2357,28 +2360,28 @@ void encode_bc4(void *pDst, const uint8_t *pPixels, uint32_t stride) {
     pDst_bytes[7] = (uint8_t)(f >> 40U);
 }
 
-void encode_bc3(void *pDst, const uint8_t *pPixels, uint32_t flags, uint32_t total_orderings_to_try) {
+void encode_bc3(BC3Block *pDst, const uint8_t *pPixels, uint32_t flags, uint32_t total_orderings_to_try) {
     assert(g_initialized);
 
     // 3-color blocks are not allowed with BC3 (on most GPU's).
     flags &= ~(cEncodeBC1Use3ColorBlocksForBlackPixels | cEncodeBC1Use3ColorBlocks);
 
-    encode_bc4(pDst, pPixels + 3, 4);
-    encode_bc1(static_cast<uint8_t *>(pDst) + 8, pPixels, flags, total_orderings_to_try);
+    encode_bc4(&pDst->alpha_block, pPixels + 3, 4);
+    encode_bc1(&pDst->color_block, pPixels, flags, total_orderings_to_try);
 }
 
-void encode_bc3(uint32_t level, void *pDst, const uint8_t *pPixels) {
+void encode_bc3(uint32_t level, BC3Block *pDst, const uint8_t *pPixels) {
     assert(g_initialized);
 
-    encode_bc4(pDst, pPixels + 3, 4);
-    encode_bc1(level, static_cast<uint8_t *>(pDst) + 8, pPixels, false, false);
+    encode_bc4(&pDst->alpha_block, pPixels + 3, 4);
+    encode_bc1(level, &pDst->color_block, pPixels, false, false);
 }
 
-void encode_bc5(void *pDst, const uint8_t *pPixels, uint32_t chan0, uint32_t chan1, uint32_t stride) {
+void encode_bc5(BC5Block *pDst, const uint8_t *pPixels, uint32_t chan0, uint32_t chan1, uint32_t stride) {
     assert(g_initialized);
 
-    encode_bc4(pDst, pPixels + chan0, stride);
-    encode_bc4(static_cast<uint8_t *>(pDst) + 8, pPixels + chan1, stride);
+    encode_bc4(&pDst->r_block, pPixels + chan0, stride);
+    encode_bc4(&pDst->g_block, pPixels + chan1, stride);
 }
 
 // Returns true if the block uses 3 color punchthrough alpha mode.
@@ -2390,8 +2393,8 @@ bool unpack_bc1(const void *pBlock_bits, void *pPixels, bool set_alpha, bc1_appr
 
     const BC1Block *pBlock = static_cast<const BC1Block *>(pBlock_bits);
 
-    const uint32_t l = pBlock->get_low_color();
-    const uint32_t h = pBlock->get_high_color();
+    const uint32_t l = pBlock->GetLowColor();
+    const uint32_t h = pBlock->GetHighColor();
 
     Color32 c[4];
 
@@ -2454,17 +2457,17 @@ bool unpack_bc1(const void *pBlock_bits, void *pPixels, bool set_alpha, bc1_appr
 
     if (set_alpha) {
         for (uint32_t y = 0; y < 4; y++, pDst_pixels += 4) {
-            pDst_pixels[0] = c[pBlock->get_selector(0, y)];
-            pDst_pixels[1] = c[pBlock->get_selector(1, y)];
-            pDst_pixels[2] = c[pBlock->get_selector(2, y)];
-            pDst_pixels[3] = c[pBlock->get_selector(3, y)];
+            pDst_pixels[0] = c[pBlock->GetSelector(0, y)];
+            pDst_pixels[1] = c[pBlock->GetSelector(1, y)];
+            pDst_pixels[2] = c[pBlock->GetSelector(2, y)];
+            pDst_pixels[3] = c[pBlock->GetSelector(3, y)];
         }
     } else {
         for (uint32_t y = 0; y < 4; y++, pDst_pixels += 4) {
-            pDst_pixels[0].set(c[pBlock->get_selector(0, y)]);
-            pDst_pixels[1].set(c[pBlock->get_selector(1, y)]);
-            pDst_pixels[2].set(c[pBlock->get_selector(2, y)]);
-            pDst_pixels[3].set(c[pBlock->get_selector(3, y)]);
+            pDst_pixels[0].set(c[pBlock->GetSelector(0, y)]);
+            pDst_pixels[1].set(c[pBlock->GetSelector(1, y)]);
+            pDst_pixels[2].set(c[pBlock->GetSelector(2, y)]);
+            pDst_pixels[3].set(c[pBlock->GetSelector(3, y)]);
         }
     }
 
@@ -2476,16 +2479,15 @@ void unpack_bc4(const void *pBlock_bits, uint8_t *pPixels, uint32_t stride) {
 
     const BC4Block *pBlock = static_cast<const BC4Block *>(pBlock_bits);
 
-    uint8_t sel_values[8];
-    BC4Block::get_block_values(sel_values, pBlock->get_low_alpha(), pBlock->get_high_alpha());
+    auto sel_values = BC4Block::GetBlockValues(pBlock->GetLowAlpha(), pBlock->GetHighAlpha());
 
-    const uint64_t selector_bits = pBlock->get_selector_bits();
+    const uint64_t selector_bits = pBlock->GetSelectorBits();
 
     for (uint32_t y = 0; y < 4; y++, pPixels += (stride * 4U)) {
-        pPixels[0] = sel_values[pBlock->get_selector(0, y, selector_bits)];
-        pPixels[stride * 1] = sel_values[pBlock->get_selector(1, y, selector_bits)];
-        pPixels[stride * 2] = sel_values[pBlock->get_selector(2, y, selector_bits)];
-        pPixels[stride * 3] = sel_values[pBlock->get_selector(3, y, selector_bits)];
+        pPixels[0] = sel_values[pBlock->GetSelector(0, y, selector_bits)];
+        pPixels[stride * 1] = sel_values[pBlock->GetSelector(1, y, selector_bits)];
+        pPixels[stride * 2] = sel_values[pBlock->GetSelector(2, y, selector_bits)];
+        pPixels[stride * 3] = sel_values[pBlock->GetSelector(3, y, selector_bits)];
     }
 }
 

@@ -18,8 +18,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FIL
 pybind11_add_module(python_rgbcx
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        ${PYTHON_FILES}
-        )
+        ${PYTHON_FILES})
 
 add_executable(test_rgbcx
         ${SOURCE_FILES}
@@ -27,5 +26,8 @@ add_executable(test_rgbcx
         ${TEST_FILES})
 
 # Set module features, like C/C++ standards
-target_compile_features(python_rgbcx PUBLIC cxx_std_17 c_std_11)
-target_compile_features(test_rgbcx PUBLIC cxx_std_17 c_std_11)
+target_compile_features(python_rgbcx PUBLIC cxx_std_20 c_std_11)
+target_compile_features(test_rgbcx PUBLIC cxx_std_20 c_std_11)
+
+set_property(TARGET python_rgbcx test_rgbcx PROPERTY INTERPROCEDURAL_OPTIMIZATION True) #enable FLTO if available
+set_property(TARGET python_rgbcx test_rgbcx PROPERTY OSX_ARCHITECTURES_RELEASE x86_64 arm64) #Mach-O fat binary for arm and x86

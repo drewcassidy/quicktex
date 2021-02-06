@@ -1,6 +1,10 @@
 ---
-BasedOnStyle: LLVM
+BasedOnStyle: google
 IndentWidth: 4
 ColumnLimit: 160
+AllowShortBlocksOnASingleLine: Always
+AllowShortFunctionsOnASingleLine: All
+AlwaysBreakTemplateDeclarations: MultiLine
+#AlignConsecutiveDeclarations: true
 ---
 
