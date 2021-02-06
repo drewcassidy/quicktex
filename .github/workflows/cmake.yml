@@ -20,10 +20,6 @@ jobs:
             name: "macOS Clang"
             cc: "clang"
             cxx: "clang++"
-          - os: macos-latest
-            name: "macOS GCC"
-            cc: "gcc-10"
-            cxx: "g++-10"
           - os: ubuntu-latest
             name: "Ubuntu Clang"
             cc: "clang-9"
