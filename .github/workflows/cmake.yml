@@ -15,8 +15,27 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-18.04, windows-latest]
-        compiler: [gcc-8, clang]
+        include:
+          - os: macos-latest
+            name: "macOS Clang"
+            cc: "clang"
+            cxx: "clang++"
+          - os: macos-latest
+            name: "macOS GCC"
+            cc: "gcc-10"
+            cxx: "g++-10"
+          - os: ubuntu-latest
+            name: "Ubuntu Clang"
+            cc: "clang-9"
+            cxx: "clang++-9"
+          - os: ubuntu-latest
+            name: "Ubuntu GCC"
+            cc: "gcc-10"
+            cxx: "g++-10"
+          - os: windows-latest
+            name: "Windows MSVC"
+            cc: "cl"
+            cxx: "cl"
 
     steps:
     - uses: actions/checkout@v2
@@ -25,6 +44,10 @@ jobs:
         # recursively checkout submodules.
         submodules: 'true'
 
+    - name: Set Windows ENV
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commands
@@ -38,13 +61,12 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_COMPILER=${{ matrix.config.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cxx }}
 
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
-      env:
-        CC: ${{ matrix.compiler }}
+
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
 
