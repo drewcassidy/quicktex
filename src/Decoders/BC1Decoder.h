@@ -19,16 +19,23 @@
 
 #pragma once
 
-#include <cstdint>
-
-#include "ColorBlock.h"
-
+#include "../blocks.h"
+#include "../interpolator.h"
+#include "../ndebug.h"
+#include "BlockDecoder.h"
 namespace rgbcx {
-
-template <class B, size_t M, size_t N> class BlockDecoder {
+class BC1Decoder : public BlockDecoder<BC1Block, 4, 4> {
    public:
-    using DecodedBlock = ColorBlock<M, N, Color32>;
-    using EncodedBlock = B;
-    virtual void DecodeBlock(const DecodedBlock *dest, const EncodedBlock *block) = 0;
+    BC1Decoder(const Interpolator &interpolator, bool write_alpha = false) : _interpolator(interpolator), _write_alpha(write_alpha) {}
+    BC1Decoder() : BC1Decoder(Interpolator()) {}
+
+    void DecodeBlock(Color4x4 *dest, BC1Block *const block) const noexcept(ndebug) override;
+
+    constexpr const Interpolator &GetInterpolator() const { return _interpolator; }
+    constexpr bool WritesAlpha() const { return _write_alpha; }
+
+   private:
+    const Interpolator &_interpolator;
+    const bool _write_alpha;
 };
 }  // namespace rgbcx

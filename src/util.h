@@ -20,8 +20,30 @@
 #pragma once
 #include <cstdint>
 
+#include "ndebug.h"
+
 static inline uint32_t iabs(int32_t i) { return (i < 0) ? static_cast<uint32_t>(-i) : static_cast<uint32_t>(i); }
 static inline uint64_t iabs(int64_t i) { return (i < 0) ? static_cast<uint64_t>(-i) : static_cast<uint64_t>(i); }
+
+template <typename I, typename O, size_t S, size_t C> constexpr auto Unpack(I packed) noexcept(ndebug) {
+    std::array<O, C> vals;
+    I mask = (1 << S) - 1;
+    for (int i = 0; i < C; i++) {
+        vals[i] = (packed >> (i * S)) & mask;
+        assert(vals[i] < 1 << S);
+    }
+
+    return vals;
+}
+
+template <typename I, typename O, size_t S, size_t C> constexpr auto Pack(const std::array<I, C> &vals) noexcept(ndebug) {
+    O packed = 0;
+    for (int i = 0; i < C; i++) {
+        packed |= vals[i] << (i * S);
+        assert(vals[i] < 1 << S);
+    }
+    return packed;
+}
 
 static inline uint8_t scale8To5(uint32_t v) {
     v = v * 31 + 128;
@@ -55,7 +77,7 @@ static inline float clampf(float value, float low, float high) {
 static inline uint8_t clamp255(int32_t i) { return (uint8_t)((i & 0xFFFFFF00U) ? (~(i >> 31)) : i); }
 
 template <typename S> inline S clamp(S value, S low, S high) { return (value < low) ? low : ((value > high) ? high : value); }
-static inline int32_t          clampi(int32_t value, int32_t low, int32_t high) {
+static inline int32_t clampi(int32_t value, int32_t low, int32_t high) {
     if (value < low)
         value = low;
     else if (value > high)

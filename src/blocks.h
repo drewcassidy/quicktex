@@ -25,10 +25,13 @@
 #include <cstdlib>
 
 #include "color.h"
+#include "util.h"
 
 #pragma pack(push, 1)
 class BC1Block {
    public:
+    using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
+
     uint16_t GetLowColor() const { return _low_color[0] | _low_color[1] << 8U; }
     uint16_t GetHighColor() const { return _high_color[0] | _high_color[1] << 8U; }
     Color32 GetLowColor32() const { return Color32::Unpack565(GetLowColor()); }
@@ -51,6 +54,20 @@ class BC1Block {
         assert((x < 4U) && (y < 4U) && (val < 4U));
         selectors[y] &= (~(SelectorMask << (x * SelectorBits)));
         selectors[y] |= (val << (x * SelectorBits));
+    }
+
+    UnpackedSelectors UnpackSelectors() const {
+        UnpackedSelectors unpacked;
+        for (int i = 0; i < 4; i++) {
+            unpacked[i] = Unpack<uint8_t, uint8_t, 2, 4>(selectors[i]);
+        }
+        return unpacked;
+    }
+
+    void PackSelectors(const UnpackedSelectors& unpacked) {
+        for (int i = 0; i < 4; i++) {
+            selectors[i] = Pack<uint8_t, uint8_t, 2, 4>(unpacked[i]);
+        }
     }
 
     constexpr static inline size_t EndpointSize = 2;

@@ -19,26 +19,25 @@
 
 #include "BC1Decoder.h"
 
-#include <array>
-
-#include "ColorBlock.h"
-
-void rgbcx::BC1Decoder::DecodeBlock(const Color4x4 *dest, const BC1Block *block) {
+namespace rgbcx {
+void BC1Decoder::DecodeBlock(Color4x4 *dest, BC1Block *const block) const {
     const unsigned l = block->GetLowColor();
     const unsigned h = block->GetHighColor();
+    const auto selectors = block->UnpackSelectors();
+    const auto colors = _interpolator.InterpolateBC1(l, h);
 
-    const auto l_color = Color32::Unpack565(l);
-    const auto h_color = Color32::Unpack565(h);
-
-    std::array<Color32, 4> colors;
-    colors[0] = l_color;
-    colors[1] = h_color;
-
-    bool three_color = (h >= l);
-    if (three_color) {
-        colors[2] = _interpolator.InterpolateHalfColor(l_color, h_color);
-        colors[3] = Color32(0,0,0);
-    } else {
-        colors[2] = _interpolator.InterpolateColor()
+    for (int y = 0; y < 4; y++) {
+        for (int x = 0; x < 4; x++) {
+            const auto selector = selectors[y][x];
+            const auto color = colors[selector];
+            assert(selector < 4);
+            assert((color.a == 0 && selector == 3 && l <= h) || color.a == UINT8_MAX);
+            if (_write_alpha) {
+                (*dest)[y][x].Set(color);
+            } else {
+                (*dest)[y][x].SetRGB(color);
+            }
+        }
     }
 }
+}  // namespace rgbcx

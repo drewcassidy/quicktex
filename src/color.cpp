@@ -41,6 +41,14 @@ Color32 Color32::Unpack565(uint16_t Packed) {
     return Color32(R, G, B);
 }
 
+Color32 Color32::Unpack565Unscaled(uint16_t Packed) {
+    uint8_t R = (Packed >> 11) & 0x1F;
+    uint8_t G = (Packed >> 5) & 0x3F;
+    uint8_t B = Packed & 0x1F;
+
+    return Color32(R, G, B);
+}
+
 uint8_t Color32::operator[](uint32_t Index) const {
     assert(Index < 4);
     return c[Index];
@@ -51,18 +59,17 @@ uint8_t &Color32::operator[](uint32_t Index) {
     return c[Index];
 }
 
-void Color32::Set(uint8_t R, uint8_t G, uint8_t B, uint8_t A) {
-    this->r = R;
-    this->g = G;
-    this->b = B;
-    this->a = A;
+void Color32::Set(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va = 0xFF) {
+    r = vr;
+    g = vg;
+    b = vb;
+    a = va;
 }
 
-void Color32::Set(const Color32 &Other) {
-    this->r = Other.r;
-    this->g = Other.g;
-    this->b = Other.b;
-    this->a = Other.a;
+void Color32::SetRGB(uint8_t vr, uint8_t vg, uint8_t vb) {
+    r = vr;
+    g = vg;
+    b = vb;
 }
 
 Color32 Color32::min(const Color32 &a, const Color32 &b) {
@@ -76,4 +83,8 @@ Color32 Color32::max(const Color32 &a, const Color32 &b) {
 uint16_t Color32::pack565() { return Pack565(r, g, b); }
 
 uint16_t Color32::pack565Unscaled() { return Pack565Unscaled(r, g, b); }
+
+Color32 Color32::ScaleTo565() const { return Color32(scale8To5(r), scale8To6(g), scale8To5(b)); }
+Color32 Color32::ScaleFrom565() const { return Color32(scale5To8(r), scale6To8(g), scale5To8(b)); }
+
 // endregion

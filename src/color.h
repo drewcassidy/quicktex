@@ -42,6 +42,7 @@ class Color32 {
     static uint16_t Pack565Unscaled(uint16_t R, uint16_t G, uint16_t B);
     static uint16_t Pack565(uint16_t R, uint16_t G, uint16_t B);
 
+    static Color32 Unpack565Unscaled(uint16_t Packed);
     static Color32 Unpack565(uint16_t Packed);
 
     bool operator==(const Color32 &Rhs) const { return r == Rhs.r && g == Rhs.g && b == Rhs.b && a == Rhs.a; }
@@ -52,11 +53,16 @@ class Color32 {
     uint16_t pack565();
     uint16_t pack565Unscaled();
 
+    Color32 ScaleTo565() const;
+    Color32 ScaleFrom565() const;
+
     static Color32 min(const Color32 &A, const Color32 &B);
     static Color32 max(const Color32 &A, const Color32 &B);
 
-    void Set(uint8_t R, uint8_t G, uint8_t B, uint8_t A);
+    void Set(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va);
+    void Set(const Color32 &other) { Set(other.r, other.g, other.b, other.a); }
 
-    void Set(const Color32 &Other);
+    void SetRGB(uint8_t vr, uint8_t vg, uint8_t vb);
+    void SetRGB(const Color32 &other) { SetRGB(other.r, other.g, other.b); }
 };
 #pragma pack(pop)

@@ -21,14 +21,14 @@
 
 #include <cstdint>
 
-#include "ColorBlock.h"
+#include "../ColorBlock.h"
 
 namespace rgbcx {
 
-template <class B, size_t M, size_t N> class BlockEncoder {
+template <class B, size_t M, size_t N> class BlockDecoder {
    public:
     using DecodedBlock = ColorBlock<Color32, M, N>;
     using EncodedBlock = B;
-    virtual void EncodeBlock(EncodedBlock *dest, DecodedBlock *const pixels) const = 0;
+    virtual void DecodeBlock(DecodedBlock *dest, EncodedBlock *const block) const = 0;
 };
 }  // namespace rgbcx

@@ -1,6 +1,6 @@
 /*  Python-rgbcx Texture Compression Library
     Copyright (C) 2021 Andrew Cassidy <drewcassidy@me.com>
-    Partially derived from rgbcx.h written by Richard Geldreich 2020 <richgel99@gmail.com>
+    Partially derived from rgbcx.h written by Richard Geldreich <richgel99@gmail.com>
     and licenced under the public domain
 
     This program is free software: you can redistribute it and/or modify
@@ -19,19 +19,8 @@
 
 #pragma once
 
-#include "BlockDecoder.h"
-#include "blocks.h"
-#include "interpolator.h"
-namespace rgbcx {
-class BC1Decoder : public BlockDecoder<BC1Block, 4, 4> {
-   public:
-    BC1Decoder(const Interpolator &interpolator) : _interpolator(interpolator) {}
-
-    BC1Decoder() : BC1Decoder(Interpolator()) {}
-
-    void DecodeBlock(const Color4x4 *dest, const BC1Block *block) override;
-
-   private:
-    const Interpolator &_interpolator;
-};
-}  // namespace rgbcx
+#ifdef NDEBUG  // asserts disabled
+constexpr bool ndebug = true;
+#else  // asserts enabled
+constexpr bool ndebug = false;
+#endif

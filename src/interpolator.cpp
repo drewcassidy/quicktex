@@ -36,7 +36,7 @@ Interpolator::Interpolator() {
 void Interpolator::PrepSingleColorTables(const MatchListPtr &matchTable, const MatchListPtr &matchTableHalf, int len) {
     int size = 1 << len;
 
-    assert((len == 5 && size == size5) || (len == 6 && size == size6));
+    assert((len == 5 && size == Size5) || (len == 6 && size == size6));
 
     const uint8_t *expand = (len == 5) ? &Expand5[0] : &Expand6[0];
 
@@ -93,7 +93,7 @@ int Interpolator::Interpolate6(int v0, int v1) const { return Interpolate8(scale
 int Interpolator::InterpolateHalf5(int v0, int v1) const { return InterpolateHalf8(scale5To8(v0), scale5To8(v1)); }
 int Interpolator::InterpolateHalf6(int v0, int v1) const { return InterpolateHalf8(scale6To8(v0), scale6To8(v1)); }
 
-std::array<Color32, 4> Interpolator::InterpolateBC1(uint16_t low, uint16_t high) {
+std::array<Color32, 4> Interpolator::InterpolateBC1(uint16_t low, uint16_t high) const {
     auto colors = std::array<Color32, 4>();
     colors[0] = Color32::Unpack565(low);
     colors[1] = Color32::Unpack565(high);
@@ -153,6 +153,27 @@ int InterpolatorNvidia::InterpolateHalf6(int v0, int v1) const {
     assert(v0 < 64 && v1 < 64);
     const int gdiff = v1 - v0;
     return (256 * v0 + gdiff / 4 + 128 + gdiff * 128) / 256;
+}
+
+std::array<Color32, 4> InterpolatorNvidia::InterpolateBC1(uint16_t low, uint16_t high) const {
+    // Nvidia is special and interpolation cant be done with 8-bit values, so we need to override the default behavior
+    auto colors = std::array<Color32, 4>();
+    auto low565 = Color32::Unpack565Unscaled(low);
+    auto high565 = Color32::Unpack565Unscaled(high);
+    colors[0] = low565.ScaleFrom565();
+    colors[1] = high565.ScaleFrom565();
+
+    if (low > high) {
+        // 4-color mode
+        colors[2] = InterpolateColor565(low565, high565);
+        colors[3] = InterpolateColor565(high565, low565);
+    } else {
+        // 3-color mode
+        colors[2] = InterpolateHalfColor565(low565, high565);
+        colors[3] = Color32(0, 0, 0, 0);  // transparent black
+    }
+
+    return colors;
 }
 // endregion
 

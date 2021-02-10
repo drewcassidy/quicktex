@@ -26,14 +26,14 @@
 
 #include "blocks.h"
 
-template <size_t M, size_t N, class T> class ColorBlock {
+template <typename T, size_t M, size_t N> class ColorBlock {
    public:
-    using row = std::span<T, N>;
+    using Row = std::span<T, N>;
 
     ColorBlock(const std::array<T *, N> &rows) {
-        for (int i = 0; i < height(); i++) { this[i] = row(rows[i], rows[i] * N * sizeof(T)); }
+        for (int i = 0; i < height(); i++) { this[i] = Row(rows[i], rows[i] * N * sizeof(T)); }
     }
-    ColorBlock(const std::array<row, N> &rows) {
+    ColorBlock(const std::array<Row, N> &rows) {
         for (int i = 0; i < height(); i++) { this[i] = rows[i]; }
     }
 
@@ -53,14 +53,15 @@ template <size_t M, size_t N, class T> class ColorBlock {
         for (int i = 0; i < height(); i++) { _rows[i] = std::span(start[i * imageWidth]); }
     }
 
-    constexpr T &operator[](size_t n) noexcept { return _rows[n]; }
+    constexpr Row &operator[](size_t n) noexcept { return _rows[n]; }
+    constexpr const Row &operator[](size_t n) const noexcept { return _rows[n]; }
 
     constexpr int width() noexcept { return N; }
     constexpr int height() noexcept { return M; }
     constexpr int size() noexcept { return N * M; }
 
    private:
-    std::array<row, M> _rows;
+    std::array<Row, M> _rows;
 };
 
-using Color4x4= ColorBlock<4, 4, Color32>;
+using Color4x4= ColorBlock<Color32, 4, 4>;

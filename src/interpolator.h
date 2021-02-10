@@ -24,19 +24,14 @@
 #include <memory>
 
 #include "color.h"
+#include "ndebug.h"
 #include "util.h"
-
-#ifdef NDEBUG  // asserts disabled
-static constexpr bool ndebug = true;
-#else  // asserts enabled
-static constexpr bool ndebug = false;
-#endif
 
 namespace rgbcx {
 
-template <size_t size, int op(int)> static constexpr std::array<uint8_t, size> ExpandArray() {
-    std::array<uint8_t, size> res;
-    for (int i = 0; i < size; i++) { res[i] = op(i); }
+template <size_t Size, int Op(int)> static constexpr std::array<uint8_t, Size> ExpandArray() {
+    std::array<uint8_t, Size> res;
+    for (int i = 0; i < Size; i++) { res[i] = Op(i); }
     return res;
 }
 
@@ -47,9 +42,6 @@ class Interpolator {
     //        uint8_t low;
     //        uint8_t error;
     //    };
-
-    constexpr static inline size_t size5 = 32;
-    constexpr static inline size_t size6 = 64;
 
     virtual ~Interpolator() noexcept = default;
 
@@ -95,13 +87,13 @@ class Interpolator {
      * @param high second 5:6:5 color for the block
      * @return and array of 4 Color32 values, with indices matching BC1 selectors
      */
-    std::array<Color32, 4> InterpolateBC1(uint16_t low, uint16_t high);
+    virtual std::array<Color32, 4> InterpolateBC1(uint16_t low, uint16_t high) const;
 
    private:
     virtual int Interpolate8(int v0, int v1) const;
     virtual int InterpolateHalf8(int v0, int v1) const;
 
-    //    constexpr static auto Expand5 = ExpandArray<size5, scale5To8>();
+    //    constexpr static auto Expand5 = ExpandArray<Size5, scale5To8>();
     //    constexpr static auto Expand6 = ExpandArray<size6, scale6To8>();
     //
     //    // match tables used for single-color blocks
@@ -136,7 +128,7 @@ class InterpolatorRound : public Interpolator {
     int Interpolate6(int v0, int v1) const override;
 
    private:
-    int Interpolate8(int v0, int v1) const;
+    int Interpolate8(int v0, int v1) const override;
 };
 
 class InterpolatorNvidia : public Interpolator {
@@ -145,7 +137,17 @@ class InterpolatorNvidia : public Interpolator {
     int Interpolate6(int v0, int v1) const override;
     int InterpolateHalf5(int v0, int v1) const override;
     int InterpolateHalf6(int v0, int v1) const override;
+    std::array<Color32, 4> InterpolateBC1(uint16_t low, uint16_t high) const override;
     constexpr bool isIdeal() noexcept override { return false; }
+
+   private:
+    Color32 InterpolateColor565(const Color32 &c0, const Color32 &c1) const {
+        return Color32(Interpolate5(c0.r, c1.r), Interpolate6(c0.g, c1.g), Interpolate5(c0.b, c1.b));
+    }
+
+    Color32 InterpolateHalfColor565(const Color32 &c0, const Color32 &c1) const {
+        return Color32(InterpolateHalf5(c0.r, c1.r), InterpolateHalf6(c0.g, c1.g), InterpolateHalf5(c0.b, c1.b));
+    }
 };
 
 class InterpolatorAMD : public Interpolator {
@@ -157,7 +159,7 @@ class InterpolatorAMD : public Interpolator {
     constexpr bool isIdeal() noexcept override { return false; }
 
    private:
-    int Interpolate8(int v0, int v1) const;
-    int InterpolateHalf8(int v0, int v1) const;
+    int Interpolate8(int v0, int v1) const override;
+    int InterpolateHalf8(int v0, int v1) const override;
 };
 }  // namespace rgbcx
