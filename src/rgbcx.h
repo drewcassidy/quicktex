@@ -56,6 +56,7 @@
 #include <cstdint>
 
 #include "blocks.h"
+#include "interpolator.h"
 
 // By default, the table used to accelerate cluster fit on 4 color blocks uses a 969x128 entry table.
 // To reduce the executable size, set RGBCX_USE_SMALLER_TABLES to 1, which selects the smaller 969x32 entry table.

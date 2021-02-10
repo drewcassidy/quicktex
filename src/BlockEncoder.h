@@ -17,6 +17,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "blocks.h"
+#pragma once
 
-// endregion
+#include <cstdint>
+
+#include "ColorBlock.h"
+
+namespace rgbcx {
+
+template <class B, size_t M, size_t N> class BlockEncoder {
+   public:
+    using DecodedBlock = ColorBlock<M, N, Color32>;
+    using EncodedBlock = B;
+    virtual void EncodeBlock(const EncodedBlock *dest, const DecodedBlock *pixels) = 0;
+};
+}  // namespace rgbcx

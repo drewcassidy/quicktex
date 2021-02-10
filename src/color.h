@@ -18,6 +18,7 @@
  */
 
 #pragma once
+#include <array>
 #include <cstdint>
 
 #pragma pack(push, 1)
@@ -25,25 +26,25 @@ class Color32 {
    public:
     union {
         struct {
-            uint8_t R;
-            uint8_t G;
-            uint8_t B;
-            uint8_t A;
+            uint8_t r;
+            uint8_t g;
+            uint8_t b;
+            uint8_t a;
         };
 
-        uint8_t C[4];
+        std::array<uint8_t, 4> c;
     };
 
     Color32();
 
     Color32(uint8_t R, uint8_t G, uint8_t B, uint8_t A = 0xFF);
 
-    static uint16_t pack565Unscaled(uint16_t R, uint16_t G, uint16_t B);
-    static uint16_t pack565(uint16_t R, uint16_t G, uint16_t B);
+    static uint16_t Pack565Unscaled(uint16_t R, uint16_t G, uint16_t B);
+    static uint16_t Pack565(uint16_t R, uint16_t G, uint16_t B);
 
-    static Color32 unpack565(uint16_t Packed);
+    static Color32 Unpack565(uint16_t Packed);
 
-    bool operator==(const Color32 &Rhs) const { return R == Rhs.R && G == Rhs.G && B == Rhs.B && A == Rhs.A; }
+    bool operator==(const Color32 &Rhs) const { return r == Rhs.r && g == Rhs.g && b == Rhs.b && a == Rhs.a; }
 
     uint8_t operator[](uint32_t Index) const;
     uint8_t &operator[](uint32_t Index);
@@ -54,8 +55,8 @@ class Color32 {
     static Color32 min(const Color32 &A, const Color32 &B);
     static Color32 max(const Color32 &A, const Color32 &B);
 
-    void set(uint8_t R, uint8_t G, uint8_t B, uint8_t A);
+    void Set(uint8_t R, uint8_t G, uint8_t B, uint8_t A);
 
-    void set(const Color32 &Other);
+    void Set(const Color32 &Other);
 };
 #pragma pack(pop)

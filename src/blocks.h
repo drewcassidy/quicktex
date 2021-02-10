@@ -31,8 +31,8 @@ class BC1Block {
    public:
     uint16_t GetLowColor() const { return _low_color[0] | _low_color[1] << 8U; }
     uint16_t GetHighColor() const { return _high_color[0] | _high_color[1] << 8U; }
-    Color32 GetLowColor32() const { return Color32::unpack565(GetLowColor()); }
-    Color32 GetHighColor32() const { return Color32::unpack565(GetHighColor()); }
+    Color32 GetLowColor32() const { return Color32::Unpack565(GetLowColor()); }
+    Color32 GetHighColor32() const { return Color32::Unpack565(GetHighColor()); }
 
     bool Is3Color() const { return GetLowColor() <= GetHighColor(); }
     void SetLowColor(uint16_t c) {

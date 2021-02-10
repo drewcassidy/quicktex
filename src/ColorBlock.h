@@ -20,6 +20,7 @@
 #pragma once
 
 #include <array>
+#include <cassert>
 #include <cstdint>
 #include <span>
 
@@ -41,13 +42,13 @@ template <size_t M, size_t N, class T> class ColorBlock {
     }
 
     ColorBlock(const T *image, int imageWidth, int imageHeight, int x = 0, int y = 0) {
-        int imageX = x * width();
-        int imageY = y * height();
+        int image_x = x * width();
+        int image_y = y * height();
 
-        assert(imageX > 0 && imageX + width() < imageWidth);
-        assert(imageY > 0 && imageY + height() < imageHeight);
+        assert(image_x > 0 && image_x + width() < imageWidth);
+        assert(image_y > 0 && image_y + height() < imageHeight);
 
-        T *start = &image[imageX + (imageY * imageWidth)];
+        T *start = &image[image_x + (image_y * imageWidth)];
 
         for (int i = 0; i < height(); i++) { _rows[i] = std::span(start[i * imageWidth]); }
     }
@@ -62,5 +63,4 @@ template <size_t M, size_t N, class T> class ColorBlock {
     std::array<row, M> _rows;
 };
 
-using RGBABlock4x4 = ColorBlock<4, 4, Color32>;
-using RBlock4x4 = ColorBlock<4, 4, uint8_t>;
+using Color4x4= ColorBlock<4, 4, Color32>;

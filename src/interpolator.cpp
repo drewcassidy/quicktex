@@ -27,6 +27,7 @@
 
 namespace rgbcx {
 
+/*
 Interpolator::Interpolator() {
     PrepSingleColorTables(_single_match5, _single_match5_half, 5);
     PrepSingleColorTables(_single_match5, _single_match5_half, 6);
@@ -66,8 +67,8 @@ void Interpolator::PrepSingleColorTables(const MatchListPtr &matchTable, const M
         }
     }
 }
-int Interpolator::PrepSingleColorTableEntry(const MatchListPtr &matchTable, int v, int i, int low, int high, int low_e, int high_e, int lowest_error,
-                                                 bool half, bool ideal) {
+int Interpolator::PrepSingleColorTableEntry(const MatchListPtr &matchTable, int v, int i, int low, int high, int low_e, int high_e, int lowest_error, bool half,
+                                            bool ideal) {
     int e = iabs(v - i);
 
     // We only need to factor in 3% error in BC1 ideal mode.
@@ -84,30 +85,48 @@ int Interpolator::PrepSingleColorTableEntry(const MatchListPtr &matchTable, int 
     }
 
     return e;
+}*/
+
+// region Interpolator implementation
+int Interpolator::Interpolate5(int v0, int v1) const { return Interpolate8(scale5To8(v0), scale5To8(v1)); }
+int Interpolator::Interpolate6(int v0, int v1) const { return Interpolate8(scale6To8(v0), scale6To8(v1)); }
+int Interpolator::InterpolateHalf5(int v0, int v1) const { return InterpolateHalf8(scale5To8(v0), scale5To8(v1)); }
+int Interpolator::InterpolateHalf6(int v0, int v1) const { return InterpolateHalf8(scale6To8(v0), scale6To8(v1)); }
+
+std::array<Color32, 4> Interpolator::InterpolateBC1(uint16_t low, uint16_t high) {
+    auto colors = std::array<Color32, 4>();
+    colors[0] = Color32::Unpack565(low);
+    colors[1] = Color32::Unpack565(high);
+
+    if (low > high) {
+        // 4-color mode
+        colors[2] = InterpolateColor24(colors[0], colors[1]);
+        colors[3] = InterpolateColor24(colors[1], colors[0]);
+    } else {
+        // 3-color mode
+        colors[2] = InterpolateHalfColor24(colors[0], colors[1]);
+        colors[3] = Color32(0, 0, 0, 0);  // transparent black
+    }
+
+    return colors;
 }
 
-// region InterpolatorIdeal implementation
-int InterpolatorIdeal::Interpolate5(int v0, int v1) const { return Interpolate5or6(v0, v1); }
-int InterpolatorIdeal::Interpolate6(int v0, int v1) const { return Interpolate5or6(v0, v1); }
-int InterpolatorIdeal::InterpolateHalf5(int v0, int v1) const { return InterpolateHalf5or6(v0, v1); }
-int InterpolatorIdeal::InterpolateHalf6(int v0, int v1) const { return InterpolateHalf5or6(v0, v1); }
-
-int InterpolatorIdeal::Interpolate5or6(int v0, int v1) const {
+int Interpolator::Interpolate8(int v0, int v1) const {
     assert(v0 < 256 && v1 < 256);
     return (v0 * 2 + v1) / 3;
 }
 
-int InterpolatorIdeal::InterpolateHalf5or6(int v0, int v1) const {
+int Interpolator::InterpolateHalf8(int v0, int v1) const {
     assert(v0 < 256 && v1 < 256);
     return (v0 + v1) / 2;
 }
 // endregion
 
-// region InterpolatorIdealRound implementation
-int InterpolatorIdealRound::Interpolate5(int v0, int v1) const { return Interpolate5or6Round(v0, v1); }
-int InterpolatorIdealRound::Interpolate6(int v0, int v1) const { return Interpolate5or6Round(v0, v1); }
+// region InterpolatorRound implementation
+int InterpolatorRound::Interpolate5(int v0, int v1) const { return Interpolate8(scale5To8(v0), scale5To8(v1)); }
+int InterpolatorRound::Interpolate6(int v0, int v1) const { return Interpolate8(scale6To8(v0), scale6To8(v1)); }
 
-int InterpolatorIdealRound::Interpolate5or6Round(int v0, int v1) const {
+int InterpolatorRound::Interpolate8(int v0, int v1) const {
     assert(v0 < 256 && v1 < 256);
     return (v0 * 2 + v1 + 1) / 3;
 }
@@ -120,7 +139,7 @@ int InterpolatorNvidia::Interpolate5(int v0, int v1) const {
 }
 
 int InterpolatorNvidia::Interpolate6(int v0, int v1) const {
-    assert(v0 < 256 && v1 < 256);
+    assert(v0 < 64 && v1 < 64);
     const int gdiff = v1 - v0;
     return (256 * v0 + (gdiff / 4) + 128 + gdiff * 80) / 256;
 }
@@ -131,24 +150,24 @@ int InterpolatorNvidia::InterpolateHalf5(int v0, int v1) const {
 }
 
 int InterpolatorNvidia::InterpolateHalf6(int v0, int v1) const {
-    assert(v0 < 256 && v1 < 256);
+    assert(v0 < 64 && v1 < 64);
     const int gdiff = v1 - v0;
     return (256 * v0 + gdiff / 4 + 128 + gdiff * 128) / 256;
 }
 // endregion
 
 // region InterpolatorAMD implementation
-int InterpolatorAMD::Interpolate5(int v0, int v1) const { return Interpolate5or6(v0, v1); }
-int InterpolatorAMD::Interpolate6(int v0, int v1) const { return Interpolate5or6(v0, v1); }
-int InterpolatorAMD::InterpolateHalf5(int v0, int v1) const { return InterpolateHalf5or6(v0, v1); }
-int InterpolatorAMD::InterpolateHalf6(int v0, int v1) const { return InterpolateHalf5or6(v0, v1); }
+int InterpolatorAMD::Interpolate5(int v0, int v1) const { return Interpolate8(scale5To8(v0), scale5To8(v1)); }
+int InterpolatorAMD::Interpolate6(int v0, int v1) const { return Interpolate8(scale6To8(v0), scale6To8(v1)); }
+int InterpolatorAMD::InterpolateHalf5(int v0, int v1) const { return InterpolateHalf8(scale5To8(v0), scale5To8(v1)); }
+int InterpolatorAMD::InterpolateHalf6(int v0, int v1) const { return InterpolateHalf8(scale6To8(v0), scale6To8(v1)); }
 
-int InterpolatorAMD::Interpolate5or6(int v0, int v1) const {
+int InterpolatorAMD::Interpolate8(int v0, int v1) const {
     assert(v0 < 256 && v1 < 256);
     return (v0 * 43 + v1 * 21 + 32) >> 6;
 }
 
-int InterpolatorAMD::InterpolateHalf5or6(int v0, int v1) const {
+int InterpolatorAMD::InterpolateHalf8(int v0, int v1) const {
     assert(v0 < 256 && v1 < 256);
     return (v0 + v1 + 1) >> 1;
 }

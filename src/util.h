@@ -32,8 +32,8 @@ static inline uint8_t scale8To6(uint32_t v) {
     return (uint8_t)((v + (v >> 8)) >> 8);
 }
 
-static inline int scale5To8(int v) { return (v << 3) | (v >> 2); }
-static inline int scale6To8(int v) { return (v << 2) | (v >> 4); }
+static constexpr int scale5To8(int v) { return (v << 3) | (v >> 2); }
+static constexpr int scale6To8(int v) { return (v << 2) | (v >> 4); }
 
 template <typename S> inline S maximum(S a, S b) { return (a > b) ? a : b; }
 template <typename S> inline S maximum(S a, S b, S c) { return maximum(maximum(a, b), c); }
