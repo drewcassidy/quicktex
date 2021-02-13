@@ -55,27 +55,27 @@ Color Color::Unpack565Unscaled(uint16_t Packed) {
 }
 
 void Color::SetRGBA(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va = 0xFF) {
-    _channels[0] = vr;
-    _channels[1] = vg;
-    _channels[2] = vb;
-    _channels[3] = va;
+    r = vr;
+    g = vg;
+    b = vb;
+    a = va;
 }
 
 void Color::SetRGB(uint8_t vr, uint8_t vg, uint8_t vb) {
-    _channels[0] = vr;
-    _channels[1] = vg;
-    _channels[2] = vb;
+    r = vr;
+    g = vg;
+    b = vb;
 }
 
 Color Color::min(const Color &a, const Color &b) { return Color(std::min(a[0], b[0]), std::min(a[1], b[1]), std::min(a[2], b[2]), std::min(a[3], b[3])); }
 
 Color Color::max(const Color &a, const Color &b) { return Color(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]), std::max(a[3], b[3])); }
 
-uint16_t Color::pack565() { return Pack565(_channels[0], _channels[1], _channels[2]); }
+uint16_t Color::pack565() { return Pack565(r, g, b); }
 
-uint16_t Color::pack565Unscaled() { return Pack565Unscaled(_channels[0], _channels[1], _channels[2]); }
+uint16_t Color::pack565Unscaled() { return Pack565Unscaled(r, g, b); }
 
-Color Color::ScaleTo565() const { return Color(scale8To5(_channels[0]), scale8To6(_channels[1]), scale8To5(_channels[2])); }
-Color Color::ScaleFrom565() const { return Color(scale5To8(_channels[0]), scale6To8(_channels[1]), scale5To8(_channels[2])); }
+Color Color::ScaleTo565() const { return Color(scale8To5(r), scale8To6(g), scale8To5(b)); }
+Color Color::ScaleFrom565() const { return Color(scale5To8(r), scale6To8(g), scale5To8(b)); }
 
 // endregion

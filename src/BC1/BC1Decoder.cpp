@@ -34,7 +34,7 @@ void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const {
             const auto selector = selectors[y][x];
             const auto color = colors[selector];
             assert(selector < 4);
-            assert((color.A() == 0 && selector == 3 && l <= h) || color.A() == UINT8_MAX);
+            assert((color.a == 0 && selector == 3 && l <= h) || color.a == UINT8_MAX);
             if (_write_alpha) {
                 dest[y][x].SetRGBA(color);
             } else {

@@ -85,16 +85,14 @@ template <typename I, typename O, size_t S, size_t C> constexpr auto Pack(const 
     static_assert(std::numeric_limits<I>::digits >= S, "Unpacked input type must be big enough to represent the number of bits");
     static_assert(std::numeric_limits<O>::digits >= (C * S), "Packed output type must be big enough to represent the number of bits multiplied by count");
 
-    constexpr I max_input = (1U << S) - 1U;                         // maximum value representable by S bits
-    constexpr O max_output = (static_cast<O>(1U) << (C * S)) - 1U;  // maximum value representable by S * C bits
-    O packed = 0;                                                   // output value of type O
+    O packed = 0;  // output value of type O
 
     for (unsigned i = 0; i < C; i++) {
-        assert(vals[i] <= max_input);
+        assert(vals[i] <= (1U << S) - 1U);
         packed |= static_cast<O>(vals[i]) << (i * S);
     }
 
-    assert(packed <= max_output);
+    assert(packed <= (static_cast<O>(1U) << (C * S)) - 1U);
     return packed;
 }
 

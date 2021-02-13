@@ -23,10 +23,12 @@
 
 #pragma pack(push, 1)
 class Color {
-   private:
-    std::array<uint8_t, 4> _channels;
-
    public:
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
+
     Color();
 
     Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xFF);
@@ -37,39 +39,22 @@ class Color {
     static Color Unpack565Unscaled(uint16_t Packed);
     static Color Unpack565(uint16_t Packed);
 
-    bool operator==(const Color &Rhs) const { return R() == Rhs.R() && G() == Rhs.G() && B() == Rhs.B() && A() == Rhs.A(); }
+    bool operator==(const Color &Rhs) const { return r == Rhs.r && g == Rhs.g && b == Rhs.b && a == Rhs.a; }
 
     uint8_t operator[](size_t index) const {
         assert(index < 4);
-        return _channels[index];
+        return reinterpret_cast<const uint8_t *>(this)[index];
     }
     uint8_t &operator[](size_t index) {
         assert(index < 4);
-        return _channels[index];
+        return reinterpret_cast<uint8_t *>(this)[index];
     }
 
-    // more readable versions of index operator for each channel
-    uint8_t &R() { return _channels[0]; }
-    uint8_t &G() { return _channels[1]; }
-    uint8_t &B() { return _channels[2]; }
-    uint8_t &A() { return _channels[3]; }
-
-    uint8_t R() const { return _channels[0]; }
-    uint8_t G() const { return _channels[1]; }
-    uint8_t B() const { return _channels[2]; }
-    uint8_t A() const { return _channels[3]; }
-
-    // Assignment functions
-    void SetR(uint8_t r) { _channels[0] = r; }
-    void SetG(uint8_t g) { _channels[1] = g; }
-    void SetB(uint8_t b) { _channels[2] = b; }
-    void SetA(uint8_t a) { _channels[3] = a; }
-
     void SetRGBA(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va);
-    void SetRGBA(const Color &other) { SetRGBA(other.R(), other.G(), other.B(), other.A()); }
+    void SetRGBA(const Color &other) { SetRGBA(other.r, other.g, other.b, other.a); }
 
     void SetRGB(uint8_t vr, uint8_t vg, uint8_t vb);
-    void SetRGB(const Color &other) { SetRGB(other.R(), other.G(), other.B()); }
+    void SetRGB(const Color &other) { SetRGB(other.r, other.g, other.a); }
 
     uint16_t pack565();
     uint16_t pack565Unscaled();
@@ -80,6 +65,6 @@ class Color {
     static Color min(const Color &A, const Color &B);
     static Color max(const Color &A, const Color &B);
 
-    unsigned get_luma() const { return (13938U * R() + 46869U * G() + 4729U * B() + 32768U) >> 16U; }  // REC709 weightings
+    unsigned get_luma() const { return (13938U * r + 46869U * g + 4729U * b + 32768U) >> 16U; }  // REC709 weightings
 };
 #pragma pack(pop)

@@ -38,7 +38,7 @@ class Interpolator {
     virtual ~Interpolator() noexcept = default;
 
     /**
-     * Performs A() 2/3 interpolation of A() pair of 5-bit values to produce an 8-bit value
+     * Performs a 2/3 interpolation of a pair of 5-bit values to produce an 8-bit value
      * Output is approximately (2v0 + v1)/3, with v0 and v1 first extended to 8 bits.
      * @param v0 The first 5-bit value
      * @param v1 The second 5-bit value
@@ -47,7 +47,7 @@ class Interpolator {
     virtual uint8_t Interpolate5(uint8_t v0, uint8_t v1) const;
 
     /**
-     * Performs A() 2/3 interpolation of A() pair of 5-bit values to produce an 8-bit value
+     * Performs a 2/3 interpolation of a pair of 5-bit values to produce an 8-bit value
      * Output is approximately (2v0 + v1)/3, with v0 and v1 first extended to 8 bits.
      * @param v0 The first 5-bit value
      * @param v1 The second 5-bit value
@@ -56,7 +56,7 @@ class Interpolator {
     virtual uint8_t Interpolate6(uint8_t v0, uint8_t v1) const;
 
     /**
-     * Performs A() 1/2 interpolation of A() pair of 5-bit values to produce an 8-bit value
+     * Performs a 1/2 interpolation of a pair of 5-bit values to produce an 8-bit value
      * Output is approximately (v0 + v1)/2, with v0 and v1 first extended to 8 bits.
      * @param v0 The first 5-bit value
      * @param v1 The second 5-bit value
@@ -65,7 +65,7 @@ class Interpolator {
     virtual uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const;
 
     /**
-     * Performs A() 1/2 interpolation of A() pair of 6-bit values to produce an 8-bit value
+     * Performs a 1/2 interpolation of a pair of 6-bit values to produce an 8-bit value
      * Output is approximately (v0 + v1)/2, with v0 and v1 first extended to 8 bits.
      * @param v0 The first 6-bit value
      * @param v1 The second 6-bit value
@@ -74,7 +74,7 @@ class Interpolator {
     virtual uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const;
 
     /**
-     * Generates the 4 colors for A() BC1 block from the given 5:6:5-packed colors
+     * Generates the 4 colors for a BC1 block from the given 5:6:5-packed colors
      * @param low first 5:6:5 color for the block
      * @param high second 5:6:5 color for the block
      * @return and array of 4 Color values, with indices matching BC1 selectors
@@ -113,11 +113,11 @@ class Interpolator {
     //    const MatchListPtr _single_match6_half = {std::make_shared<MatchList>()};
 
     Color InterpolateColor24(const Color &c0, const Color &c1) const {
-        return Color(Interpolate8(c0.R(), c1.R()), Interpolate8(c0.G(), c1.G()), Interpolate8(c0.B(), c1.B()));
+        return Color(Interpolate8(c0.r, c1.r), Interpolate8(c0.g, c1.g), Interpolate8(c0.b, c1.b));
     }
 
     Color InterpolateHalfColor24(const Color &c0, const Color &c1) const {
-        return Color(InterpolateHalf8(c0.R(), c1.R()), InterpolateHalf8(c0.G(), c1.G()), InterpolateHalf8(c0.B(), c1.B()));
+        return Color(InterpolateHalf8(c0.r, c1.r), InterpolateHalf8(c0.g, c1.g), InterpolateHalf8(c0.b, c1.b));
     }
 
     //    virtual constexpr bool useExpandedInMatch() noexcept { return true; }
@@ -149,11 +149,11 @@ class InterpolatorNvidia : public Interpolator {
 
    private:
     Color InterpolateColor565(const Color &c0, const Color &c1) const {
-        return Color(Interpolate5(c0.R(), c1.R()), Interpolate6(c0.G(), c1.G()), Interpolate5(c0.B(), c1.B()));
+        return Color(Interpolate5(c0.r, c1.r), Interpolate6(c0.g, c1.g), Interpolate5(c0.b, c1.b));
     }
 
     Color InterpolateHalfColor565(const Color &c0, const Color &c1) const {
-        return Color(InterpolateHalf5(c0.R(), c1.R()), InterpolateHalf6(c0.G(), c1.G()), InterpolateHalf5(c0.B(), c1.B()));
+        return Color(InterpolateHalf5(c0.r, c1.r), InterpolateHalf6(c0.g, c1.g), InterpolateHalf5(c0.b, c1.b));
     }
 };
 

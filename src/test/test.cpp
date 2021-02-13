@@ -2,6 +2,7 @@
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+#pragma GCC diagnostic ignored "-Weverything"
 
 #include <algorithm>
 #include <cassert>
@@ -18,6 +19,7 @@
 
 #include "../blocks.h"
 #include "../rgbcx.h"
+#include "../rgbcxDecoders.h"
 #include "../util.h"
 #include "bc7decomp.h"
 #include "bc7enc.h"
@@ -66,7 +68,7 @@ static int print_usage() {
 
     return EXIT_FAILURE;
 }
-
+/*
 struct color_quad_u8 {
     uint8_t m_c[4];
 
@@ -100,7 +102,8 @@ struct color_quad_u8 {
     }
 
     inline int get_luma() const { return (13938U * m_c[0] + 46869U * m_c[1] + 4729U * m_c[2] + 32768U) >> 16U; }  // REC709 weightings
-};
+};*/
+using color_quad_u8 = Color;
 typedef std::vector<color_quad_u8> color_quad_u8_vec;
 
 class image_u8 {
@@ -111,6 +114,10 @@ class image_u8 {
 
     inline const color_quad_u8_vec &get_pixels() const { return m_pixels; }
     inline color_quad_u8_vec &get_pixels() { return m_pixels; }
+
+    void set_pixels(const color_quad_u8_vec &pixels) {
+        m_pixels = pixels;
+    }
 
     inline uint32_t width() const { return m_width; }
     inline uint32_t height() const { return m_height; }
@@ -833,7 +840,7 @@ int main(int argc, char *argv[]) {
             image_u8 unpacked_image_alpha(unpacked_image);
             for (uint32_t y = 0; y < unpacked_image_alpha.height(); y++)
                 for (uint32_t x = 0; x < unpacked_image_alpha.width(); x++) {
-                    uint8_t alpha = unpacked_image_alpha(x, y).A();
+                    uint8_t alpha = unpacked_image_alpha(x, y).a;
                     unpacked_image_alpha(x, y).SetRGBA(alpha, alpha, alpha, 255); }
 
             if (!save_png(png_alpha_output_filename.c_str(), unpacked_image_alpha, false))
