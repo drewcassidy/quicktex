@@ -1,6 +1,6 @@
 /*  Python-rgbcx Texture Compression Library
     Copyright (C) 2021 Andrew Cassidy <drewcassidy@me.com>
-    Partially derived from rgbcx.h written by Richard Geldreich 2020 <richgel99@gmail.com>
+    Partially derived from rgbcx.h written by Richard Geldreich <richgel99@gmail.com>
     and licenced under the public domain
 
     This program is free software: you can redistribute it and/or modify
@@ -19,16 +19,7 @@
 
 #pragma once
 
-#include <cstdint>
-
-#include "ColorBlock.h"
-
-namespace rgbcx {
-
-template <class B, size_t M, size_t N> class BlockEncoder {
-   public:
-    using DecodedBlock = ColorBlock<M, N>;
-    using EncodedBlock = B;
-    virtual void EncodeBlock(EncodedBlock *dest, DecodedBlock *const pixels) const = 0;
-};
-}  // namespace rgbcx
+#include "BC1/BC1Decoder.h"
+#include "BC3/BC3Decoder.h"
+#include "BC4/BC4Decoder.h"
+#include "BC5/BC5Decoder.h"

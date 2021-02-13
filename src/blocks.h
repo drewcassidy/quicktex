@@ -24,7 +24,7 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include "color.h"
+#include "Color.h"
 #include "util.h"
 
 #pragma pack(push, 1)
@@ -32,10 +32,10 @@ class BC1Block {
    public:
     using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
 
-    uint16_t GetLowColor() const { return _low_color[0] | _low_color[1] << 8U; }
-    uint16_t GetHighColor() const { return _high_color[0] | _high_color[1] << 8U; }
-    Color32 GetLowColor32() const { return Color32::Unpack565(GetLowColor()); }
-    Color32 GetHighColor32() const { return Color32::Unpack565(GetHighColor()); }
+    uint16_t GetLowColor() const { return static_cast<uint16_t>(_low_color[0] | (_low_color[1] << 8U)); }
+    uint16_t GetHighColor() const { return static_cast<uint16_t>(_high_color[0] | (_high_color[1] << 8U)); }
+    Color GetLowColor32() const { return Color::Unpack565(GetLowColor()); }
+    Color GetHighColor32() const { return Color::Unpack565(GetHighColor()); }
 
     bool Is3Color() const { return GetLowColor() <= GetHighColor(); }
     void SetLowColor(uint16_t c) {
@@ -58,16 +58,12 @@ class BC1Block {
 
     UnpackedSelectors UnpackSelectors() const {
         UnpackedSelectors unpacked;
-        for (int i = 0; i < 4; i++) {
-            unpacked[i] = Unpack<uint8_t, uint8_t, 2, 4>(selectors[i]);
-        }
+        for (unsigned i = 0; i < 4; i++) { unpacked[i] = Unpack<uint8_t, uint8_t, 2, 4>(selectors[i]); }
         return unpacked;
     }
 
     void PackSelectors(const UnpackedSelectors& unpacked) {
-        for (int i = 0; i < 4; i++) {
-            selectors[i] = Pack<uint8_t, uint8_t, 2, 4>(unpacked[i]);
-        }
+        for (unsigned i = 0; i < 4; i++) { selectors[i] = Pack<uint8_t, uint8_t, 2, 4>(unpacked[i]); }
     }
 
     constexpr static inline size_t EndpointSize = 2;
@@ -86,13 +82,39 @@ class BC1Block {
 
 class BC4Block {
    public:
+    using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
+
     inline uint32_t GetLowAlpha() const { return low_alpha; }
     inline uint32_t GetHighAlpha() const { return high_alpha; }
     inline bool Is6Alpha() const { return GetLowAlpha() <= GetHighAlpha(); }
 
     inline uint64_t GetSelectorBits() const {
-        return ((uint64_t)((uint32_t)selectors[0] | ((uint32_t)selectors[1] << 8U) | ((uint32_t)selectors[2] << 16U) | ((uint32_t)selectors[3] << 24U))) |
-               (((uint64_t)selectors[4]) << 32U) | (((uint64_t)selectors[5]) << 40U);
+        auto packed = Pack<uint8_t, uint64_t, 8, 6>(selectors);
+        assert(packed <= SelectorBitsMax);
+        return packed;
+    }
+
+    void SetSelectorBits(uint64_t packed) {
+        assert(packed <= SelectorBitsMax);
+        selectors = Unpack<uint64_t, uint8_t, 8, 6>(packed);
+    }
+
+    UnpackedSelectors UnpackSelectors() const {
+        UnpackedSelectors unpacked;
+        auto rows = Unpack<uint64_t, uint16_t, 12, 4>(GetSelectorBits());
+        for (unsigned i = 0; i < 4; i++) {
+            auto row = Unpack<uint16_t, uint8_t, SelectorBits, 4>(rows[i]);
+            unpacked[i] = row;
+        }
+
+        return unpacked;
+    }
+
+    void PackSelectors(const UnpackedSelectors& unpacked) {
+        std::array<uint16_t, 4> rows;
+        for (unsigned i = 0; i < 4; i++) { rows[i] = Pack<uint8_t, uint16_t, SelectorBits, 4>(unpacked[i]); }
+        auto packed = Pack<uint16_t, uint64_t, 12, 4>(rows);
+        SetSelectorBits(packed);
     }
 
     inline uint32_t GetSelector(uint32_t x, uint32_t y, uint64_t selector_bits) const {
@@ -100,7 +122,7 @@ class BC4Block {
         return (selector_bits >> (((y * 4) + x) * SelectorBits)) & (SelectorMask);
     }
 
-    static inline std::array<uint8_t, 8> GetBlockValues6(uint32_t l, uint32_t h) {
+    static inline std::array<uint8_t, 8> GetValues6(uint32_t l, uint32_t h) {
         return {static_cast<uint8_t>(l),
                 static_cast<uint8_t>(h),
                 static_cast<uint8_t>((l * 4 + h) / 5),
@@ -111,7 +133,7 @@ class BC4Block {
                 255};
     }
 
-    static inline std::array<uint8_t, 8> GetBlockValues8(uint32_t l, uint32_t h) {
+    static inline std::array<uint8_t, 8> GetValues8(uint32_t l, uint32_t h) {
         return {static_cast<uint8_t>(l),
                 static_cast<uint8_t>(h),
                 static_cast<uint8_t>((l * 6 + h) / 7),
@@ -122,11 +144,11 @@ class BC4Block {
                 static_cast<uint8_t>((l + h * 6) / 7)};
     }
 
-    static inline std::array<uint8_t, 8> GetBlockValues(uint32_t l, uint32_t h) {
+    static inline std::array<uint8_t, 8> GetValues(uint32_t l, uint32_t h) {
         if (l > h)
-            return GetBlockValues8(l, h);
+            return GetValues8(l, h);
         else
-            return GetBlockValues6(l, h);
+            return GetValues6(l, h);
     }
 
     constexpr static inline size_t EndpointSize = 1;
@@ -134,10 +156,11 @@ class BC4Block {
     constexpr static inline uint8_t SelectorBits = 3;
     constexpr static inline uint8_t SelectorValues = 1 << SelectorBits;
     constexpr static inline uint8_t SelectorMask = SelectorValues - 1;
+    constexpr static inline uint64_t SelectorBitsMax = (1UL << (8U * SelectorSize)) - 1U;
 
     uint8_t low_alpha;
     uint8_t high_alpha;
-    uint8_t selectors[SelectorSize];
+    std::array<uint8_t, SelectorSize> selectors;
 };
 
 class BC3Block {
@@ -148,7 +171,7 @@ class BC3Block {
 
 class BC5Block {
    public:
-    BC4Block r_block;
-    BC4Block g_block;
+    BC4Block chan0_block;
+    BC4Block chan1_block;
 };
 #pragma pack(pop)

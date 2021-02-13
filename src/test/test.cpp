@@ -185,7 +185,7 @@ class image_u8 {
         for (uint32_t y = 0; y < m_height; y++) {
             for (uint32_t x = 0; x < m_width; x++) {
                 color_quad_u8 tmp((*this)(x, y));
-                (*this)(x, y).set(tmp[r], tmp[g], tmp[b], tmp[a]);
+                (*this)(x, y).SetRGBA(tmp[r], tmp[g], tmp[b], tmp[a]);
             }
         }
 
@@ -657,7 +657,7 @@ int main(int argc, char *argv[]) {
             source_image.get_block(bx, by, 4, 4, pixels);
             if (!has_alpha) {
                 for (uint32_t i = 0; i < 16; i++) {
-                    if (pixels[i].m_c[3] < 255) {
+                    if (pixels[i][3] < 255) {
                         has_alpha = true;
                         break;
                     }
@@ -668,25 +668,25 @@ int main(int argc, char *argv[]) {
                 case DXGI_FORMAT_BC1_UNORM: {
                     block8 *pBlock = &packed_image8[bx + by * blocks_x];
 
-                    rgbcx::encode_bc1(bc1_quality_level, pBlock, &pixels[0].m_c[0], use_bc1_3color_mode, use_bc1_3color_mode_for_black);
+                    rgbcx::encode_bc1(bc1_quality_level, pBlock, &pixels[0][0], use_bc1_3color_mode, use_bc1_3color_mode_for_black);
                     break;
                 }
                 case DXGI_FORMAT_BC3_UNORM: {
                     BC3Block *pBlock = reinterpret_cast<BC3Block *>(&packed_image16[bx + by * blocks_x]);
 
-                    rgbcx::encode_bc3(bc1_quality_level, pBlock, &pixels[0].m_c[0]);
+                    rgbcx::encode_bc3(bc1_quality_level, pBlock, &pixels[0][0]);
                     break;
                 }
                 case DXGI_FORMAT_BC4_UNORM: {
                     block8 *pBlock = &packed_image8[bx + by * blocks_x];
 
-                    rgbcx::encode_bc4(pBlock, &pixels[0].m_c[bc45_channel0], 4);
+                    rgbcx::encode_bc4(pBlock, &pixels[0][bc45_channel0], 4);
                     break;
                 }
                 case DXGI_FORMAT_BC5_UNORM: {
                     block16 *pBlock = &packed_image16[bx + by * blocks_x];
 
-                    rgbcx::encode_bc5(reinterpret_cast<BC5Block *>(pBlock), &pixels[0].m_c[0], bc45_channel0, bc45_channel1, 4);
+                    rgbcx::encode_bc5(reinterpret_cast<BC5Block *>(pBlock), &pixels[0][0], bc45_channel0, bc45_channel1, 4);
                     break;
                 }
                 case DXGI_FORMAT_BC7_UNORM: {
@@ -735,37 +735,62 @@ int main(int argc, char *argv[]) {
         image_u8 unpacked_image(source_image.width(), source_image.height());
 
         bool punchthrough_flag = false;
-        for (uint32_t by = 0; by < blocks_y; by++) {
-            for (uint32_t bx = 0; bx < blocks_x; bx++) {
-                void *pBlock = (bytes_per_block == 16) ? (void *)&packed_image16[bx + by * blocks_x] : (void *)&packed_image8[bx + by * blocks_x];
+        auto decoder_bc1 = rgbcx::BC1Decoder();
+        auto decoder_bc3 = rgbcx::BC3Decoder();
+        auto decoder_bc4 = rgbcx::BC4Decoder();
+        auto decoder_bc5 = rgbcx::BC5Decoder();
 
-                color_quad_u8 unpacked_pixels[16];
-                for (uint32_t i = 0; i < 16; i++) unpacked_pixels[i].set(0, 0, 0, 255);
+        switch (dxgi_format) {
+            case DXGI_FORMAT_BC1_UNORM:
+                unpacked_image.set_pixels(decoder_bc1.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), source_image.width(), source_image.height()));
+                break;
+            case DXGI_FORMAT_BC3_UNORM:
+                unpacked_image.set_pixels(
+                    decoder_bc3.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image16[0]), source_image.width(), source_image.height()));
+                break;
+            case DXGI_FORMAT_BC4_UNORM:
+                unpacked_image.set_pixels(decoder_bc4.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), source_image.width(), source_image.height()));
+                break;
+            case DXGI_FORMAT_BC5_UNORM:
+                unpacked_image.set_pixels(
+                    decoder_bc5.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image16[0]), source_image.width(), source_image.height()));
+                break;
+            default:
+                assert(0);
+                break;
+        }
 
-                switch (dxgi_format) {
-                    case DXGI_FORMAT_BC1_UNORM:
-                        rgbcx::unpack_bc1(pBlock, unpacked_pixels, true, bc1_mode);
-                        break;
-                    case DXGI_FORMAT_BC3_UNORM:
-                        if (!rgbcx::unpack_bc3(pBlock, unpacked_pixels, bc1_mode)) punchthrough_flag = true;
-                        break;
-                    case DXGI_FORMAT_BC4_UNORM:
-                        rgbcx::unpack_bc4(pBlock, &unpacked_pixels[0][0], 4);
-                        break;
-                    case DXGI_FORMAT_BC5_UNORM:
-                        rgbcx::unpack_bc5(pBlock, &unpacked_pixels[0][0], 0, 1, 4);
-                        break;
-                    case DXGI_FORMAT_BC7_UNORM:
-                        bc7decomp::unpack_bc7((const uint8_t *)pBlock, (bc7decomp::color_rgba *)unpacked_pixels);
-                        break;
-                    default:
-                        assert(0);
-                        break;
-                }
-
-                unpacked_image.set_block(bx, by, 4, 4, unpacked_pixels);
-            }  // bx
-        }      // by
+        //        for (uint32_t by = 0; by < blocks_y; by++) {
+        //            for (uint32_t bx = 0; bx < blocks_x; bx++) {
+        //                void *pBlock = (bytes_per_block == 16) ? (void *)&packed_image16[bx + by * blocks_x] : (void *)&packed_image8[bx + by * blocks_x];
+        //
+        //                color_quad_u8 unpacked_pixels[16];
+        //                for (uint32_t i = 0; i < 16; i++) unpacked_pixels[i].set(0, 0, 0, 255);
+        //
+        //                switch (dxgi_format) {
+        //                    case DXGI_FORMAT_BC1_UNORM:
+        //                        rgbcx::unpack_bc1(pBlock, unpacked_pixels, true, bc1_mode);
+        //                        break;
+        //                    case DXGI_FORMAT_BC3_UNORM:
+        //                        if (!rgbcx::unpack_bc3(pBlock, unpacked_pixels, bc1_mode)) punchthrough_flag = true;
+        //                        break;
+        //                    case DXGI_FORMAT_BC4_UNORM:
+        //                        rgbcx::unpack_bc4(pBlock, &unpacked_pixels[0][0], 4);
+        //                        break;
+        //                    case DXGI_FORMAT_BC5_UNORM:
+        //                        rgbcx::unpack_bc5(pBlock, &unpacked_pixels[0][0], 0, 1, 4);
+        //                        break;
+        //                    case DXGI_FORMAT_BC7_UNORM:
+        //                        bc7decomp::unpack_bc7((const uint8_t *)pBlock, (bc7decomp::color_rgba *)unpacked_pixels);
+        //                        break;
+        //                    default:
+        //                        assert(0);
+        //                        break;
+        //                }
+        //
+        //                unpacked_image.set_block(bx, by, 4, 4, unpacked_pixels);
+        //            }  // bx
+        //        }      // by
 
         if ((punchthrough_flag) && (dxgi_format == DXGI_FORMAT_BC3_UNORM))
             fprintf(stderr, "Warning: BC3 mode selected, but rgbcx::unpack_bc3() returned one or more blocks using 3-color mode!\n");
@@ -807,7 +832,9 @@ int main(int argc, char *argv[]) {
         if (png_alpha_output_filename.size()) {
             image_u8 unpacked_image_alpha(unpacked_image);
             for (uint32_t y = 0; y < unpacked_image_alpha.height(); y++)
-                for (uint32_t x = 0; x < unpacked_image_alpha.width(); x++) unpacked_image_alpha(x, y).set(unpacked_image_alpha(x, y)[3], 255);
+                for (uint32_t x = 0; x < unpacked_image_alpha.width(); x++) {
+                    uint8_t alpha = unpacked_image_alpha(x, y).A();
+                    unpacked_image_alpha(x, y).SetRGBA(alpha, alpha, alpha, 255); }
 
             if (!save_png(png_alpha_output_filename.c_str(), unpacked_image_alpha, false))
                 failed = true;
@@ -818,3 +845,4 @@ int main(int argc, char *argv[]) {
 
     return failed ? EXIT_FAILURE : EXIT_SUCCESS;
 }
+#pragma GCC diagnostic pop

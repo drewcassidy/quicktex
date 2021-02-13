@@ -1,7 +1,7 @@
 // File: bc7decomp.c - Richard Geldreich, Jr. 3/31/2020 - MIT license or public domain (see end of file)
+#pragma GCC diagnostic ignored "-Weverything"
 #include "bc7decomp.h"
-
-namespace bc7decomp 
+namespace bc7decomp
 {
 
 const uint32_t g_bc7_weights2[4] = { 0, 21, 43, 64 };

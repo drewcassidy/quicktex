@@ -19,39 +19,22 @@
 
 #pragma once
 
-#include <array>
-#include <cassert>
-#include <cstdint>
-#include <cstdio>
-#include <vector>
+#include "../BlockDecoder.h"
+#include "../blocks.h"
+#include "../interpolator.h"
+#include "../ndebug.h"
 
-#include "blocks.h"
-
-template <size_t N> class ColorRow {
+namespace rgbcx {
+class BC4Decoder : public BlockDecoder<BC4Block, 4, 4> {
    public:
-    constexpr Color &operator[](size_t n) noexcept { return _colors[n]; }
-    constexpr const Color &operator[](size_t n) const noexcept { return _colors[n]; }
+    BC4Decoder(size_t channel = 3) : _channel(channel) {}
 
-    constexpr int size() noexcept { return N; }
+    void DecodeBlock(Color4x4 dest, BC4Block *const block) const noexcept(ndebug) override { DecodeBlock(dest, block, _channel); }
+    void DecodeBlock(Color4x4 dest, BC4Block *const block, size_t channel) const noexcept(ndebug);
+
+    constexpr size_t GetChannel() const { return _channel; }
 
    private:
-    std::array<Color, 4> _colors;
+    const size_t _channel;
 };
-
-template <size_t M, size_t N> class ColorBlock {
-   public:
-    using Row = ColorRow<N>;
-    constexpr Row &operator[](size_t n) noexcept { return *_rows[n]; }
-    constexpr const Row &operator[](size_t n) const noexcept { return *_rows[n]; }
-
-    constexpr int width() noexcept { return N; }
-    constexpr int height() noexcept { return M; }
-    constexpr int size() noexcept { return N * M; }
-
-    ColorBlock(const std::array<Row *, M> &Rows) : _rows(Rows) {}
-
-   private:
-    std::array<Row *, M> _rows;
-};
-
-using Color4x4 = ColorBlock<4, 4>;
+}  // namespace rgbcx

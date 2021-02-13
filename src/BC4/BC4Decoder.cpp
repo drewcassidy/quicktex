@@ -1,6 +1,6 @@
 /*  Python-rgbcx Texture Compression Library
     Copyright (C) 2021 Andrew Cassidy <drewcassidy@me.com>
-    Partially derived from rgbcx.h written by Richard Geldreich 2020 <richgel99@gmail.com>
+    Partially derived from rgbcx.h written by Richard Geldreich <richgel99@gmail.com>
     and licenced under the public domain
 
     This program is free software: you can redistribute it and/or modify
@@ -17,18 +17,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "BC4Decoder.h"
 
-#include <cstdint>
+#include "../ColorBlock.h"
+#include "../blocks.h"
 
-#include "ColorBlock.h"
+void rgbcx::BC4Decoder::DecodeBlock(Color4x4 dest, BC4Block *const block, size_t channel) const noexcept(ndebug) {
+    auto l = block->GetLowAlpha();
+    auto h = block->GetHighAlpha();
 
-namespace rgbcx {
+    auto values = BC4Block::GetValues(l, h);
+    auto selectors = block->UnpackSelectors();
 
-template <class B, size_t M, size_t N> class BlockEncoder {
-   public:
-    using DecodedBlock = ColorBlock<M, N>;
-    using EncodedBlock = B;
-    virtual void EncodeBlock(EncodedBlock *dest, DecodedBlock *const pixels) const = 0;
-};
-}  // namespace rgbcx
+    for (unsigned y = 0; y < 4; y++) {
+        for (unsigned x = 0; x < 4; x++) {
+            const auto selector = selectors[y][x];
+            assert(selector < 8);
+            dest[y][x][channel] = values[selector];
+        }
+    }
+}

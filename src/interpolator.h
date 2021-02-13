@@ -23,75 +23,82 @@
 #include <cstdint>
 #include <memory>
 
-#include "color.h"
+#include "Color.h"
 #include "ndebug.h"
 #include "util.h"
 
 namespace rgbcx {
 
-template <size_t Size, int Op(int)> static constexpr std::array<uint8_t, Size> ExpandArray() {
-    std::array<uint8_t, Size> res;
-    for (int i = 0; i < Size; i++) { res[i] = Op(i); }
-    return res;
-}
-
 class Interpolator {
    public:
-    //    struct MatchEntry {
-    //        uint8_t high;
-    //        uint8_t low;
-    //        uint8_t error;
-    //    };
+    enum class Type { Ideal, IdealRound, Nvidia, AMD };
+
+    static std::unique_ptr<Interpolator> MakeInterpolator(Type type = Type::Ideal);
 
     virtual ~Interpolator() noexcept = default;
 
     /**
-     * Performs a 2/3 interpolation of a pair of 5-bit values to produce an 8-bit value
+     * Performs A() 2/3 interpolation of A() pair of 5-bit values to produce an 8-bit value
      * Output is approximately (2v0 + v1)/3, with v0 and v1 first extended to 8 bits.
      * @param v0 The first 5-bit value
      * @param v1 The second 5-bit value
      * @return The interpolated value
      */
-    virtual int Interpolate5(int v0, int v1) const;
+    virtual uint8_t Interpolate5(uint8_t v0, uint8_t v1) const;
 
     /**
-     * Performs a 2/3 interpolation of a pair of 5-bit values to produce an 8-bit value
+     * Performs A() 2/3 interpolation of A() pair of 5-bit values to produce an 8-bit value
      * Output is approximately (2v0 + v1)/3, with v0 and v1 first extended to 8 bits.
      * @param v0 The first 5-bit value
      * @param v1 The second 5-bit value
      * @return The interpolated value
      */
-    virtual int Interpolate6(int v0, int v1) const;
+    virtual uint8_t Interpolate6(uint8_t v0, uint8_t v1) const;
 
     /**
-     * Performs a 1/2 interpolation of a pair of 5-bit values to produce an 8-bit value
+     * Performs A() 1/2 interpolation of A() pair of 5-bit values to produce an 8-bit value
      * Output is approximately (v0 + v1)/2, with v0 and v1 first extended to 8 bits.
      * @param v0 The first 5-bit value
      * @param v1 The second 5-bit value
      * @return The interpolated value
      */
-    virtual int InterpolateHalf5(int v0, int v1) const;
+    virtual uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const;
 
     /**
-     * Performs a 1/2 interpolation of a pair of 6-bit values to produce an 8-bit value
+     * Performs A() 1/2 interpolation of A() pair of 6-bit values to produce an 8-bit value
      * Output is approximately (v0 + v1)/2, with v0 and v1 first extended to 8 bits.
      * @param v0 The first 6-bit value
      * @param v1 The second 6-bit value
      * @return The interpolated value
      */
-    virtual int InterpolateHalf6(int v0, int v1) const;
+    virtual uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const;
 
     /**
-     * Generates the 4 colors for a BC1 block from the given 5:6:5-packed colors
+     * Generates the 4 colors for A() BC1 block from the given 5:6:5-packed colors
      * @param low first 5:6:5 color for the block
      * @param high second 5:6:5 color for the block
-     * @return and array of 4 Color32 values, with indices matching BC1 selectors
+     * @return and array of 4 Color values, with indices matching BC1 selectors
      */
-    virtual std::array<Color32, 4> InterpolateBC1(uint16_t low, uint16_t high) const;
+    virtual std::array<Color, 4> InterpolateBC1(uint16_t low, uint16_t high) const;
+
+    /**
+     * Gets the type of an interpolator
+     * @return The interpolator type
+     */
+    virtual Type GetType() const noexcept { return Type::Ideal; }
+
+    /**
+     * Checks if the interpolator uses an ideal algorithm
+     * @return true if the interpolator is ideal, false otherwise.
+     */
+    virtual bool IsIdeal() const noexcept {
+        auto type = GetType();
+        return (type == Type::Ideal || type == Type::IdealRound);
+    }
 
    private:
-    virtual int Interpolate8(int v0, int v1) const;
-    virtual int InterpolateHalf8(int v0, int v1) const;
+    virtual uint8_t Interpolate8(uint8_t v0, uint8_t v1) const;
+    virtual uint8_t InterpolateHalf8(uint8_t v0, uint8_t v1) const;
 
     //    constexpr static auto Expand5 = ExpandArray<Size5, scale5To8>();
     //    constexpr static auto Expand6 = ExpandArray<size6, scale6To8>();
@@ -105,15 +112,14 @@ class Interpolator {
     //    const MatchListPtr _single_match5_half = {std::make_shared<MatchList>()};
     //    const MatchListPtr _single_match6_half = {std::make_shared<MatchList>()};
 
-    Color32 InterpolateColor24(const Color32 &c0, const Color32 &c1) const {
-        return Color32(Interpolate8(c0.r, c1.r), Interpolate8(c0.g, c1.g), Interpolate8(c0.b, c1.b));
+    Color InterpolateColor24(const Color &c0, const Color &c1) const {
+        return Color(Interpolate8(c0.R(), c1.R()), Interpolate8(c0.G(), c1.G()), Interpolate8(c0.B(), c1.B()));
     }
 
-    Color32 InterpolateHalfColor24(const Color32 &c0, const Color32 &c1) const {
-        return Color32(InterpolateHalf8(c0.r, c1.r), InterpolateHalf8(c0.g, c1.g), InterpolateHalf8(c0.b, c1.b));
+    Color InterpolateHalfColor24(const Color &c0, const Color &c1) const {
+        return Color(InterpolateHalf8(c0.R(), c1.R()), InterpolateHalf8(c0.G(), c1.G()), InterpolateHalf8(c0.B(), c1.B()));
     }
 
-    virtual constexpr bool isIdeal() noexcept { return true; }
     //    virtual constexpr bool useExpandedInMatch() noexcept { return true; }
     //
     //    void PrepSingleColorTables(const MatchListPtr &matchTable, const MatchListPtr &matchTableHalf, int len);
@@ -124,42 +130,43 @@ class Interpolator {
 
 class InterpolatorRound : public Interpolator {
    public:
-    int Interpolate5(int v0, int v1) const override;
-    int Interpolate6(int v0, int v1) const override;
+    uint8_t Interpolate5(uint8_t v0, uint8_t v1) const override;
+    uint8_t Interpolate6(uint8_t v0, uint8_t v1) const override;
+    Type GetType() const noexcept override { return Type::IdealRound; }
 
    private:
-    int Interpolate8(int v0, int v1) const override;
+    uint8_t Interpolate8(uint8_t v0, uint8_t v1) const override;
 };
 
 class InterpolatorNvidia : public Interpolator {
    public:
-    int Interpolate5(int v0, int v1) const override;
-    int Interpolate6(int v0, int v1) const override;
-    int InterpolateHalf5(int v0, int v1) const override;
-    int InterpolateHalf6(int v0, int v1) const override;
-    std::array<Color32, 4> InterpolateBC1(uint16_t low, uint16_t high) const override;
-    constexpr bool isIdeal() noexcept override { return false; }
+    uint8_t Interpolate5(uint8_t v0, uint8_t v1) const override;
+    uint8_t Interpolate6(uint8_t v0, uint8_t v1) const override;
+    uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const override;
+    uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const override;
+    std::array<Color, 4> InterpolateBC1(uint16_t low, uint16_t high) const override;
+    Type GetType() const noexcept override { return Type::Nvidia; }
 
    private:
-    Color32 InterpolateColor565(const Color32 &c0, const Color32 &c1) const {
-        return Color32(Interpolate5(c0.r, c1.r), Interpolate6(c0.g, c1.g), Interpolate5(c0.b, c1.b));
+    Color InterpolateColor565(const Color &c0, const Color &c1) const {
+        return Color(Interpolate5(c0.R(), c1.R()), Interpolate6(c0.G(), c1.G()), Interpolate5(c0.B(), c1.B()));
     }
 
-    Color32 InterpolateHalfColor565(const Color32 &c0, const Color32 &c1) const {
-        return Color32(InterpolateHalf5(c0.r, c1.r), InterpolateHalf6(c0.g, c1.g), InterpolateHalf5(c0.b, c1.b));
+    Color InterpolateHalfColor565(const Color &c0, const Color &c1) const {
+        return Color(InterpolateHalf5(c0.R(), c1.R()), InterpolateHalf6(c0.G(), c1.G()), InterpolateHalf5(c0.B(), c1.B()));
     }
 };
 
 class InterpolatorAMD : public Interpolator {
    public:
-    int Interpolate5(int v0, int v1) const override;
-    int Interpolate6(int v0, int v1) const override;
-    int InterpolateHalf5(int v0, int v1) const override;
-    int InterpolateHalf6(int v0, int v1) const override;
-    constexpr bool isIdeal() noexcept override { return false; }
+    uint8_t Interpolate5(uint8_t v0, uint8_t v1) const override;
+    uint8_t Interpolate6(uint8_t v0, uint8_t v1) const override;
+    uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const override;
+    uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const override;
+    Type GetType() const noexcept override { return Type::AMD; }
 
    private:
-    int Interpolate8(int v0, int v1) const override;
-    int InterpolateHalf8(int v0, int v1) const override;
+    uint8_t Interpolate8(uint8_t v0, uint8_t v1) const override;
+    uint8_t InterpolateHalf8(uint8_t v0, uint8_t v1) const override;
 };
 }  // namespace rgbcx
