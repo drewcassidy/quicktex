@@ -18,8 +18,10 @@
  */
 
 #pragma once
-#include <array>
-#include <cstdint>
+#include <assert.h>  // for assert
+#include <stddef.h>  // for size_t
+
+#include <cstdint>  // for uint8_t, uint16_t
 
 #pragma pack(push, 1)
 class Color {

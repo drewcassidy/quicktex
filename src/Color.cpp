@@ -19,10 +19,9 @@
 
 #include "Color.h"
 
-#include <algorithm>
-#include <cassert>
+#include <algorithm>  // for max, min
 
-#include "util.h"
+#include "util.h"  // for scale5To8, scale8To5, Assert5Bit, scale6To8
 
 // region Color implementation
 Color::Color() { SetRGBA(0, 0, 0, 0xFF); }

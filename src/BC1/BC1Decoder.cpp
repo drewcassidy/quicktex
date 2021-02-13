@@ -19,8 +19,14 @@
 
 #include "BC1Decoder.h"
 
+#include <assert.h>
+#include <stdint.h>
+#include <array>
 #include "../ColorBlock.h"
 #include "../blocks.h"
+#include "../Color.h"
+#include "../interpolator.h"
+#include "../ndebug.h"
 
 namespace rgbcx {
 void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) {

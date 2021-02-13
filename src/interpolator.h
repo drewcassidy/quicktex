@@ -18,14 +18,11 @@
  */
 
 #pragma once
-#include <array>
-#include <cassert>
-#include <cstdint>
-#include <memory>
+#include <array>    // for array
+#include <cstdint>  // for uint8_t, uint16_t
+#include <memory>   // for unique_ptr
 
-#include "Color.h"
-#include "ndebug.h"
-#include "util.h"
+#include "Color.h"  // for Color
 
 namespace rgbcx {
 

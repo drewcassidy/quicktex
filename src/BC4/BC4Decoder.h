@@ -19,9 +19,11 @@
 
 #pragma once
 
+#include <stddef.h>
+
 #include "../BlockDecoder.h"
+#include "../ColorBlock.h"
 #include "../blocks.h"
-#include "../interpolator.h"
 #include "../ndebug.h"
 
 namespace rgbcx {

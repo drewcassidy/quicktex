@@ -19,12 +19,13 @@
 
 #pragma once
 
-#include "../BC1/BC1Decoder.h"
+#include <stddef.h>
+
 #include "../BC4/BC4Decoder.h"
 #include "../BlockDecoder.h"
-#include "../blocks.h"
-#include "../interpolator.h"
+#include "../ColorBlock.h"
 #include "../ndebug.h"
+#include "../blocks.h"
 
 namespace rgbcx {
 class BC5Decoder : public BlockDecoder<BC5Block, 4, 4> {

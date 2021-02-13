@@ -23,6 +23,7 @@
 #include "../blocks.h"
 #include "../interpolator.h"
 #include "../ndebug.h"
+#include "../ColorBlock.h"
 
 namespace rgbcx {
 class BC1Decoder final : public BlockDecoder<BC1Block, 4, 4> {
