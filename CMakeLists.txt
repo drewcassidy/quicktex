@@ -53,6 +53,8 @@ set(CLANG_WARNINGS
         )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -v -stdlib=libc++")
     set(PROJECT_WARNINGS ${CLANG_WARNINGS})
     target_compile_options(test_rgbcx PUBLIC ${PROJECT_WARNINGS})
 endif()
