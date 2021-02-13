@@ -23,7 +23,7 @@
 #include "../blocks.h"
 
 namespace rgbcx {
-void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const {
+void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) {
     const auto l = block->GetLowColor();
     const auto h = block->GetHighColor();
     const auto selectors = block->UnpackSelectors();

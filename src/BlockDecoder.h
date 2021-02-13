@@ -26,6 +26,7 @@
 
 #include "ColorBlock.h"
 #include "util.h"
+#include "ndebug.h"
 
 namespace rgbcx {
 
@@ -36,7 +37,7 @@ template <class B, size_t M, size_t N> class BlockDecoder {
 
     BlockDecoder() noexcept = default;
     virtual ~BlockDecoder() noexcept = default;
-    virtual void DecodeBlock(DecodedBlock dest, EncodedBlock *const block) const = 0;
+    virtual void DecodeBlock(DecodedBlock dest, EncodedBlock *const block) const noexcept(ndebug) = 0;
 
     void DecodeRow(std::span<DecodedBlock> dests, std::span<const EncodedBlock> blocks) {
         assert(dests.size() == blocks.size());
