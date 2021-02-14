@@ -21,8 +21,8 @@ jobs:
             cc: "clang"
             cxx: "clang++"
           - os: Ubuntu-20.04
-            cc: "clang-9"
-            cxx: "clang++-9"
+            cc: "clang-10"
+            cxx: "clang++-10"
           - os: Ubuntu-20.04
             cc: "gcc-10"
             cxx: "g++-10"
@@ -47,7 +47,7 @@ jobs:
       run: cmake -E make_directory ${{github.workspace}}/build
 
     - name: print libc++ version
-      run: echo "#include <cstdint>\nint main () {}" | clang-9 -E --std=c++2a -stdlib=libc++ -x c++ -dM - | grep _LIBCPP_VERSION
+      run: echo "#include <cstdint>\nint main () {}" | clang-10 -E --std=c++2a -stdlib=libc++ -x c++ -dM - | grep _LIBCPP_VERSION
 
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
