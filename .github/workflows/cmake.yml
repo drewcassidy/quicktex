@@ -46,9 +46,6 @@ jobs:
       # We'll use this as our working directory for all subsequent commands
       run: cmake -E make_directory ${{github.workspace}}/build
 
-    - name: print libc++ version
-      run: echo "#include <cstdint>\nint main () {}" | clang-10 -E --std=c++2a -stdlib=libc++ -x c++ -dM - | grep _LIBCPP_VERSION
-
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
       # access regardless of the host operating system
