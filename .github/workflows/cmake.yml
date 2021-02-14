@@ -20,10 +20,10 @@ jobs:
           - os: macos-latest
             cc: "clang"
             cxx: "clang++"
-          - os: ubuntu-latest
+          - os: Ubuntu-20.04
             cc: "clang-9"
             cxx: "clang++-9"
-          - os: ubuntu-latest
+          - os: Ubuntu-20.04
             cc: "gcc-10"
             cxx: "g++-10"
           - os: windows-latest
