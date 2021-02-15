@@ -104,12 +104,12 @@ template <size_t Size, int Op(int)> constexpr std::array<uint8_t, Size> ExpandAr
 }
 
 template <typename S> constexpr S scale8To5(S v) {
-    v = v * 31 + 128;
-    return static_cast<S>((v + (v >> 8)) >> 8);
+    auto v2 = v * 31 + 128;
+    return static_cast<S>((v2 + (v2 >> 8)) >> 8);
 }
 template <typename S> constexpr S scale8To6(S v) {
-    v = v * 63 + 128;
-    return static_cast<S>((v + (v >> 8)) >> 8);
+    auto v2 = v * 63 + 128;
+    return static_cast<S>((v2 + (v2 >> 8)) >> 8);
 }
 
 template <typename S> constexpr S scale5To8(S v) {

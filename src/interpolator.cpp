@@ -127,22 +127,16 @@ std::array<Color, 4> Interpolator::InterpolateBC1(uint16_t low, uint16_t high) c
     return colors;
 }
 
-uint8_t Interpolator::Interpolate8(uint8_t v0, uint8_t v1) const {
-    return (v0 * 2 + v1) / 3;
-}
+uint8_t Interpolator::Interpolate8(uint8_t v0, uint8_t v1) const { return (v0 * 2 + v1) / 3; }
 
-uint8_t Interpolator::InterpolateHalf8(uint8_t v0, uint8_t v1) const {
-    return (v0 + v1) / 2;
-}
+uint8_t Interpolator::InterpolateHalf8(uint8_t v0, uint8_t v1) const { return (v0 + v1) / 2; }
 // endregion
 
 // region InterpolatorRound implementation
 uint8_t InterpolatorRound::Interpolate5(uint8_t v0, uint8_t v1) const { return Interpolate8(scale5To8(v0), scale5To8(v1)); }
 uint8_t InterpolatorRound::Interpolate6(uint8_t v0, uint8_t v1) const { return Interpolate8(scale6To8(v0), scale6To8(v1)); }
 
-uint8_t InterpolatorRound::Interpolate8(uint8_t v0, uint8_t v1) const {
-    return (v0 * 2 + v1 + 1) / 3;
-}
+uint8_t InterpolatorRound::Interpolate8(uint8_t v0, uint8_t v1) const { return (v0 * 2 + v1 + 1) / 3; }
 // endregion
 
 // region InterpolatorNvidia implementation
@@ -153,7 +147,7 @@ uint8_t InterpolatorNvidia::Interpolate5(uint8_t v0, uint8_t v1) const {
 
 uint8_t InterpolatorNvidia::Interpolate6(uint8_t v0, uint8_t v1) const {
     assert(v0 < 64 && v1 < 64);
-    const int gdiff = v1 - v0;
+    const int gdiff = (int) v1 - v0;
     return static_cast<uint8_t>((256 * v0 + (gdiff / 4) + 128 + gdiff * 80) >> 8);
 }
 
@@ -164,13 +158,13 @@ uint8_t InterpolatorNvidia::InterpolateHalf5(uint8_t v0, uint8_t v1) const {
 
 uint8_t InterpolatorNvidia::InterpolateHalf6(uint8_t v0, uint8_t v1) const {
     assert(v0 < 64 && v1 < 64);
-    const int gdiff = v1 - v0;
+    const int gdiff = (int) v1 - v0;
     return static_cast<uint8_t>((256 * v0 + gdiff / 4 + 128 + gdiff * 128) >> 8);
 }
 
 std::array<Color, 4> InterpolatorNvidia::InterpolateBC1(uint16_t low, uint16_t high) const {
     // Nvidia is special and interpolation cant be done with 8-bit values, so we need to override the default behavior
-    auto colors = std::array<Color, 4>();
+    std::array<Color, 4> colors;
     auto low565 = Color::Unpack565Unscaled(low);
     auto high565 = Color::Unpack565Unscaled(high);
     colors[0] = low565.ScaleFrom565();
@@ -196,12 +190,8 @@ uint8_t InterpolatorAMD::Interpolate6(uint8_t v0, uint8_t v1) const { return Int
 uint8_t InterpolatorAMD::InterpolateHalf5(uint8_t v0, uint8_t v1) const { return InterpolateHalf8(scale5To8(v0), scale5To8(v1)); }
 uint8_t InterpolatorAMD::InterpolateHalf6(uint8_t v0, uint8_t v1) const { return InterpolateHalf8(scale6To8(v0), scale6To8(v1)); }
 
-uint8_t InterpolatorAMD::Interpolate8(uint8_t v0, uint8_t v1) const {
-    return (v0 * 43 + v1 * 21 + 32) >> 6;
-}
+uint8_t InterpolatorAMD::Interpolate8(uint8_t v0, uint8_t v1) const { return (v0 * 43 + v1 * 21 + 32) >> 6; }
 
-uint8_t InterpolatorAMD::InterpolateHalf8(uint8_t v0, uint8_t v1) const {
-    return (v0 + v1 + 1) >> 1;
-}
+uint8_t InterpolatorAMD::InterpolateHalf8(uint8_t v0, uint8_t v1) const { return (v0 + v1 + 1) >> 1; }
 // endregion
 }  // namespace rgbcx
