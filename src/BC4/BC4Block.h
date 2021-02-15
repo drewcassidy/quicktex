@@ -1,6 +1,6 @@
 /*  Python-rgbcx Texture Compression Library
     Copyright (C) 2021 Andrew Cassidy <drewcassidy@me.com>
-    Partially derived from rgbcx.h written by Richard Geldreich 2020 <richgel99@gmail.com>
+    Partially derived from rgbcx.h written by Richard Geldreich <richgel99@gmail.com>
     and licenced under the public domain
 
     This program is free software: you can redistribute it and/or modify
@@ -24,62 +24,13 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include "Color.h"
-#include "util.h"
+#include "../BC1/BC1Block.h"
+#include "../Color.h"
+#include "../util.h"
+
+namespace rgbcx {
 
 #pragma pack(push, 1)
-class BC1Block {
-   public:
-    using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
-
-    uint16_t GetLowColor() const { return static_cast<uint16_t>(_low_color[0] | (_low_color[1] << 8U)); }
-    uint16_t GetHighColor() const { return static_cast<uint16_t>(_high_color[0] | (_high_color[1] << 8U)); }
-    Color GetLowColor32() const { return Color::Unpack565(GetLowColor()); }
-    Color GetHighColor32() const { return Color::Unpack565(GetHighColor()); }
-
-    bool Is3Color() const { return GetLowColor() <= GetHighColor(); }
-    void SetLowColor(uint16_t c) {
-        _low_color[0] = c & 0xFF;
-        _low_color[1] = (c >> 8) & 0xFF;
-    }
-    void SetHighColor(uint16_t c) {
-        _high_color[0] = c & 0xFF;
-        _high_color[1] = (c >> 8) & 0xFF;
-    }
-    uint32_t GetSelector(uint32_t x, uint32_t y) const {
-        assert((x < 4U) && (y < 4U));
-        return (selectors[y] >> (x * SelectorBits)) & SelectorMask;
-    }
-    void SetSelector(uint32_t x, uint32_t y, uint32_t val) {
-        assert((x < 4U) && (y < 4U) && (val < 4U));
-        selectors[y] &= (~(SelectorMask << (x * SelectorBits)));
-        selectors[y] |= (val << (x * SelectorBits));
-    }
-
-    UnpackedSelectors UnpackSelectors() const {
-        UnpackedSelectors unpacked;
-        for (unsigned i = 0; i < 4; i++) { unpacked[i] = Unpack<uint8_t, uint8_t, 2, 4>(selectors[i]); }
-        return unpacked;
-    }
-
-    void PackSelectors(const UnpackedSelectors& unpacked) {
-        for (unsigned i = 0; i < 4; i++) { selectors[i] = Pack<uint8_t, uint8_t, 2, 4>(unpacked[i]); }
-    }
-
-    constexpr static inline size_t EndpointSize = 2;
-    constexpr static inline size_t SelectorSize = 4;
-    constexpr static inline uint8_t SelectorBits = 2;
-    constexpr static inline uint8_t SelectorValues = 1 << SelectorBits;
-    constexpr static inline uint8_t SelectorMask = SelectorValues - 1;
-
-   private:
-    std::array<uint8_t, EndpointSize> _low_color;
-    std::array<uint8_t, EndpointSize> _high_color;
-
-   public:
-    std::array<uint8_t, 4> selectors;
-};
-
 class BC4Block {
    public:
     using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
@@ -156,22 +107,11 @@ class BC4Block {
     constexpr static inline uint8_t SelectorBits = 3;
     constexpr static inline uint8_t SelectorValues = 1 << SelectorBits;
     constexpr static inline uint8_t SelectorMask = SelectorValues - 1;
-    constexpr static inline uint64_t SelectorBitsMax = (1UL << (8U * SelectorSize)) - 1U;
+    constexpr static inline uint64_t SelectorBitsMax = (1ULL << (8U * SelectorSize)) - 1U;
 
     uint8_t low_alpha;
     uint8_t high_alpha;
     std::array<uint8_t, SelectorSize> selectors;
 };
-
-class BC3Block {
-   public:
-    BC4Block alpha_block;
-    BC1Block color_block;
-};
-
-class BC5Block {
-   public:
-    BC4Block chan0_block;
-    BC4Block chan1_block;
-};
 #pragma pack(pop)
+}  // namespace rgbcx

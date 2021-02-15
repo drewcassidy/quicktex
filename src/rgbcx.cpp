@@ -12,8 +12,8 @@
 #include <cstring>
 #include <type_traits>
 
+#include "BC1/BC1Block.h"
 #include "Color.h"
-#include "blocks.h"
 #include "tables.h"
 #include "util.h"
 

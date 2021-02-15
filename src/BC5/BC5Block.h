@@ -17,16 +17,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "BC5Decoder.h"
+#pragma once
 
-#include "../BC4/BC4Decoder.h"
-#include "../ColorBlock.h"
-#include "../ndebug.h"
+#include "../BC4/BC4Block.h"
 
 namespace rgbcx {
 
-void BC5Decoder::DecodeBlock(Color4x4 dest, BC5Block *const block) const noexcept(ndebug) {
-    _bc4_decoder->DecodeBlock(dest, &block->chan0_block, _chan0);
-    _bc4_decoder->DecodeBlock(dest, &block->chan1_block, _chan1);
-}
+#pragma pack(push, 1)
+class BC5Block {
+   public:
+    BC4Block chan0_block;
+    BC4Block chan1_block;
+};
+#pragma pack(pop)
 }  // namespace rgbcx

@@ -17,7 +17,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "../blocks.h"
 #include "../rgbcx.h"
 #include "../rgbcxDecoders.h"
 #include "../util.h"
@@ -25,6 +24,8 @@
 #include "bc7enc.h"
 #include "dds_defs.h"
 #include "lodepng.h"
+
+using namespace rgbcx;
 
 const int MAX_UBER_LEVEL = 5;
 

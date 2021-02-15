@@ -25,8 +25,8 @@
 #include "../BC4/BC4Decoder.h"
 #include "../BlockDecoder.h"
 #include "../ColorBlock.h"
-#include "../blocks.h"
 #include "../ndebug.h"
+#include "BC5Block.h"
 
 namespace rgbcx {
 class BC5Decoder : public BlockDecoder<BC5Block, 4, 4> {

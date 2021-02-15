@@ -23,8 +23,8 @@
 
 #include "../BlockDecoder.h"
 #include "../ColorBlock.h"
-#include "../blocks.h"
 #include "../ndebug.h"
+#include "BC4Block.h"
 
 namespace rgbcx {
 class BC4Decoder : public BlockDecoder<BC4Block, 4, 4> {

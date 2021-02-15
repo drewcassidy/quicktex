@@ -55,7 +55,10 @@
 
 #include <cstdint>
 
-#include "blocks.h"
+#include "BC1/BC1Block.h"
+#include "BC3/BC3Block.h"
+#include "BC4/BC4Block.h"
+#include "BC5/BC5Block.h"
 #include "interpolator.h"
 
 // By default, the table used to accelerate cluster fit on 4 color blocks uses a 969x128 entry table.

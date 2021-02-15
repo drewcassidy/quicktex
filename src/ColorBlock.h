@@ -25,7 +25,7 @@
 #include <cstdio>
 #include <vector>
 
-#include "blocks.h"
+#include "Color.h"
 
 template <size_t N> class ColorRow {
    public:

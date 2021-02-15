@@ -36,7 +36,7 @@ set_project_warnings(test_rgbcx)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -fsanitize=undefined")
     set(PROJECT_WARNINGS ${CLANG_WARNINGS})
     if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         set_property(TARGET python_rgbcx test_rgbcx PROPERTY OSX_ARCHITECTURES_RELEASE x86_64 arm64) #Mach-O fat binary for arm and x86

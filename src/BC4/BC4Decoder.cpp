@@ -25,8 +25,8 @@
 
 #include "../Color.h"       // for Color
 #include "../ColorBlock.h"  // for ColorBlock
-#include "../blocks.h"      // for BC4Block
 #include "../ndebug.h"      // for ndebug
+#include "BC4Block.h"
 
 void rgbcx::BC4Decoder::DecodeBlock(Color4x4 dest, BC4Block *const block, size_t channel) const noexcept(ndebug) {
     auto l = block->GetLowAlpha();

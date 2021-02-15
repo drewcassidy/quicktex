@@ -21,12 +21,14 @@
 
 #include <assert.h>
 #include <stdint.h>
+
 #include <array>
-#include "../ColorBlock.h"
-#include "../blocks.h"
+
 #include "../Color.h"
+#include "../ColorBlock.h"
 #include "../interpolator.h"
 #include "../ndebug.h"
+#include "BC1Block.h"
 
 namespace rgbcx {
 void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) {
