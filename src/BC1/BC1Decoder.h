@@ -22,8 +22,8 @@
 #include <memory>
 
 #include "../BlockDecoder.h"
-#include "../ColorBlock.h"
-#include "../interpolator.h"
+#include "../BlockView.h"
+#include "../Interpolator.h"
 #include "../ndebug.h"
 #include "BC1Block.h"
 

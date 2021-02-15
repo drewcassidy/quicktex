@@ -23,12 +23,12 @@
 
 #include <array>  // for array
 
-#include "../Color.h"       // for Color
-#include "../ColorBlock.h"  // for ColorBlock
-#include "../ndebug.h"      // for ndebug
+#include "../BlockView.h"  // for ColorBlock
+#include "../Color.h"      // for Color
+#include "../ndebug.h"     // for ndebug
 #include "BC4Block.h"
 
-void rgbcx::BC4Decoder::DecodeBlock(Color4x4 dest, BC4Block *const block, size_t channel) const noexcept(ndebug) {
+void rgbcx::BC4Decoder::DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug) {
     auto l = block->GetLowAlpha();
     auto h = block->GetHighAlpha();
 
@@ -39,7 +39,7 @@ void rgbcx::BC4Decoder::DecodeBlock(Color4x4 dest, BC4Block *const block, size_t
         for (unsigned x = 0; x < 4; x++) {
             const auto selector = selectors[y][x];
             assert(selector < 8);
-            dest[y][x][channel] = values[selector];
+            dest.set(x, y, values[selector]);
         }
     }
 }

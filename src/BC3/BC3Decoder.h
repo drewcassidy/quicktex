@@ -24,8 +24,8 @@
 #include "../BC1/BC1Decoder.h"
 #include "../BC4/BC4Decoder.h"
 #include "../BlockDecoder.h"
-#include "../ColorBlock.h"
-#include "../interpolator.h"
+#include "../BlockView.h"
+#include "../Interpolator.h"
 #include "../ndebug.h"
 #include "BC3Block.h"
 

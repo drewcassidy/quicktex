@@ -21,7 +21,7 @@
 
 #include "../BC1/BC1Decoder.h"
 #include "../BC4/BC4Decoder.h"
-#include "../ColorBlock.h"
+#include "../BlockView.h"
 #include "../ndebug.h"
 
 namespace rgbcx {

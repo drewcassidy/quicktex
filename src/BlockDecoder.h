@@ -24,19 +24,20 @@
 #include <span>
 #include <vector>
 
-#include "ColorBlock.h"
-#include "util.h"
+#include "BlockView.h"
 #include "ndebug.h"
+#include "util.h"
 
 namespace rgbcx {
 
 template <class B, size_t M, size_t N> class BlockDecoder {
    public:
-    using DecodedBlock = ColorBlock<M, N>;
+    using DecodedBlock = ColorBlockView<M, N>;
     using EncodedBlock = B;
 
     BlockDecoder() noexcept = default;
     virtual ~BlockDecoder() noexcept = default;
+
     virtual void DecodeBlock(DecodedBlock dest, EncodedBlock *const block) const noexcept(ndebug) = 0;
 
     void DecodeRow(std::span<DecodedBlock> dests, std::span<const EncodedBlock> blocks) {
@@ -69,8 +70,9 @@ template <class B, size_t M, size_t N> class BlockDecoder {
                     auto rows = std::array<Row *, M>();
                     for (unsigned i = 0; i < M; i++) { rows[i] = reinterpret_cast<Row *>(&image[top_left + i * image_width]); }
 
-                    // auto dest = DecodedBlock(image, image_width, image_height, x, y);
-                    DecodeBlock(DecodedBlock(rows), &blocks[x + block_width * y]);
+                    auto dest = DecodedBlock(&image[top_left],image_width);
+
+                    DecodeBlock(dest, &blocks[x + block_width * y]);
                 }
             }
         }

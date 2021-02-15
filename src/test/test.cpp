@@ -742,6 +742,8 @@ int main(int argc, char *argv[]) {
         printf("Wrote DDS file %s\n", dds_output_filename.c_str());
 
     if ((!no_output_png) && (png_output_filename.size())) {
+        clock_t start_decode_t = clock();
+
         image_u8 unpacked_image(source_image.width(), source_image.height());
 
         bool punchthrough_flag = false;
@@ -801,6 +803,9 @@ int main(int argc, char *argv[]) {
         //                unpacked_image.set_block(bx, by, 4, 4, unpacked_pixels);
         //            }  // bx
         //        }      // by
+        clock_t end_decode_t = clock();
+        printf("\nDecode time: %f secs\n", (double)(end_decode_t - start_decode_t) / CLOCKS_PER_SEC);
+
 
         if ((punchthrough_flag) && (dxgi_format == DXGI_FORMAT_BC3_UNORM))
             fprintf(stderr, "Warning: BC3 mode selected, but rgbcx::unpack_bc3() returned one or more blocks using 3-color mode!\n");

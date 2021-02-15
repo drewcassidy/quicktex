@@ -21,13 +21,13 @@
 
 #include <cstdint>
 
-#include "ColorBlock.h"
+#include "BlockView.h"
 
 namespace rgbcx {
 
 template <class B, size_t M, size_t N> class BlockEncoder {
    public:
-    using DecodedBlock = ColorBlock<M, N>;
+    using DecodedBlock = BlockView<M, N>;
     using EncodedBlock = B;
     virtual void EncodeBlock(EncodedBlock *dest, DecodedBlock *const pixels) const = 0;
 };

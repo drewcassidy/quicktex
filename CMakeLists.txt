@@ -34,6 +34,8 @@ target_compile_features(test_rgbcx PUBLIC cxx_std_20 c_std_11)
 set_project_warnings(python_rgbcx)
 set_project_warnings(test_rgbcx)
 
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
 if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -fsanitize=undefined")

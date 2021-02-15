@@ -24,9 +24,9 @@
 
 #include <array>
 
+#include "../BlockView.h"
 #include "../Color.h"
-#include "../ColorBlock.h"
-#include "../interpolator.h"
+#include "../Interpolator.h"
 #include "../ndebug.h"
 #include "BC1Block.h"
 
@@ -44,9 +44,9 @@ void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcep
             assert(selector < 4);
             assert((color.a == 0 && selector == 3 && l <= h) || color.a == UINT8_MAX);
             if (_write_alpha) {
-                dest[y][x].SetRGBA(color);
+                dest.get(x, y).SetRGBA(color);
             } else {
-                dest[y][x].SetRGB(color);
+                dest.get(x, y).SetRGB(color);
             }
         }
     }

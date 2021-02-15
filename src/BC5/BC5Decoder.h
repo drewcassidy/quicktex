@@ -20,11 +20,12 @@
 #pragma once
 
 #include <stddef.h>
+
 #include <memory>
 
 #include "../BC4/BC4Decoder.h"
 #include "../BlockDecoder.h"
-#include "../ColorBlock.h"
+#include "../BlockView.h"
 #include "../ndebug.h"
 #include "BC5Block.h"
 
@@ -33,8 +34,12 @@ class BC5Decoder : public BlockDecoder<BC5Block, 4, 4> {
    public:
     using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
 
-    BC5Decoder(size_t chan0 = 0, size_t chan1 = 1) : BC5Decoder(std::make_shared<BC4Decoder>(), chan0, chan1) {}
-    BC5Decoder(BC4DecoderPtr bc4_decoder, size_t chan0 = 0, size_t chan1 = 1) : _bc4_decoder(bc4_decoder), _chan0(chan0), _chan1(chan1) {}
+    BC5Decoder(uint8_t chan0 = 0, uint8_t chan1 = 1) : BC5Decoder(std::make_shared<BC4Decoder>(), chan0, chan1) {}
+    BC5Decoder(BC4DecoderPtr bc4_decoder, uint8_t chan0 = 0, uint8_t chan1 = 1) : _bc4_decoder(bc4_decoder), _chan0(chan0), _chan1(chan1) {
+        assert(chan0 < 4U);
+        assert(chan1 < 4U);
+        assert(chan0 != chan1);
+    }
 
     void DecodeBlock(Color4x4 dest, BC5Block *const block) const noexcept(ndebug) override;
 
@@ -43,7 +48,7 @@ class BC5Decoder : public BlockDecoder<BC5Block, 4, 4> {
 
    private:
     const BC4DecoderPtr _bc4_decoder;
-    const size_t _chan0;
-    const size_t _chan1;
+    const uint8_t _chan0;
+    const uint8_t _chan1;
 };
 }  // namespace rgbcx

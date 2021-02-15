@@ -22,21 +22,23 @@
 #include <stddef.h>
 
 #include "../BlockDecoder.h"
-#include "../ColorBlock.h"
+#include "../BlockView.h"
 #include "../ndebug.h"
 #include "BC4Block.h"
 
 namespace rgbcx {
 class BC4Decoder : public BlockDecoder<BC4Block, 4, 4> {
    public:
-    BC4Decoder(size_t channel = 3) : _channel(channel) {}
+    using Byte4x4 = BlockView<uint8_t, 4, 4>;
+    BC4Decoder(uint8_t channel = 3) : _channel(channel) { assert(channel < 4U); }
 
-    void DecodeBlock(Color4x4 dest, BC4Block *const block) const noexcept(ndebug) override { DecodeBlock(dest, block, _channel); }
-    void DecodeBlock(Color4x4 dest, BC4Block *const block, size_t channel) const noexcept(ndebug);
+    void DecodeBlock(Color4x4 dest, BC4Block *const block) const noexcept(ndebug) override { DecodeBlock(dest.GetChannel(_channel), block); }
+    void DecodeBlock(Color4x4 dest, BC4Block *const block, uint8_t channel) const noexcept(ndebug) { DecodeBlock(dest.GetChannel(channel), block); }
+    void DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug);
 
-    constexpr size_t GetChannel() const { return _channel; }
+    constexpr uint8_t GetChannel() const { return _channel; }
 
    private:
-    const size_t _channel;
+    const uint8_t _channel;
 };
 }  // namespace rgbcx
