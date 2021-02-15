@@ -56,7 +56,7 @@ class Color {
     void SetRGBA(const Color &other) { SetRGBA(other.r, other.g, other.b, other.a); }
 
     void SetRGB(uint8_t vr, uint8_t vg, uint8_t vb);
-    void SetRGB(const Color &other) { SetRGB(other.r, other.g, other.a); }
+    void SetRGB(const Color &other) { SetRGB(other.r, other.g, other.b); }
 
     uint16_t pack565();
     uint16_t pack565Unscaled();
@@ -67,6 +67,6 @@ class Color {
     static Color min(const Color &A, const Color &B);
     static Color max(const Color &A, const Color &B);
 
-    unsigned get_luma() const { return (13938U * r + 46869U * g + 4729U * b + 32768U) >> 16U; }  // REC709 weightings
+    int get_luma() const { return (13938U * r + 46869U * g + 4729U * b + 32768U) >> 16U; }  // REC709 weightings
 };
 #pragma pack(pop)

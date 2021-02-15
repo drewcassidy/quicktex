@@ -20,18 +20,21 @@
 #pragma once
 
 #include <stddef.h>
+#include <memory>
 
 #include "../BC4/BC4Decoder.h"
 #include "../BlockDecoder.h"
 #include "../ColorBlock.h"
-#include "../ndebug.h"
 #include "../blocks.h"
+#include "../ndebug.h"
 
 namespace rgbcx {
 class BC5Decoder : public BlockDecoder<BC5Block, 4, 4> {
    public:
-    BC5Decoder(size_t chan0 = 0, size_t chan1 = 1) : BC5Decoder(BC4Decoder(), chan0, chan1) {}
-    BC5Decoder(const BC4Decoder &bc4_decoder, size_t chan0 = 0, size_t chan1 = 1) : _bc4_decoder(bc4_decoder), _chan0(chan0), _chan1(chan1) {}
+    using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
+
+    BC5Decoder(size_t chan0 = 0, size_t chan1 = 1) : BC5Decoder(std::make_shared<BC4Decoder>(), chan0, chan1) {}
+    BC5Decoder(BC4DecoderPtr bc4_decoder, size_t chan0 = 0, size_t chan1 = 1) : _bc4_decoder(bc4_decoder), _chan0(chan0), _chan1(chan1) {}
 
     void DecodeBlock(Color4x4 dest, BC5Block *const block) const noexcept(ndebug) override;
 
@@ -39,7 +42,7 @@ class BC5Decoder : public BlockDecoder<BC5Block, 4, 4> {
     constexpr size_t GetChannel1() const { return _chan1; }
 
    private:
-    const BC4Decoder &_bc4_decoder;
+    const BC4DecoderPtr _bc4_decoder;
     const size_t _chan0;
     const size_t _chan1;
 };

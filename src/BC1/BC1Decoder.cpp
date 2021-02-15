@@ -33,7 +33,7 @@ void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcep
     const auto l = block->GetLowColor();
     const auto h = block->GetHighColor();
     const auto selectors = block->UnpackSelectors();
-    const auto colors = _interpolator.InterpolateBC1(l, h);
+    const auto colors = _interpolator->InterpolateBC1(l, h);
 
     for (unsigned y = 0; y < 4; y++) {
         for (unsigned x = 0; x < 4; x++) {

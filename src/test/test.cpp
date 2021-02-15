@@ -264,9 +264,11 @@ class image_metrics {
                 const color_quad_u8 &ca = a(x, y);
                 const color_quad_u8 &cb = b(x, y);
 
-                if (!num_channels)
-                    hist[iabs(ca.get_luma() - cb.get_luma())]++;
-                else {
+                if (!num_channels) {
+//                    int luma_diff = ;
+                    unsigned index = iabs(ca.get_luma() - cb.get_luma());
+                    hist[index]++;
+                } else {
                     for (uint32_t c = 0; c < num_channels; c++) hist[iabs(ca[first_channel + c] - cb[first_channel + c])]++;
                 }
             }

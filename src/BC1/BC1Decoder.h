@@ -19,24 +19,28 @@
 
 #pragma once
 
+#include <memory>
+
 #include "../BlockDecoder.h"
+#include "../ColorBlock.h"
 #include "../blocks.h"
 #include "../interpolator.h"
 #include "../ndebug.h"
-#include "../ColorBlock.h"
 
 namespace rgbcx {
 class BC1Decoder final : public BlockDecoder<BC1Block, 4, 4> {
    public:
-    BC1Decoder(const Interpolator &interpolator = Interpolator(), bool write_alpha = false) : _interpolator(interpolator), _write_alpha(write_alpha) {}
+    using InterpolatorPtr = std::shared_ptr<Interpolator>;
+    BC1Decoder(const InterpolatorPtr interpolator = std::make_shared<Interpolator>(), bool write_alpha = false)
+        : _interpolator(interpolator), _write_alpha(write_alpha) {}
 
     void DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) override;
 
-    constexpr const Interpolator &GetInterpolator() const { return _interpolator; }
+    InterpolatorPtr GetInterpolator() const { return _interpolator; }
     constexpr bool WritesAlpha() const { return _write_alpha; }
 
    private:
-    const Interpolator &_interpolator;
+    const InterpolatorPtr _interpolator;
     const bool _write_alpha;
 };
 }  // namespace rgbcx

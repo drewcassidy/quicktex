@@ -38,6 +38,7 @@ template <typename S> constexpr void Assert6Bit(S x) {
 }
 
 template <typename S> constexpr auto iabs(S i) {
+    static_assert(!std::is_unsigned<S>::value);
     using O = typename std::make_unsigned<S>::type;
     return (i < 0) ? static_cast<O>(-i) : static_cast<O>(i);
 }

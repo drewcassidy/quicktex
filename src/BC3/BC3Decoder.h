@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "../BC1/BC1Decoder.h"
 #include "../BC4/BC4Decoder.h"
 #include "../BlockDecoder.h"
@@ -30,13 +32,17 @@
 namespace rgbcx {
 class BC3Decoder : public BlockDecoder<BC3Block, 4, 4> {
    public:
-    BC3Decoder(const Interpolator &interpolator = Interpolator()) : BC3Decoder(BC1Decoder(interpolator, false)) {}
-    BC3Decoder(const BC1Decoder &bc1_decoder, const BC4Decoder &bc4_decoder = BC4Decoder()) : _bc1_decoder(bc1_decoder), _bc4_decoder(bc4_decoder) {}
+    using InterpolatorPtr = std::shared_ptr<Interpolator>;
+    using BC1DecoderPtr = std::shared_ptr<BC1Decoder>;
+    using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
+
+    BC3Decoder(InterpolatorPtr interpolator = std::make_shared<Interpolator>()) : BC3Decoder(std::make_shared<BC1Decoder>(interpolator)) {}
+    BC3Decoder(BC1DecoderPtr bc1_decoder, BC4DecoderPtr bc4_decoder = std::make_shared<BC4Decoder>()) : _bc1_decoder(bc1_decoder), _bc4_decoder(bc4_decoder) {}
 
     void DecodeBlock(Color4x4 dest, BC3Block *const block) const noexcept(ndebug) override;
 
    private:
-    const BC1Decoder &_bc1_decoder;
-    const BC4Decoder &_bc4_decoder;
+    const BC1DecoderPtr _bc1_decoder;
+    const BC4DecoderPtr _bc4_decoder;
 };
 }  // namespace rgbcx
