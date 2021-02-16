@@ -68,6 +68,11 @@ class BC4Block {
         SetSelectorBits(packed);
     }
 
+    void PackSelectors(const std::array<uint8_t, 16>& unpacked) {
+        auto packed = Pack<uint8_t, uint64_t, 3, 16>(unpacked);
+        SetSelectorBits(packed);
+    }
+
     inline uint32_t GetSelector(uint32_t x, uint32_t y, uint64_t selector_bits) const {
         assert((x < 4U) && (y < 4U));
         return (selector_bits >> (((y * 4) + x) * SelectorBits)) & (SelectorMask);
