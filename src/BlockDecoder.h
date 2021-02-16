@@ -40,14 +40,7 @@ template <class B, size_t M, size_t N> class BlockDecoder {
 
     virtual void DecodeBlock(DecodedBlock dest, EncodedBlock *const block) const noexcept(ndebug) = 0;
 
-    void DecodeRow(std::span<DecodedBlock> dests, std::span<const EncodedBlock> blocks) {
-        assert(dests.size() == blocks.size());
-
-        for (int i = 0; i < dests.size; i++) { DecodeBlock(&dests[i], &blocks[i]); }
-    }
-
-    std::vector<Color> DecodeImage(uint8_t *bytes, unsigned image_width, unsigned image_height, unsigned chunk_size = 0, bool threaded = false) {
-        assert(threaded == chunk_size > 0);
+    std::vector<Color> DecodeImage(uint8_t *bytes, unsigned image_width, unsigned image_height) {
         unsigned block_width = maximum(1U, ((image_width + 3) / 4));
         unsigned block_height = maximum(1U, ((image_height + 3) / 4));
         using Row = typename DecodedBlock::Row;
@@ -55,25 +48,26 @@ template <class B, size_t M, size_t N> class BlockDecoder {
         auto image = std::vector<Color>(block_width * block_height * N * M);
         auto blocks = reinterpret_cast<B *>(bytes);
 
-        if (!threaded) {
+        // from experimentation, multithreading this using OpenMP actually makes decoding slower
+        // due to thread creation/teardown taking longer than the decoding process itself.
+        // As a result, this is left as a serial operation despite being embarassingly parallelizable
+        for (unsigned y = 0; y < block_height; y++) {
             for (unsigned x = 0; x < block_width; x++) {
-                for (unsigned y = 0; y < block_height; y++) {
-                    unsigned pixel_x = x * N;
-                    unsigned pixel_y = y * M;
+                unsigned pixel_x = x * N;
+                unsigned pixel_y = y * M;
 
-                    assert(pixel_x >= 0);
-                    assert(pixel_y >= 0);
-                    assert(pixel_y + M <= image_height);
-                    assert(pixel_x + N <= image_width);
+                assert(pixel_x >= 0);
+                assert(pixel_y >= 0);
+                assert(pixel_y + M <= image_height);
+                assert(pixel_x + N <= image_width);
 
-                    unsigned top_left = pixel_x + (pixel_y * image_width);
-                    auto rows = std::array<Row *, M>();
-                    for (unsigned i = 0; i < M; i++) { rows[i] = reinterpret_cast<Row *>(&image[top_left + i * image_width]); }
+                unsigned top_left = pixel_x + (pixel_y * image_width);
+                auto rows = std::array<Row *, M>();
+                for (unsigned i = 0; i < M; i++) { rows[i] = reinterpret_cast<Row *>(&image[top_left + i * image_width]); }
 
-                    auto dest = DecodedBlock(&image[top_left],image_width);
+                auto dest = DecodedBlock(&image[top_left], image_width);
 
-                    DecodeBlock(dest, &blocks[x + block_width * y]);
-                }
+                DecodeBlock(dest, &blocks[x + block_width * y]);
             }
         }
 

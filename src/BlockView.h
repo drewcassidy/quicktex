@@ -54,9 +54,9 @@ template <typename S, size_t M, size_t N> class BlockView {
 
     BlockView(S *start, int row_stride = N, int pixel_stride = 1) : start(start), row_stride(row_stride), pixel_stride(pixel_stride) {}
 
-    constexpr Row operator[](size_t index) noexcept(ndebug) {
+    constexpr Row operator[](unsigned index) noexcept(ndebug) {
         assert(index < M);
-        return RowView<S, N>(&start[index * row_stride], pixel_stride);
+        return RowView<S, N>(&start[row_stride * (int)index], pixel_stride);
     }
 
     constexpr int width() noexcept { return N; }
@@ -66,25 +66,25 @@ template <typename S, size_t M, size_t N> class BlockView {
     constexpr S &get(unsigned x, unsigned y) noexcept(ndebug) {
         assert(x < N);
         assert(y < M);
-        return start[(row_stride * y) + (pixel_stride * x)];
+        return start[(row_stride * (int)y) + (pixel_stride * (int)x)];
     }
 
     constexpr S get(unsigned x, unsigned y) const noexcept(ndebug) {
         assert(x < N);
         assert(y < M);
-        return start[(row_stride * y) + (pixel_stride * x)];
+        return start[(row_stride * (int)y) + (pixel_stride * (int)x)];
     }
 
     constexpr void set(unsigned x, unsigned y, S value) noexcept(ndebug) {
         assert(x < N);
         assert(y < M);
-        start[(row_stride * y) + (pixel_stride * x)] = value;
+        start[(row_stride * (int)y) + (pixel_stride * (int)x)] = value;
     }
 
     constexpr std::array<S, M * N> flatten() noexcept {
         std::array<S, M * N> result;
-        for (unsigned x = 0; x < N; x++) {
-            for (unsigned y = 0; y < M; y++) { result[x + (N * y)] = start[(row_stride * y) + (pixel_stride * x)]; }
+        for (int x = 0; x < N; x++) {
+            for (int y = 0; y < M; y++) { result[x + (N * y)] = start[(row_stride * y) + (pixel_stride * x)]; }
         }
         return result;
     }
@@ -107,10 +107,7 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
         return ChannelView(channelStart, Base::row_stride * 4, Base::pixel_stride * 4);
     }
 
-    constexpr ChannelView GetR() noexcept(ndebug) { return GetChannel(0); };
-    constexpr ChannelView GetG() noexcept(ndebug) { return GetChannel(1); };
-    constexpr ChannelView GetB() noexcept(ndebug) { return GetChannel(2); };
-    constexpr ChannelView GetA() noexcept(ndebug) { return GetChannel(3); };
+    void SetRGB(unsigned x, unsigned y, Color value) noexcept(ndebug) { Base::get(x, y).SetRGB(value); }
 };
 
 using Color4x4 = ColorBlockView<4, 4>;

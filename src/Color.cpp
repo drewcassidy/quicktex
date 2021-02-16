@@ -21,7 +21,7 @@
 
 #include <algorithm>  // for max, min
 
-#include "util.h"  // for scale5To8, scale8To5, Assert5Bit, scale6To8
+#include "util.h"  // for scale5To8, scale8To5, assert5bit, scale6To8
 
 // region Color implementation
 Color::Color() { SetRGBA(0, 0, 0, 0xFF); }
@@ -29,9 +29,9 @@ Color::Color() { SetRGBA(0, 0, 0, 0xFF); }
 Color::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { SetRGBA(r, g, b, a); }
 
 uint16_t Color::Pack565Unscaled(uint8_t r, uint8_t g, uint8_t b) {
-    Assert5Bit(r);
-    Assert6Bit(g);
-    Assert5Bit(b);
+    assert5bit(r);
+    assert6bit(g);
+    assert5bit(b);
     return static_cast<uint16_t>(b | (g << 5) | (r << 11));
 }
 

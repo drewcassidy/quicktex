@@ -28,14 +28,8 @@
 #define UINT5_MAX 0x1FU  // 31
 #define UINT6_MAX 0x3FU  // 63
 
-template <typename S> constexpr void Assert5Bit(S x) {
-    static_assert(std::is_unsigned<S>::value);
-    assert(x <= UINT5_MAX);
-}
-template <typename S> constexpr void Assert6Bit(S x) {
-    static_assert(std::is_unsigned<S>::value);
-    assert(x <= UINT6_MAX);
-}
+#define assert5bit(x) assert(x <= UINT5_MAX)
+#define assert6bit(x) assert(x <= UINT6_MAX)
 
 template <typename S> constexpr auto iabs(S i) {
     static_assert(!std::is_unsigned<S>::value);
@@ -113,12 +107,11 @@ template <typename S> constexpr S scale8To6(S v) {
 }
 
 template <typename S> constexpr S scale5To8(S v) {
-    Assert5Bit(v);
-    assert(v <= UINT5_MAX);
+    assert5bit(v);
     return static_cast<S>((v << 3) | (v >> 2));
 }
 template <typename S> constexpr S scale6To8(S v) {
-    Assert6Bit(v);
+    assert6bit(v);
     return static_cast<S>((v << 2) | (v >> 4));
 }
 
