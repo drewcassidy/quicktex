@@ -17,6 +17,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "../BC4/BC4Encoder.h"
 #include "../rgbcx.h"
 #include "../rgbcxDecoders.h"
 #include "../util.h"
@@ -116,9 +117,7 @@ class image_u8 {
     inline const color_quad_u8_vec &get_pixels() const { return m_pixels; }
     inline color_quad_u8_vec &get_pixels() { return m_pixels; }
 
-    void set_pixels(const color_quad_u8_vec &pixels) {
-        m_pixels = pixels;
-    }
+    void set_pixels(const color_quad_u8_vec &pixels) { m_pixels = pixels; }
 
     inline uint32_t width() const { return m_width; }
     inline uint32_t height() const { return m_height; }
@@ -266,7 +265,7 @@ class image_metrics {
                 const color_quad_u8 &cb = b(x, y);
 
                 if (!num_channels) {
-//                    int luma_diff = ;
+                    //                    int luma_diff = ;
                     unsigned index = iabs(ca.get_luma() - cb.get_luma());
                     hist[index]++;
                 } else {
@@ -660,67 +659,75 @@ int main(int argc, char *argv[]) {
     uint32_t bc7_mode_hist[8];
     memset(bc7_mode_hist, 0, sizeof(bc7_mode_hist));
 
-    for (uint32_t by = 0; by < blocks_y; by++) {
-        for (uint32_t bx = 0; bx < blocks_x; bx++) {
-            color_quad_u8 pixels[16];
+    if (dxgi_format == DXGI_FORMAT_BC4_UNORM) {
+        auto bc4_encoder = BC4Encoder(bc45_channel0);
+        Color *src = &source_image.get_pixels()[0];
 
-            source_image.get_block(bx, by, 4, 4, pixels);
-            if (!has_alpha) {
-                for (uint32_t i = 0; i < 16; i++) {
-                    if (pixels[i][3] < 255) {
-                        has_alpha = true;
+        bc4_encoder.EncodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), src, source_image.width(), source_image.height());
+
+    } else {
+        for (uint32_t by = 0; by < blocks_y; by++) {
+            for (uint32_t bx = 0; bx < blocks_x; bx++) {
+                color_quad_u8 pixels[16];
+
+                source_image.get_block(bx, by, 4, 4, pixels);
+                if (!has_alpha) {
+                    for (uint32_t i = 0; i < 16; i++) {
+                        if (pixels[i][3] < 255) {
+                            has_alpha = true;
+                            break;
+                        }
+                    }
+                }
+
+                switch (dxgi_format) {
+                    case DXGI_FORMAT_BC1_UNORM: {
+                        block8 *pBlock = &packed_image8[bx + by * blocks_x];
+
+                        rgbcx::encode_bc1(bc1_quality_level, pBlock, &pixels[0][0], use_bc1_3color_mode, use_bc1_3color_mode_for_black);
+                        break;
+                    }
+                    case DXGI_FORMAT_BC3_UNORM: {
+                        BC3Block *pBlock = reinterpret_cast<BC3Block *>(&packed_image16[bx + by * blocks_x]);
+
+                        rgbcx::encode_bc3(bc1_quality_level, pBlock, &pixels[0][0]);
+                        break;
+                    }
+                    case DXGI_FORMAT_BC4_UNORM: {
+                        block8 *pBlock = &packed_image8[bx + by * blocks_x];
+
+                        rgbcx::encode_bc4(pBlock, &pixels[0][bc45_channel0], 4);
+                        break;
+                    }
+                    case DXGI_FORMAT_BC5_UNORM: {
+                        block16 *pBlock = &packed_image16[bx + by * blocks_x];
+
+                        rgbcx::encode_bc5(reinterpret_cast<BC5Block *>(pBlock), &pixels[0][0], bc45_channel0, bc45_channel1, 4);
+                        break;
+                    }
+                    case DXGI_FORMAT_BC7_UNORM: {
+                        block16 *pBlock = &packed_image16[bx + by * blocks_x];
+
+                        bc7enc_compress_block(pBlock, pixels, &pack_params);
+
+                        uint32_t mode = ((uint8_t *)pBlock)[0];
+                        for (uint32_t m = 0; m <= 7; m++) {
+                            if (mode & (1 << m)) {
+                                bc7_mode_hist[m]++;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    default: {
+                        assert(0);
                         break;
                     }
                 }
             }
 
-            switch (dxgi_format) {
-                case DXGI_FORMAT_BC1_UNORM: {
-                    block8 *pBlock = &packed_image8[bx + by * blocks_x];
-
-                    rgbcx::encode_bc1(bc1_quality_level, pBlock, &pixels[0][0], use_bc1_3color_mode, use_bc1_3color_mode_for_black);
-                    break;
-                }
-                case DXGI_FORMAT_BC3_UNORM: {
-                    BC3Block *pBlock = reinterpret_cast<BC3Block *>(&packed_image16[bx + by * blocks_x]);
-
-                    rgbcx::encode_bc3(bc1_quality_level, pBlock, &pixels[0][0]);
-                    break;
-                }
-                case DXGI_FORMAT_BC4_UNORM: {
-                    block8 *pBlock = &packed_image8[bx + by * blocks_x];
-
-                    rgbcx::encode_bc4(pBlock, &pixels[0][bc45_channel0], 4);
-                    break;
-                }
-                case DXGI_FORMAT_BC5_UNORM: {
-                    block16 *pBlock = &packed_image16[bx + by * blocks_x];
-
-                    rgbcx::encode_bc5(reinterpret_cast<BC5Block *>(pBlock), &pixels[0][0], bc45_channel0, bc45_channel1, 4);
-                    break;
-                }
-                case DXGI_FORMAT_BC7_UNORM: {
-                    block16 *pBlock = &packed_image16[bx + by * blocks_x];
-
-                    bc7enc_compress_block(pBlock, pixels, &pack_params);
-
-                    uint32_t mode = ((uint8_t *)pBlock)[0];
-                    for (uint32_t m = 0; m <= 7; m++) {
-                        if (mode & (1 << m)) {
-                            bc7_mode_hist[m]++;
-                            break;
-                        }
-                    }
-                    break;
-                }
-                default: {
-                    assert(0);
-                    break;
-                }
-            }
+            if ((by & 127) == 0) printf(".");
         }
-
-        if ((by & 127) == 0) printf(".");
     }
 
     clock_t end_t = clock();
@@ -749,23 +756,22 @@ int main(int argc, char *argv[]) {
         bool punchthrough_flag = false;
         auto decoder_bc1 = rgbcx::BC1Decoder();
         auto decoder_bc3 = rgbcx::BC3Decoder();
-        auto decoder_bc4 = rgbcx::BC4Decoder();
+        auto decoder_bc4 = rgbcx::BC4Decoder(bc45_channel0);
         auto decoder_bc5 = rgbcx::BC5Decoder();
+        Color *dest = &unpacked_image.get_pixels()[0];
 
         switch (dxgi_format) {
             case DXGI_FORMAT_BC1_UNORM:
-                unpacked_image.set_pixels(decoder_bc1.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), source_image.width(), source_image.height()));
+                decoder_bc1.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), dest, source_image.width(), source_image.height());
                 break;
             case DXGI_FORMAT_BC3_UNORM:
-                unpacked_image.set_pixels(
-                    decoder_bc3.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image16[0]), source_image.width(), source_image.height()));
+                decoder_bc3.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image16[0]), dest, source_image.width(), source_image.height());
                 break;
             case DXGI_FORMAT_BC4_UNORM:
-                unpacked_image.set_pixels(decoder_bc4.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), source_image.width(), source_image.height()));
+                decoder_bc4.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), dest, source_image.width(), source_image.height());
                 break;
             case DXGI_FORMAT_BC5_UNORM:
-                unpacked_image.set_pixels(
-                    decoder_bc5.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image16[0]), source_image.width(), source_image.height()));
+                decoder_bc5.DecodeImage(reinterpret_cast<uint8_t *>(&packed_image16[0]), dest, source_image.width(), source_image.height());
                 break;
             default:
                 assert(0);
@@ -777,7 +783,7 @@ int main(int argc, char *argv[]) {
         //                void *pBlock = (bytes_per_block == 16) ? (void *)&packed_image16[bx + by * blocks_x] : (void *)&packed_image8[bx + by * blocks_x];
         //
         //                color_quad_u8 unpacked_pixels[16];
-        //                for (uint32_t i = 0; i < 16; i++) unpacked_pixels[i].set(0, 0, 0, 255);
+        //                for (uint32_t i = 0; i < 16; i++) unpacked_pixels[i].Set(0, 0, 0, 255);
         //
         //                switch (dxgi_format) {
         //                    case DXGI_FORMAT_BC1_UNORM:
@@ -805,7 +811,6 @@ int main(int argc, char *argv[]) {
         //        }      // by
         clock_t end_decode_t = clock();
         printf("\nDecode time: %f secs\n", (double)(end_decode_t - start_decode_t) / CLOCKS_PER_SEC);
-
 
         if ((punchthrough_flag) && (dxgi_format == DXGI_FORMAT_BC3_UNORM))
             fprintf(stderr, "Warning: BC3 mode selected, but rgbcx::unpack_bc3() returned one or more blocks using 3-color mode!\n");
@@ -849,7 +854,8 @@ int main(int argc, char *argv[]) {
             for (uint32_t y = 0; y < unpacked_image_alpha.height(); y++)
                 for (uint32_t x = 0; x < unpacked_image_alpha.width(); x++) {
                     uint8_t alpha = unpacked_image_alpha(x, y).a;
-                    unpacked_image_alpha(x, y).SetRGBA(alpha, alpha, alpha, 255); }
+                    unpacked_image_alpha(x, y).SetRGBA(alpha, alpha, alpha, 255);
+                }
 
             if (!save_png(png_alpha_output_filename.c_str(), unpacked_image_alpha, false))
                 failed = true;

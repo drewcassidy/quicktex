@@ -42,7 +42,7 @@ template <typename S, size_t N> class RowView {
         return start[index * pixel_stride];
     }
 
-    constexpr int size() noexcept { return N; }
+    constexpr int Size() noexcept { return N; }
 
     S *const start;
     const int pixel_stride;
@@ -59,29 +59,29 @@ template <typename S, size_t M, size_t N> class BlockView {
         return RowView<S, N>(&start[row_stride * (int)index], pixel_stride);
     }
 
-    constexpr int width() noexcept { return N; }
-    constexpr int height() noexcept { return M; }
-    constexpr int size() noexcept { return N * M; }
+    constexpr int Width() noexcept { return N; }
+    constexpr int Height() noexcept { return M; }
+    constexpr int Size() noexcept { return N * M; }
 
-    constexpr S &get(unsigned x, unsigned y) noexcept(ndebug) {
+    constexpr S &Get(unsigned x, unsigned y) noexcept(ndebug) {
         assert(x < N);
         assert(y < M);
         return start[(row_stride * (int)y) + (pixel_stride * (int)x)];
     }
 
-    constexpr S get(unsigned x, unsigned y) const noexcept(ndebug) {
+    constexpr S Get(unsigned x, unsigned y) const noexcept(ndebug) {
         assert(x < N);
         assert(y < M);
         return start[(row_stride * (int)y) + (pixel_stride * (int)x)];
     }
 
-    constexpr void set(unsigned x, unsigned y, S value) noexcept(ndebug) {
+    constexpr void Set(unsigned x, unsigned y, S value) noexcept(ndebug) {
         assert(x < N);
         assert(y < M);
         start[(row_stride * (int)y) + (pixel_stride * (int)x)] = value;
     }
 
-    constexpr std::array<S, M * N> flatten() noexcept {
+    constexpr std::array<S, M * N> Flatten() noexcept {
         std::array<S, M * N> result;
         for (int x = 0; x < N; x++) {
             for (int y = 0; y < M; y++) { result[x + (N * y)] = start[(row_stride * y) + (pixel_stride * x)]; }
@@ -107,9 +107,10 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
         return ChannelView(channelStart, Base::row_stride * 4, Base::pixel_stride * 4);
     }
 
-    void SetRGB(unsigned x, unsigned y, Color value) noexcept(ndebug) { Base::get(x, y).SetRGB(value); }
+    void SetRGB(unsigned x, unsigned y, Color value) noexcept(ndebug) { Base::Get(x, y).SetRGB(value); }
 };
 
 using Color4x4 = ColorBlockView<4, 4>;
+using Byte4x4 = BlockView<uint8_t, 4, 4>;
 
 }  // namespace rgbcx

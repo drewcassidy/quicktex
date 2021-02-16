@@ -40,13 +40,14 @@ template <class B, size_t M, size_t N> class BlockDecoder {
 
     virtual void DecodeBlock(DecodedBlock dest, EncodedBlock *const block) const noexcept(ndebug) = 0;
 
-    std::vector<Color> DecodeImage(uint8_t *bytes, unsigned image_width, unsigned image_height) {
-        unsigned block_width = maximum(1U, ((image_width + 3) / 4));
-        unsigned block_height = maximum(1U, ((image_height + 3) / 4));
-        using Row = typename DecodedBlock::Row;
+    void DecodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) {
+        assert(image_width % N == 0);
+        assert(image_width % M == 0);
 
-        auto image = std::vector<Color>(block_width * block_height * N * M);
-        auto blocks = reinterpret_cast<B *>(bytes);
+        unsigned block_width = image_width / N;
+        unsigned block_height = image_height / M;
+
+        auto blocks = reinterpret_cast<B *>(encoded);
 
         // from experimentation, multithreading this using OpenMP actually makes decoding slower
         // due to thread creation/teardown taking longer than the decoding process itself.
@@ -62,16 +63,11 @@ template <class B, size_t M, size_t N> class BlockDecoder {
                 assert(pixel_x + N <= image_width);
 
                 unsigned top_left = pixel_x + (pixel_y * image_width);
-                auto rows = std::array<Row *, M>();
-                for (unsigned i = 0; i < M; i++) { rows[i] = reinterpret_cast<Row *>(&image[top_left + i * image_width]); }
-
-                auto dest = DecodedBlock(&image[top_left], image_width);
+                auto dest = DecodedBlock(&decoded[top_left], image_width);
 
                 DecodeBlock(dest, &blocks[x + block_width * y]);
             }
         }
-
-        return image;
     }
 };
 }  // namespace rgbcx

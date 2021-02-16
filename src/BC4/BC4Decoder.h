@@ -29,7 +29,6 @@
 namespace rgbcx {
 class BC4Decoder : public BlockDecoder<BC4Block, 4, 4> {
    public:
-    using Byte4x4 = BlockView<uint8_t, 4, 4>;
     BC4Decoder(uint8_t channel = 3) : _channel(channel) { assert(channel < 4U); }
 
     void DecodeBlock(Color4x4 dest, BC4Block *const block) const noexcept(ndebug) override { DecodeBlock(dest.GetChannel(_channel), block); }

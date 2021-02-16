@@ -27,8 +27,42 @@ namespace rgbcx {
 
 template <class B, size_t M, size_t N> class BlockEncoder {
    public:
-    using DecodedBlock = BlockView<M, N>;
+    using DecodedBlock = ColorBlockView<M, N>;
     using EncodedBlock = B;
-    virtual void EncodeBlock(EncodedBlock *dest, DecodedBlock *const pixels) const = 0;
+
+    BlockEncoder() noexcept = default;
+    virtual ~BlockEncoder() noexcept = default;
+
+    virtual void EncodeBlock(DecodedBlock pixels, EncodedBlock *dest) const = 0;
+
+    void EncodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) {
+        assert(image_width % N == 0);
+        assert(image_width % M == 0);
+
+        unsigned block_width = image_width / N;
+        unsigned block_height = image_height / M;
+
+        auto blocks = reinterpret_cast<B *>(encoded);
+
+        // from experimentation, multithreading this using OpenMP actually makes decoding slower
+        // due to thread creation/teardown taking longer than the decoding process itself.
+        // As a result, this is left as a serial operation despite being embarassingly parallelizable
+        for (unsigned y = 0; y < block_height; y++) {
+            for (unsigned x = 0; x < block_width; x++) {
+                unsigned pixel_x = x * N;
+                unsigned pixel_y = y * M;
+
+                assert(pixel_x >= 0);
+                assert(pixel_y >= 0);
+                assert(pixel_y + M <= image_height);
+                assert(pixel_x + N <= image_width);
+
+                unsigned top_left = pixel_x + (pixel_y * image_width);
+                auto src = DecodedBlock(&decoded[top_left], image_width);
+
+                EncodeBlock(src, &blocks[x + block_width * y]);
+            }
+        }
+    }
 };
 }  // namespace rgbcx

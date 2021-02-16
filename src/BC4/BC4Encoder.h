@@ -19,7 +19,19 @@
 
 #pragma once
 
+#include "../BlockEncoder.h"
+#include "BC4Block.h"
 namespace rgbcx {
 
-class BC4Encoder {};
+class BC4Encoder : public BlockEncoder<BC4Block, 4, 4> {
+   public:
+    BC4Encoder(const uint8_t channel) : _channel(channel) { assert(channel < 4); }
+
+    void EncodeBlock(Color4x4 pixels, BC4Block *dest) const override { EncodeBlock(pixels.GetChannel(_channel), dest); }
+    void EncodeBlock(Color4x4 pixels, BC4Block *const dest, uint8_t channel) const noexcept(ndebug) { EncodeBlock(pixels.GetChannel(channel), dest); }
+    void EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug);
+
+   private:
+    const uint8_t _channel;
+};
 }  // namespace rgbcx

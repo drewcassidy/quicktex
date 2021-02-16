@@ -39,7 +39,7 @@ void rgbcx::BC4Decoder::DecodeBlock(Byte4x4 dest, BC4Block *const block) const n
         for (unsigned x = 0; x < 4; x++) {
             const auto selector = selectors[y][x];
             assert(selector < 8);
-            dest.set(x, y, values[selector]);
+            dest.Set(x, y, values[selector]);
         }
     }
 }
