@@ -83,8 +83,8 @@ template <typename S, size_t M, size_t N> class BlockView {
 
     constexpr std::array<S, M * N> Flatten() noexcept {
         std::array<S, M * N> result;
-        for (int x = 0; x < N; x++) {
-            for (int y = 0; y < M; y++) { result[x + (N * y)] = start[(row_stride * y) + (pixel_stride * x)]; }
+        for (unsigned x = 0; x < N; x++) {
+            for (unsigned y = 0; y < M; y++) { result[x + (N * y)] = Get(x, y); }
         }
         return result;
     }
