@@ -19,8 +19,9 @@
 
 #pragma once
 
-#include <stddef.h>
-
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 
 #include "../BC4/BC4Decoder.h"

@@ -19,12 +19,10 @@
 
 #include "BC4Decoder.h"
 
-#include <assert.h>  // for assert
-
-#include <array>  // for array
+#include <array>    // for array
+#include <cassert>  // for assert
 
 #include "../BlockView.h"  // for ColorBlock
-#include "../Color.h"      // for Color
 #include "../ndebug.h"     // for ndebug
 #include "BC4Block.h"
 

@@ -19,14 +19,12 @@
 
 #include "BC1Decoder.h"
 
-#include <assert.h>
-#include <stdint.h>
-
 #include <array>
+#include <cassert>
+#include <cstdint>
 
 #include "../BlockView.h"
 #include "../Color.h"
-#include "../Interpolator.h"
 #include "../ndebug.h"
 #include "BC1Block.h"
 

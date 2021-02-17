@@ -19,9 +19,9 @@
 
 #include "BC5Decoder.h"
 
-#include "../BC4/BC4Decoder.h"
 #include "../BlockView.h"
 #include "../ndebug.h"
+#include "BC5Block.h"
 
 namespace rgbcx {
 

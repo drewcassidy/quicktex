@@ -19,7 +19,8 @@
 
 #pragma once
 
-#include <stddef.h>
+#include <cassert>
+#include <cstdint>
 
 #include "../BlockDecoder.h"
 #include "../BlockView.h"

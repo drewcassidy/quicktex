@@ -19,7 +19,12 @@
 
 #include "BC4Encoder.h"
 
-#include <algorithm>
+#include <algorithm>  // for minmax_element
+#include <array>      // for array
+#include <cstdint>    // for uint8_t
+#include <utility>    // for pair
+
+#include "BC4Block.h"  // for BC4Block
 
 namespace rgbcx {
 void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug) {
@@ -38,7 +43,7 @@ void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcep
     }
 
     std::array<uint8_t, 16> selectors = {};
-    const static std::array<uint8_t, 8> Levels = {1U, 7U, 6U, 5U, 4U, 3U, 2U, 0U}; // selector value options in linear order
+    const static std::array<uint8_t, 8> Levels = {1U, 7U, 6U, 5U, 4U, 3U, 2U, 0U};  // selector value options in linear order
 
     // BC4 floors in its divisions, which we compensate for with the 4 bias.
     // This function is optimal for all possible inputs (i.e. it outputs the same results as checking all 8 values and choosing the closest one).
@@ -52,7 +57,7 @@ void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcep
 
     // iterate over all values and calculate selectors
     for (unsigned i = 0; i < 16; i++) {
-        int value = flattened[i] * 14; // multiply by demonimator
+        int value = flattened[i] * 14;  // multiply by demonimator
 
         // level = number of thresholds this value is greater than
         unsigned level = 0;

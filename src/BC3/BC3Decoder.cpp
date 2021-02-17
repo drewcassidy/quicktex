@@ -23,6 +23,7 @@
 #include "../BC4/BC4Decoder.h"
 #include "../BlockView.h"
 #include "../ndebug.h"
+#include "BC3Block.h"
 
 namespace rgbcx {
 

@@ -19,8 +19,14 @@
 
 #pragma once
 
+#include <cassert>
+#include <cstdint>
+
 #include "../BlockEncoder.h"
+#include "../BlockView.h"
+#include "../ndebug.h"
 #include "BC4Block.h"
+
 namespace rgbcx {
 
 class BC4Encoder : public BlockEncoder<BC4Block, 4, 4> {
