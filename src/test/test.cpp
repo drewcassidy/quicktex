@@ -659,11 +659,18 @@ int main(int argc, char *argv[]) {
     uint32_t bc7_mode_hist[8];
     memset(bc7_mode_hist, 0, sizeof(bc7_mode_hist));
 
+#ifdef NDEBUG
+    const int test_count = 1000;
+#else
+    const int test_count = 1;
+#endif
+
     if (dxgi_format == DXGI_FORMAT_BC4_UNORM) {
         auto bc4_encoder = BC4Encoder(bc45_channel0);
         Color *src = &source_image.get_pixels()[0];
 
-        bc4_encoder.EncodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), src, source_image.width(), source_image.height());
+        for (int i = 0; i < test_count; i++)
+            bc4_encoder.EncodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), src, source_image.width(), source_image.height());
 
     } else {
         for (uint32_t by = 0; by < blocks_y; by++) {
@@ -732,7 +739,7 @@ int main(int argc, char *argv[]) {
 
     clock_t end_t = clock();
 
-    printf("\nTotal time: %f secs\n", (double)(end_t - start_t) / CLOCKS_PER_SEC);
+    printf("\nTotal time: %f secs\n", (double)(end_t - start_t) / CLOCKS_PER_SEC / test_count);
 
     if (dxgi_format == DXGI_FORMAT_BC7_UNORM) {
         printf("BC7 mode histogram:\n");
