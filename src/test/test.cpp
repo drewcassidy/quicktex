@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "../BC4/BC4Encoder.h"
+#include "../BC1/BC1Encoder.h"
 #include "../rgbcx.h"
 #include "../rgbcxDecoders.h"
 #include "../util.h"
@@ -671,7 +672,11 @@ int main(int argc, char *argv[]) {
 
         for (int i = 0; i < test_count; i++)
             bc4_encoder.EncodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), src, source_image.width(), source_image.height());
+    } else if (dxgi_format == DXGI_FORMAT_BC1_UNORM) {
+        auto bc1_encoder = BC1Encoder(Interpolator::MakeInterpolator());
+        Color *src = &source_image.get_pixels()[0];
 
+        bc1_encoder.EncodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), src, source_image.width(), source_image.height());
     } else {
         for (uint32_t by = 0; by < blocks_y; by++) {
             for (uint32_t bx = 0; bx < blocks_x; bx++) {

@@ -81,6 +81,9 @@ template <typename S, size_t M, size_t N> class BlockView {
         start[(row_stride * (int)y) + (pixel_stride * (int)x)] = value;
     }
 
+    constexpr S &Get(unsigned i) noexcept(ndebug) { return Get(i % N, i / N); }
+    constexpr S Get(unsigned i) const noexcept(ndebug) { return Get(i % N, i / N); }
+
     constexpr std::array<S, M * N> Flatten() noexcept {
         std::array<S, M * N> result;
         for (unsigned x = 0; x < N; x++) {
@@ -108,6 +111,34 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
     }
 
     void SetRGB(unsigned x, unsigned y, Color value) noexcept(ndebug) { Base::Get(x, y).SetRGB(value); }
+
+    bool IsSingleColor() {
+        auto first = Base::Get(0, 0);
+        for (unsigned j = 1; j < M * N; j++) {
+            if (Base::Get(j) != first) return false;
+        }
+        return true;
+    }
+
+    void GetMinMaxAvgRGB(Color &min, Color &max, Color &avg) {
+        min = Base::Get(0, 0);
+        max = Base::Get(0, 0);
+        std::array<unsigned, 3> sums;
+
+        for (unsigned i = 1; i < M * N; i++) {
+            auto val = Base::Get(i);
+            for (unsigned c = 0; c < 3; c++) {
+                if (val[c] < min[c]) {
+                    min[c] = val[c];
+                } else {
+                    max[c] = val[c];
+                }
+                sums[c] += val[c];
+            }
+        }
+
+        for (unsigned c = 0; c < 3; c++) { avg[c] = (uint8_t)(sums[c] / (M * N)); }
+    }
 };
 
 using Color4x4 = ColorBlockView<4, 4>;
