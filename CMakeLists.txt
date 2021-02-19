@@ -16,6 +16,8 @@ file(GLOB TEST_FILES "src/test/*.c" "src/test/*.cpp" "src/test/*.h")
 # Organize source files together for some IDEs
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES})
 
+include_directories(${CMAKE_SOURCE_DIR}/extern/gif-h)
+
 # Add python module
 pybind11_add_module(python_rgbcx
         ${SOURCE_FILES}

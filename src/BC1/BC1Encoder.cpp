@@ -19,6 +19,9 @@
 
 #include "BC1Encoder.h"
 
+#include <gif.h>
+#include <string>
+
 #include <cstdint>
 #include <memory>
 
@@ -47,12 +50,18 @@ inline void PrepSingleColorTableEntry(unsigned &error, MatchList &match_table, u
         match_table[i].high = (uint8_t)high;
         match_table[i].error = (uint8_t)new_error;
 
-        error = new_error;
+//        error = new_error;
     }
+    error = new_error;
 }
 
 template <size_t S> void PrepSingleColorTable(MatchList &match_table, MatchList &match_table_half, Interpolator &interpolator) {
     unsigned size = 1 << S;
+
+    std::vector<uint8_t> frame(size * size * 4, 0);
+    auto fileName = "lut" + std::to_string(S) + ".gif";
+    GifWriter g;
+    GifBegin(&g, fileName.c_str(), size, size, 10);
 
     assert((S == 5 && size == 32) || (S == 6 && size == 64));
 
@@ -69,7 +78,7 @@ template <size_t S> void PrepSingleColorTable(MatchList &match_table, MatchList 
             uint8_t low8 = (S == 5) ? scale5To8(low) : scale6To8(low);
 
             for (uint8_t high = 0; high < size; high++) {
-                uint8_t high8 = (S == 5) ? scale5To8(high) : scale6To8(low);
+                uint8_t high8 = (S == 5) ? scale5To8(high) : scale6To8(high);
                 uint8_t value, value_half;
 
                 if (use_8bit) {
@@ -82,9 +91,17 @@ template <size_t S> void PrepSingleColorTable(MatchList &match_table, MatchList 
 
                 PrepSingleColorTableEntry(error, match_table, value, i, low, high, low8, high8, ideal);
                 PrepSingleColorTableEntry(error_half, match_table_half, value_half, i, low, high, low8, high8, ideal);
+                frame[(low + (size * high))*4] = error;
+                frame[(low + (size * high))*4+1] = error;
+                frame[(low + (size * high))*4+2] = error;
+                frame[(low + (size * high))*4+3] = 255;
+
             }
         }
+        GifWriteFrame(&g, frame.data(), size, size, 10);
     }
+
+    GifEnd(&g);
 }
 // endregion
 
