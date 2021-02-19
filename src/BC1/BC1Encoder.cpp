@@ -69,7 +69,7 @@ template <size_t S> void PrepSingleColorTable(MatchList &match_table, MatchList 
             uint8_t low8 = (S == 5) ? scale5To8(low) : scale6To8(low);
 
             for (uint8_t high = 0; high < size; high++) {
-                uint8_t high8 = (S == 5) ? scale5To8(high) : scale6To8(low);
+                uint8_t high8 = (S == 5) ? scale5To8(high) : scale6To8(high);
                 uint8_t value, value_half;
 
                 if (use_8bit) {
