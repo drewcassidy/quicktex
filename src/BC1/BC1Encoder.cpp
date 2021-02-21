@@ -317,7 +317,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
 
         std::array<Vector4, 16> colors;
 
-        Vector4 axis = {306, 601, 117};  // I think this is luma?
+        Vector4 axis = {306, 601, 117};  // Luma vector
         Matrix4x4 covariance;
         const unsigned total_power_iters = (flags & Flags::Use6PowerIters) != Flags::None ? 6 : 4;
 
@@ -341,8 +341,10 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         if (covariance[0][2] < 0) delta[0] = -delta[0];  // r vs b
         if (covariance[1][2] < 0) delta[1] = -delta[1];  // g vs b
 
+        // using the covariance matrix, iteratively stretch the delta vector towards the primary axis of the data
         for (unsigned power_iter = 0; power_iter < total_power_iters; power_iter++) { delta = covariance * delta; }
 
+        // if we found any correlation, then this is our new axis. otherwise we fallback to the luma vector
         float k = delta.MaxAbs(3);
         if (k > 2) { axis = delta * (2048.0f / k); }
 
@@ -352,6 +354,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         unsigned min_index, max_index;
 
         for (unsigned i = 0; i < 16; i++) {
+            // since axis is constant here, I dont think its magnitude actually matters,
+            // since we only care about the min or max dot product
             float dot = colors[i].Dot(axis);
             if (dot > max_dot) {
                 max_dot = dot;
