@@ -184,8 +184,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
 
         if (metrics.max.r - metrics.min.r < 2) {
             // single color block
-            low.r = high.r = scale8To5(fr);
-            low.g = high.g = scale8To6(fr);
+            low.r = high.r = (uint8_t)scale8To5(fr);
+            low.g = high.g = (uint8_t)scale8To6(fr);
             low.b = high.b = low.r;
         } else {
             low.r = low.b = scale8To5(metrics.min.r);
@@ -204,7 +204,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         auto &min = metrics.min;
         auto &max = metrics.max;
 
-        unsigned chan0 = diff.MaxChannelRGB();  // primary axis of the bounding box
+        unsigned chan0 = (unsigned)diff.MaxChannelRGB();  // primary axis of the bounding box
         l[chan0] = (float)min[chan0];
         h[chan0] = (float)min[chan0];
 
@@ -223,7 +223,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         float denominator = (float)(16 * sum_xx) - (float)(sum_x * sum_x);
 
         // once per secondary axis, calculate high and low using least squares
-        if (fabs(denominator > 1e-8f)) {
+        if (fabs(denominator) > 1e-8f) {
             for (unsigned i = 1; i < 3; i++) {
                 /* each secondary axis is fitted with a linear formula of the form
                  *  y = ax + b
@@ -285,8 +285,6 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         // Algorithm from icbc.h compress_dxt1_fast(), but converted to integer.
 
         Color min, max;
-
-        const float bias = 8.0f / 255.0f;
 
         // rescale and inset values
         for (unsigned c = 0; c < 3; c++) {
