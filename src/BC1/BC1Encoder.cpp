@@ -19,11 +19,15 @@
 
 #include "BC1Encoder.h"
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <memory>
 
 #include "../BlockView.h"
 #include "../Color.h"
+#include "../Matrix4x4.h"
+#include "../Vector4.h"
 #include "../bitwiseEnums.h"
 
 namespace rgbcx {
@@ -98,14 +102,15 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
     auto g_view = pixels.GetChannel(1);
     auto b_view = pixels.GetChannel(2);
 
-    if (pixels.IsSingleColor() || true) {  // for now assume (wrongly) everything is a single-color block
+    Color first = pixels.Get(0, 0);
+
+    if (pixels.IsSingleColor()) {  // for now assume (wrongly) everything is a single-color block
         // single-color pixel block, do it the fast way
-        EncodeBlockSingleColor(pixels.Get(0, 0), dest);
+        EncodeBlockSingleColor(first, dest);
         return;
     }
 
-    Color min, max, avg;
-    pixels.GetMinMaxAvgRGB(min, max, avg);
+    auto metrics = pixels.GetMetrics();
 }
 
 void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
@@ -155,7 +160,7 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
                 assert(min16 == 0 && max16 == 0);
                 max16 = 1;
                 min16 = 0;
-                mask = 0x55;  // 1111 (min value only, max is ignored)
+                mask = 0x55;  // 1111 (Min value only, max is ignored)
             }
         } else if (max16 < min16) {
             std::swap(min16, max16);
@@ -172,4 +177,193 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
     dest->selectors[3] = mask;
 }
 
+void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const BC1Encoder::BlockMetrics metrics, Color &low, Color &high) const {
+    if (metrics.is_greyscale) {
+        // specialized greyscale case
+        const unsigned fr = pixels.Get(0).r;
+
+        if (metrics.max.r - metrics.min.r < 2) {
+            // single color block
+            low.r = high.r = scale8To5(fr);
+            low.g = high.g = scale8To6(fr);
+            low.b = high.b = low.r;
+        } else {
+            low.r = low.b = scale8To5(metrics.min.r);
+            low.g = scale8To6(metrics.min.r);
+
+            high.r = high.b = scale8To5(metrics.max.r);
+            high.g = scale8To6(metrics.max.r);
+        }
+    } else if ((flags & Flags::Use2DLS) != Flags::None) {
+        //  2D Least Squares approach from Humus's example, with added inset and optimal rounding.
+        Color diff = Color(metrics.max.r - metrics.min.r, metrics.max.g - metrics.min.g, metrics.max.b - metrics.min.b);
+        Vector4 l = {0, 0, 0};
+        Vector4 h = {0, 0, 0};
+
+        auto &sums = metrics.sums;
+        auto &min = metrics.min;
+        auto &max = metrics.max;
+
+        unsigned chan0 = diff.MaxChannelRGB();  // primary axis of the bounding box
+        l[chan0] = (float)min[chan0];
+        h[chan0] = (float)min[chan0];
+
+        assert(diff[chan0] >= diff[(chan0 + 1) % 3] && diff[chan0] >= diff[(chan0 + 2) % 3]);
+
+        std::array<unsigned, 3> sums_xy;
+
+        for (unsigned i = 0; i < 16; i++) {
+            auto val = pixels.Get(i);
+            for (unsigned c = 0; c < 3; c++) { sums_xy[c] += val[chan0] * val[c]; }
+        }
+
+        auto &sum_x = sums[chan0];
+        auto &sum_xx = sums_xy[chan0];
+
+        float denominator = (float)(16 * sum_xx) - (float)(sum_x * sum_x);
+
+        // once per secondary axis, calculate high and low using least squares
+        if (fabs(denominator > 1e-8f)) {
+            for (unsigned i = 1; i < 3; i++) {
+                /* each secondary axis is fitted with a linear formula of the form
+                 *  y = ax + b
+                 * where y is the secondary axis and x is the primary axis
+                 *  a = (m∑xy - ∑x∑y) / m∑x² - (∑x)²
+                 *  b = (∑x²∑y - ∑xy∑x) / m∑x² - (∑x)²
+                 * see Giordano/Weir pg.103 */
+                const unsigned chan = (chan0 + i) % 3;
+                const unsigned &sum_y = sums[chan];
+                const unsigned &sum_xy = sums_xy[chan];
+
+                float a = (float)((16 * sum_xy) - (sum_x * sum_y)) / denominator;
+                float b = (float)((sum_xx * sum_y) - (sum_xy * sum_x)) / denominator;
+
+                l[chan] = b + (a * l[chan0]);
+                h[chan] = b + (a * h[chan0]);
+            }
+        }
+
+        // once per axis, inset towards the center by 1/16 of the delta and scale
+        for (unsigned c = 0; c < 3; c++) {
+            float inset = (h[c] - l[c]) / 16.0f;
+
+            l[c] = ((l[c] + inset) / 255.0f);
+            h[c] = ((h[c] - inset) / 255.0f);
+        }
+
+        low = Color::PreciseRound565(l);
+        high = Color::PreciseRound565(h);
+    } else if ((flags & Flags::BoundingBox) != Flags::None) {
+        // Algorithm from icbc.h compress_dxt1_fast()
+        Vector4 l, h;
+        const float bias = 8.0f / 255.0f;
+
+        // rescale and inset values
+        for (unsigned c = 0; c < 3; c++) {  // heh, c++
+            l[c] = (float)metrics.min[c] / 255.0f;
+            h[c] = (float)metrics.max[c] / 255.0f;
+
+            float inset = (h[c] - l[c] - bias) / 16.0f;
+            l[c] += inset;
+            h[c] -= inset;
+        }
+
+        // Select the correct diagonal across the bounding box
+        int icov_xz = 0, icov_yz = 0;
+        for (unsigned i = 0; i < 16; i++) {
+            int b = (int)pixels.Get(i).b - metrics.avg.b;
+            icov_xz += b * (int)pixels.Get(i).r - metrics.avg.r;
+            icov_yz += b * (int)pixels.Get(i).g - metrics.avg.g;
+        }
+
+        if (icov_xz < 0) std::swap(l[0], h[0]);
+        if (icov_yz < 0) std::swap(l[1], h[1]);
+
+        low = Color::PreciseRound565(l);
+        high = Color::PreciseRound565(h);
+    } else if ((flags & Flags::BoundingBoxInt) != Flags::None) {
+        // Algorithm from icbc.h compress_dxt1_fast(), but converted to integer.
+
+        Color min, max;
+
+        const float bias = 8.0f / 255.0f;
+
+        // rescale and inset values
+        for (unsigned c = 0; c < 3; c++) {
+            int inset = ((int)(metrics.max[c] - metrics.min[c]) - 8) >> 4;  // 1/16 of delta, with bias
+
+            min[c] = clamp255(metrics.min[c] + inset);
+            max[c] = clamp255(metrics.max[c] - inset);
+        }
+
+        int icov_xz = 0, icov_yz = 0;
+        for (unsigned i = 0; i < 16; i++) {
+            int b = (int)pixels.Get(i).b - metrics.avg.b;
+            icov_xz += b * (int)pixels.Get(i).r - metrics.avg.r;
+            icov_yz += b * (int)pixels.Get(i).g - metrics.avg.g;
+        }
+
+        if (icov_xz < 0) std::swap(min.r, max.r);
+        if (icov_yz < 0) std::swap(min.g, max.g);
+
+        low = min.ScaleTo565();
+        high = max.ScaleTo565();
+    } else {
+        // the slow way
+        // Select 2 colors along the principle axis. (There must be a faster/simpler way.)
+        auto min = Vector4::FromColorRGB(metrics.min);
+        auto max = Vector4::FromColorRGB(metrics.max);
+        auto avg = Vector4::FromColorRGB(metrics.avg);
+
+        std::array<Vector4, 16> colors;
+
+        Vector4 axis = {306, 601, 117};  // I think this is luma?
+        Matrix4x4 covariance;
+        const unsigned total_power_iters = (flags & Flags::Use6PowerIters) != Flags::None ? 6 : 4;
+
+        for (unsigned i = 0; i < 16; i++) {
+            colors[i] = Vector4::FromColorRGB(pixels.Get(i));
+            Vector4 diff = colors[i] - avg;
+            for (unsigned c1 = 0; c1 < 3; c1++) {
+                for (unsigned c2 = c1; c2 < 3; c2++) {
+                    covariance[c1][c2] += (diff[c1] * diff[c2]);
+                    assert(c1 <= c2);
+                }
+            }
+        }
+
+        covariance /= 255.0f;
+        covariance.Mirror();
+
+        Vector4 delta = max - min;
+
+        // realign r and g axes to match
+        if (covariance[0][2] < 0) delta[0] = -delta[0];  // r vs b
+        if (covariance[1][2] < 0) delta[1] = -delta[1];  // g vs b
+
+        for (unsigned power_iter = 0; power_iter < total_power_iters; power_iter++) { delta = covariance * delta; }
+
+        float k = delta.MaxAbs(3);
+        if (k > 2) { axis = delta * (2048.0f / k); }
+
+        float min_dot = INFINITY;
+        float max_dot = -INFINITY;
+
+        unsigned min_index, max_index;
+
+        for (unsigned i = 0; i < 16; i++) {
+            float dot = colors[i].Dot(axis);
+            if (dot > max_dot) {
+                max_dot = dot;
+                max_index = i;
+            } else if (dot < min_dot) {
+                min_dot = dot;
+                min_index = i;
+            }
+        }
+
+        low = pixels.Get(min_index).ScaleTo565();
+        high = pixels.Get(max_index).ScaleTo565();
+    }
+}
 }  // namespace rgbcx

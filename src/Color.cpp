@@ -16,14 +16,15 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "Color.h"
 
-#include <algorithm>  // for max, min
+#include <algorithm>  // for max, Min
 
+#include "Vector4.h"
 #include "util.h"  // for scale5To8, scale8To5, assert5bit, scale6To8
 
-// region Color implementation
+namespace rgbcx {
+
 Color::Color() { SetRGBA(0, 0, 0, 0xFF); }
 
 Color::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { SetRGBA(r, g, b, a); }
@@ -37,6 +38,14 @@ uint16_t Color::Pack565Unscaled(uint8_t r, uint8_t g, uint8_t b) {
 
 uint16_t Color::Pack565(uint8_t r, uint8_t g, uint8_t b) { return Pack565Unscaled(scale8To5(r), scale8To6(g), scale8To5(b)); }
 
+Color Color::Unpack565Unscaled(uint16_t Packed) {
+    uint8_t r = (Packed >> 11) & 0x1F;
+    uint8_t g = (Packed >> 5) & 0x3F;
+    uint8_t b = Packed & 0x1F;
+
+    return Color(r, g, b);
+}
+
 Color Color::Unpack565(uint16_t Packed) {
     uint8_t r = static_cast<uint8_t>(scale5To8((Packed >> 11) & 0x1FU));
     uint8_t g = static_cast<uint8_t>(scale6To8((Packed >> 5) & 0x3FU));
@@ -45,10 +54,24 @@ Color Color::Unpack565(uint16_t Packed) {
     return Color(r, g, b);
 }
 
-Color Color::Unpack565Unscaled(uint16_t Packed) {
-    uint8_t r = (Packed >> 11) & 0x1F;
-    uint8_t g = (Packed >> 5) & 0x3F;
-    uint8_t b = Packed & 0x1F;
+Color Color::PreciseRound565(Vector4 &v) {
+    int trial_r = (int)(v[0] * UINT5_MAX);
+    int trial_g = (int)(v[1] * UINT6_MAX);
+    int trial_b = (int)(v[2] * UINT5_MAX);
+
+    // clamp to prevent weirdness with slightly out of bounds float values
+    uint8_t r = (uint8_t)clampi(trial_r, 0, UINT5_MAX);
+    uint8_t g = (uint8_t)clampi(trial_g, 0, UINT6_MAX);
+    uint8_t b = (uint8_t)clampi(trial_b, 0, UINT5_MAX);
+
+    // increment each channel if above the rounding point
+    r += v[0] > Midpoints5bit[r];
+    g += v[1] > Midpoints6bit[g];
+    b += v[2] > Midpoints5bit[b];
+
+    assert5bit(r);
+    assert6bit(g);
+    assert5bit(b);
 
     return Color(r, g, b);
 }
@@ -66,15 +89,26 @@ void Color::SetRGB(uint8_t vr, uint8_t vg, uint8_t vb) {
     b = vb;
 }
 
-Color Color::min(const Color &a, const Color &b) { return Color(std::min(a[0], b[0]), std::min(a[1], b[1]), std::min(a[2], b[2]), std::min(a[3], b[3])); }
+size_t Color::MinChannelRGB() {
+    if (r < g && r < b) return 0;
+    if (g < b && g < r) return 1;
+    return 2;
+}
 
-Color Color::max(const Color &a, const Color &b) { return Color(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]), std::max(a[3], b[3])); }
+size_t Color::MaxChannelRGB() {
+    if (r > g && r > b) return 0;
+    if (g > b && g > r) return 1;
+    return 2;
+}
+
+Color Color::Min(const Color &A, const Color &B) { return Color(std::min(A[0], B[0]), std::min(A[1], B[1]), std::min(A[2], B[2]), std::min(A[3], B[3])); }
+
+Color Color::Max(const Color &a, const Color &b) { return Color(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]), std::max(a[3], b[3])); }
 
 uint16_t Color::pack565() { return Pack565(r, g, b); }
-
 uint16_t Color::pack565Unscaled() { return Pack565Unscaled(r, g, b); }
 
 Color Color::ScaleTo565() const { return Color(scale8To5(r), scale8To6(g), scale8To5(b)); }
 Color Color::ScaleFrom565() const { return Color(scale5To8(r), scale6To8(g), scale5To8(b)); }
 
-// endregion
+}  // namespace rgbcx

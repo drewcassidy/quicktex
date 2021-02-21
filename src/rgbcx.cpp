@@ -13,8 +13,8 @@
 #include <type_traits>
 
 #include "BC1/BC1Block.h"
+#include "BC1/tables.h"
 #include "Color.h"
-#include "tables.h"
 #include "util.h"
 
 namespace rgbcx {
@@ -1703,12 +1703,12 @@ static inline void encode_bc1_pick_initial(const Color *pSrc_pixels, uint32_t fl
             int r = (int)pSrc_pixels[i].r - avg_r;
             int g = (int)pSrc_pixels[i].g - avg_g;
             int b = (int)pSrc_pixels[i].b - avg_b;
-            icov[0] += r * r;
-            icov[1] += r * g;
-            icov[2] += r * b;
-            icov[3] += g * g;
-            icov[4] += g * b;
-            icov[5] += b * b;
+            icov[0] += r * r; //0, 0, 0
+            icov[1] += r * g; //1, 0, 1
+            icov[2] += r * b; //2, 0, 2
+            icov[3] += g * g; //3, 1, 1
+            icov[4] += g * b; //4, 1, 2
+            icov[5] += b * b; //5, 2, 2
         }
 
         int saxis_r = 306, saxis_g = 601, saxis_b = 117;

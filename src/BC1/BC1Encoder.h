@@ -29,8 +29,8 @@
 #include "../Interpolator.h"
 #include "../bitwiseEnums.h"
 #include "../ndebug.h"
-#include "../tables.h"
 #include "BC1Block.h"
+#include "tables.h"
 
 namespace rgbcx {
 
@@ -43,6 +43,7 @@ struct BC1MatchEntry {
 class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
+    using BlockMetrics = Color4x4::BlockMetrics;
 
     enum class Flags : uint32_t {
         None = 0,
@@ -105,10 +106,11 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
 
     BC1Encoder(InterpolatorPtr interpolator);
 
-
     void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
 
    private:
+    using Vec3F = std::array<float, 3>;
+
     const InterpolatorPtr _interpolator;
 
     Flags _flags;
@@ -116,7 +118,16 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
     unsigned _orderings4;
     unsigned _orderings3;
 
+    // Unpacked BC1 block with metadata
+    struct EncodeResults {
+        Color low;
+        Color high;
+        std::array<uint8_t, 16> selectors;
+        bool is_3_color;
+    };
+
     void EncodeBlockSingleColor(Color color, BC1Block *dest) const;
+    void FindEndpoints(Color4x4 pixels, Flags flags, BlockMetrics const metrics, Color &low, Color &high) const;
 
     // match tables used for single-color blocks
     // Each entry includes a high and low pair that best reproduces the 8-bit index as well as possible,

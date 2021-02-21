@@ -102,6 +102,15 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
     using Base = BlockView<Color, M, N>;
     using ChannelView = BlockView<uint8_t, M, N>;
 
+    struct BlockMetrics {
+        Color min;
+        Color max;
+        Color avg;
+        bool is_greyscale;
+        bool has_black;
+        std::array<unsigned, 3> sums;
+    };
+
     ColorBlockView(Color *start, int row_stride = N, int pixel_stride = 1) : Base(start, row_stride, pixel_stride) {}
 
     constexpr ChannelView GetChannel(uint8_t index) noexcept(ndebug) {
@@ -120,24 +129,32 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
         return true;
     }
 
-    void GetMinMaxAvgRGB(Color &min, Color &max, Color &avg) {
-        min = Base::Get(0, 0);
-        max = Base::Get(0, 0);
+    BlockMetrics GetMetrics(unsigned black_threshold = 4) {
+        BlockMetrics metrics;
+        metrics.min = Color(UINT8_MAX, UINT8_MAX, UINT8_MAX);
+        metrics.max = Color(0, 0, 0);
+        metrics.has_black = false;
+        metrics.is_greyscale = true;
+
         std::array<unsigned, 3> sums;
 
-        for (unsigned i = 1; i < M * N; i++) {
+        for (unsigned i = 0; i < M * N; i++) {
             auto val = Base::Get(i);
             for (unsigned c = 0; c < 3; c++) {
-                if (val[c] < min[c]) {
-                    min[c] = val[c];
+                if (val[c] < metrics.min[c]) {
+                    metrics.min[c] = val[c];
                 } else {
-                    max[c] = val[c];
+                    metrics.max[c] = val[c];
                 }
                 sums[c] += val[c];
             }
+            metrics.is_greyscale &= ((val.r == val.g) && (val.r == val.b));
+            metrics.has_black |= (val.r | val.g | val.b < black_threshold);
         }
 
-        for (unsigned c = 0; c < 3; c++) { avg[c] = (uint8_t)(sums[c] / (M * N)); }
+        for (unsigned c = 0; c < 3; c++) { metrics.avg[c] = (uint8_t)(metrics.sums[c] / (M * N)); }
+
+        return metrics;
     }
 };
 

@@ -17,9 +17,34 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "Matrix4x4.h"
 
 namespace rgbcx {
 
-class Image {};
+Matrix4x4 operator*(Matrix4x4& lhs, Matrix4x4& rhs) {
+    Matrix4x4 trans_rhs = rhs.Transpose();  // 🏳️‍⚧️
+    Matrix4x4 result;
+    for (unsigned r = 0; r < 4; r++) {
+        for (unsigned c = 0; c < 4; c++) { result[r][c] = lhs[r].Dot(trans_rhs[c]); }
+    }
+
+    return result;
+}
+
+Vector4 operator*(Matrix4x4& lhs, Vector4& rhs) {
+    Vector4 result;
+
+    for (unsigned r = 0; r < 4; r++) { result[r] = rhs.Dot(lhs[r]); }
+
+    return result;
+}
+
+void Matrix4x4::Mirror() {
+    for (unsigned r = 0; r < 3; r++) {
+        for (unsigned c = (r + 1); c < 4; c++) {
+            _r[c][r] = _r[r][c];
+        }
+    }
+}
+
 }  // namespace rgbcx

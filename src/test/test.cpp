@@ -104,7 +104,7 @@ struct color_quad_u8 {
         return m_c[i];
     }
 
-    inline int get_luma() const { return (13938U * m_c[0] + 46869U * m_c[1] + 4729U * m_c[2] + 32768U) >> 16U; }  // REC709 weightings
+    inline int GetLuma() const { return (13938U * m_c[0] + 46869U * m_c[1] + 4729U * m_c[2] + 32768U) >> 16U; }  // REC709 weightings
 };*/
 using color_quad_u8 = Color;
 typedef std::vector<color_quad_u8> color_quad_u8_vec;
@@ -267,7 +267,7 @@ class image_metrics {
 
                 if (!num_channels) {
                     //                    int luma_diff = ;
-                    unsigned index = iabs(ca.get_luma() - cb.get_luma());
+                    unsigned index = iabs(ca.GetLuma() - cb.GetLuma());
                     hist[index]++;
                 } else {
                     for (uint32_t c = 0; c < num_channels; c++) hist[iabs(ca[first_channel + c] - cb[first_channel + c])]++;

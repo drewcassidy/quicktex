@@ -125,7 +125,7 @@ template <typename S> constexpr S minimum(S a, S b, S c, S d) { return minimum(m
 
 template <typename T> constexpr T square(T a) { return a * a; }
 
-constexpr float clampf(float value, float low, float high) {
+constexpr float clampf(float value, float low = 0.0f, float high = 1.0f) {
     if (value < low)
         value = low;
     else if (value > high)

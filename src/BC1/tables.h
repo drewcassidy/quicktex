@@ -13,6 +13,9 @@ const uint32_t MAX_TOTAL_ORDERINGS4 = 32;
 const uint32_t MAX_TOTAL_ORDERINGS4 = 128;
 #endif
 
+extern const float g_midpoint5[32];
+extern const float g_midpoint6[64];
+
 const uint32_t NUM_UNIQUE_TOTAL_ORDERINGS4 = 969;
 extern const uint8_t g_unique_total_orders4[NUM_UNIQUE_TOTAL_ORDERINGS4][4];
 

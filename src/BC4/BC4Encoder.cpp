@@ -50,7 +50,7 @@ void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcep
     const int bias = 4 - min * 14;
     const int delta = max - min;
 
-    // min is now 0. Compute thresholds between values by scaling max. It's x14 because we're adding two x7 scale factors.
+    // Min is now 0. Compute thresholds between values by scaling max. It's x14 because we're adding two x7 scale factors.
     // bias is applied here
     std::array<int, 7> thresholds = {};
     for (unsigned i = 0; i < 7; i++) thresholds[i] = delta * (1 + (2 * (int)i)) - bias;
