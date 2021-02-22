@@ -340,7 +340,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         if (covariance[0][2] < 0) delta[0] = -delta[0];  // r vs b
         if (covariance[1][2] < 0) delta[1] = -delta[1];  // g vs b
 
-        // using the covariance matrix, iteratively stretch the delta vector towards the primary axis of the data
+        // using the covariance matrix, stretch the delta vector towards the primary axis of the data using power iteration
+        // the end result of this may actually be the same as the least squares approach, will have to do more research
         for (unsigned power_iter = 0; power_iter < total_power_iters; power_iter++) { delta = covariance * delta; }
 
         // if we found any correlation, then this is our new axis. otherwise we fallback to the luma vector
