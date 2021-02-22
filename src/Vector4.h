@@ -48,7 +48,7 @@ class Vector4 {
 
     static Vector4 FromColorRGB(const Color &c) { return Vector4(c.r, c.g, c.b); }
 
-    static float Dot(Vector4 &lhs, Vector4 &rhs) {
+    static float Dot(const Vector4 &lhs, const Vector4 &rhs) {
         float sum = 0;
         for (unsigned i = 0; i < 4; i++) { sum += lhs[i] * rhs[i]; }
         return sum;
@@ -83,8 +83,8 @@ class Vector4 {
     friend Vector4 &operator*=(Vector4 &lhs, const float &rhs) { return lhs = lhs * rhs; }
     friend Vector4 &operator/=(Vector4 &lhs, const float &rhs) { return lhs = lhs / rhs; }
 
-    float Dot(Vector4 other) { return Dot(*this, other); }
-    float MaxAbs(unsigned channels = 4) {
+    float Dot(Vector4 other) const { return Dot(*this, other); }
+    float MaxAbs(unsigned channels = 4) const {
         assert(channels < 5);
         assert(channels > 0);
         float max = 0;

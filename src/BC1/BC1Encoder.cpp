@@ -29,6 +29,7 @@
 #include "../Color.h"
 #include "../Matrix4x4.h"
 #include "../Vector4.h"
+#include "../Vector4Int.h"
 #include "../bitwiseEnums.h"
 
 namespace rgbcx {
@@ -96,6 +97,7 @@ template <size_t S> void PrepSingleColorTable(MatchList &match_table, MatchList 
 BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
     PrepSingleColorTable<5>(*_single_match5, *_single_match5_half, *_interpolator);
     PrepSingleColorTable<6>(*_single_match6, *_single_match6_half, *_interpolator);
+    _flags = Flags::None;
 }
 
 void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
@@ -105,13 +107,32 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
 
     Color first = pixels.Get(0, 0);
 
-    if (pixels.IsSingleColor()) {  // for now assume (wrongly) everything is a single-color block
+    if (pixels.IsSingleColor()) {
         // single-color pixel block, do it the fast way
         EncodeBlockSingleColor(first, dest);
         return;
     }
 
     auto metrics = pixels.GetMetrics();
+
+    bool needs_block_error = (_flags & Flags::UseLikelyTotalOrderings | Flags::Use3ColorBlocks | Flags::UseFullMSEEval) != Flags::None;
+    needs_block_error |= (_search_rounds > 0);
+    needs_block_error |= metrics.has_black && ((_flags & Flags::Use3ColorBlocksForBlackPixels) != Flags::None);
+
+    unsigned cur_err = UINT_MAX;
+
+    if (!needs_block_error || true) {
+        //        assert((_flags & Flags::TryAllInitialEndponts) == Flags::None);
+
+        EncodeResults orig;
+        FindEndpoints(pixels, _flags, metrics, orig.low, orig.high);
+        FindSelectors4(pixels, orig);
+        if (orig.low == orig.high) {
+            EncodeBlockSingleColor(metrics.avg, dest);
+        } else {
+            EncodeBlock4Color(orig, dest);
+        }
+    }
 }
 
 void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
@@ -178,7 +199,38 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
     dest->selectors[3] = mask;
 }
 
+void BC1Encoder::EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const {
+    if (block.low == block.high) {
+        EncodeBlockSingleColor(block.low.ScaleFrom565() /* Color(255, 0, 255)*/, dest);
+        return;
+    }
+
+    uint8_t mask = 0;
+    uint16_t low = block.low.Pack565Unscaled();
+    uint16_t high = block.high.Pack565Unscaled();
+    if (low < high) {
+        std::swap(low, high);
+        mask = 0x55;
+    }
+
+    assert(low > high);
+    dest->SetLowColor(low);
+    dest->SetHighColor(high);
+    dest->PackSelectors(block.selectors, mask);
+}
+
+void encode_bc1_pick_initial(const Color *pSrc_pixels, uint32_t flags, bool grayscale_flag, int min_r, int min_g, int min_b, int max_r, int max_g, int max_b,
+                             int avg_r, int avg_g, int avg_b, int total_r, int total_g, int total_b, int &lr, int &lg, int &lb, int &hr, int &hg, int &hb);
+
 void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const BC1Encoder::BlockMetrics metrics, Color &low, Color &high) const {
+    int lr, lg, lb, hr, hg, hb;
+    auto colors = pixels.Flatten();
+    encode_bc1_pick_initial(&colors[0], 0, metrics.is_greyscale, metrics.min.r, metrics.min.g, metrics.min.b, metrics.max.r, metrics.max.g, metrics.max.b,
+                            metrics.avg.r, metrics.avg.g, metrics.avg.b, metrics.sums[0], metrics.sums[1], metrics.sums[2], lr, lg, lb, hr, hg, hb);
+    low = Color(lr, lg, lb);
+    high = Color(hr, hg, hb);
+//    return;
+
     if (metrics.is_greyscale) {
         // specialized greyscale case
         const unsigned fr = pixels.Get(0).r;
@@ -209,7 +261,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         l[chan0] = (float)min[chan0];
         h[chan0] = (float)min[chan0];
 
-        assert(diff[chan0] >= diff[(chan0 + 1) % 3] && diff[chan0] >= diff[(chan0 + 2) % 3]);
+        assert((diff[chan0] >= diff[(chan0 + 1) % 3]) && (diff[chan0] >= diff[(chan0 + 2) % 3]));
 
         std::array<unsigned, 3> sums_xy;
 
@@ -317,7 +369,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         std::array<Vector4, 16> colors;
 
         Vector4 axis = {306, 601, 117};  // Luma vector
-        Matrix4x4 covariance;
+        Matrix4x4 covariance = Matrix4x4::Identity();
         const unsigned total_power_iters = (flags & Flags::Use6PowerIters) != Flags::None ? 6 : 4;
 
         for (unsigned i = 0; i < 16; i++) {
@@ -346,12 +398,14 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
 
         // if we found any correlation, then this is our new axis. otherwise we fallback to the luma vector
         float k = delta.MaxAbs(3);
-        if (k > 2) { axis = delta * (2048.0f / k); }
+        if (k >= 2) { axis = delta * (2048.0f / k); }
+
+        axis *= 16;
 
         float min_dot = INFINITY;
         float max_dot = -INFINITY;
 
-        unsigned min_index, max_index;
+        unsigned min_index = 0, max_index = 0;
 
         for (unsigned i = 0; i < 16; i++) {
             // since axis is constant here, I dont think its magnitude actually matters,
@@ -360,7 +414,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
             if (dot > max_dot) {
                 max_dot = dot;
                 max_index = i;
-            } else if (dot < min_dot) {
+            }
+            if (dot < min_dot) {
                 min_dot = dot;
                 min_index = i;
             }
@@ -369,5 +424,39 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         low = pixels.Get(min_index).ScaleTo565();
         high = pixels.Get(max_index).ScaleTo565();
     }
+}
+
+unsigned BC1Encoder::FindSelectors4(Color4x4 pixels, BC1Encoder::EncodeResults &block, unsigned int cur_err, bool use_err) const {
+    // colors in selector order, 0, 1, 2, 3
+    // 0 = low color, 1 = high color, 2/3 = interpolated
+    std::array<Color, 4> colors = _interpolator->InterpolateBC1(block.low, block.high, false);
+    //    std::array<Vector4Int, 4> colorVectors;
+    //    for (unsigned i = 0; i < 4; i++) { colorVectors[i] = (Vector4Int)colors[i]; }
+
+    const std::array<uint8_t, 4> selectors = {1, 3, 2, 0};
+    std::array<Vector4Int, 4> colorVectors = {(Vector4Int)colors[0], (Vector4Int)colors[2], (Vector4Int)colors[3], (Vector4Int)colors[1]};
+
+    if (!use_err) {
+        Vector4Int a = colorVectors[3] - colorVectors[0];
+        Color high = block.high.ScaleFrom565();
+        Color low = block.low.ScaleFrom565();
+        std::array<int, 4> dots;
+        for (unsigned i = 0; i < 4; i++) { dots[i] = a.Dot(colorVectors[i]); }
+        int t0 = dots[0] + dots[1], t1 = dots[1] + dots[2], t2 = dots[2] + dots[3];
+        a *= 2;
+
+        for (unsigned x = 0; x < 4; x++) {
+            for (unsigned y = 0; y < 4; y++) {
+                int dot = a.Dot((Vector4Int)pixels.Get(x, y));
+                unsigned level = (dot <= t0) + (dot < t1) + (dot < t2);
+                unsigned selector = selectors[level];
+                assert(level < 4);
+                assert(selector < 4);
+                block.selectors[y][x] = selector;
+            }
+        }
+        return 0;
+    }
+    return 0;
 }
 }  // namespace rgbcx

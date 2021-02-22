@@ -64,8 +64,8 @@ class BC1Block {
         return unpacked;
     }
 
-    void PackSelectors(const UnpackedSelectors& unpacked) {
-        for (unsigned i = 0; i < 4; i++) { selectors[i] = Pack<uint8_t, uint8_t, 2, 4>(unpacked[i]); }
+    void PackSelectors(const UnpackedSelectors& unpacked, uint8_t mask = 0) {
+        for (unsigned i = 0; i < 4; i++) { selectors[i] = mask ^ Pack<uint8_t, uint8_t, 2, 4>(unpacked[i]); }
     }
 
     constexpr static inline size_t EndpointSize = 2;

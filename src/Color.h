@@ -25,9 +25,10 @@
 
 namespace rgbcx {
 class Vector4;
+class Vector4Int;
+
 
 #pragma pack(push, 1)
-
 class Color {
    public:
     uint8_t r;
@@ -61,14 +62,17 @@ class Color {
         return reinterpret_cast<uint8_t *>(this)[index];
     }
 
+    operator Vector4() const;
+    operator Vector4Int() const;
+
     void SetRGBA(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va);
     void SetRGBA(const Color &other) { SetRGBA(other.r, other.g, other.b, other.a); }
 
     void SetRGB(uint8_t vr, uint8_t vg, uint8_t vb);
     void SetRGB(const Color &other) { SetRGB(other.r, other.g, other.b); }
 
-    uint16_t pack565();
-    uint16_t pack565Unscaled();
+    uint16_t Pack565() const;
+    uint16_t Pack565Unscaled() const;
 
     Color ScaleTo565() const;
     Color ScaleFrom565() const;

@@ -135,8 +135,7 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
         metrics.max = Color(0, 0, 0);
         metrics.has_black = false;
         metrics.is_greyscale = true;
-
-        std::array<unsigned, 3> sums;
+        metrics.sums = {0, 0, 0};
 
         for (unsigned i = 0; i < M * N; i++) {
             auto val = Base::Get(i);
@@ -146,7 +145,7 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
                 } else {
                     metrics.max[c] = val[c];
                 }
-                sums[c] += val[c];
+                metrics.sums[c] += val[c];
             }
             metrics.is_greyscale &= ((val.r == val.g) && (val.r == val.b));
             metrics.has_black |= (val.r | val.g | val.b < black_threshold);

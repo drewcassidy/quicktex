@@ -98,6 +98,8 @@ class Interpolator {
      */
     virtual std::array<Color, 4> InterpolateBC1(uint16_t low, uint16_t high) const;
 
+    virtual std::array<Color, 4> InterpolateBC1(Color low, Color high, bool use_3color) const;
+
     /**
      * Gets the type of an interpolator
      * @return The interpolator type
@@ -142,7 +144,7 @@ class InterpolatorNvidia : public Interpolator {
     uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const override;
     uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const override;
 
-    std::array<Color, 4> InterpolateBC1(uint16_t low, uint16_t high) const override;
+    std::array<Color, 4> InterpolateBC1(Color low, Color high, bool use_3color) const override;
 
     Type GetType() const noexcept override { return Type::Nvidia; }
     bool CanInterpolate8Bit() const noexcept override { return false; }

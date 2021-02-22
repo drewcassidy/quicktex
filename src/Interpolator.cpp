@@ -110,18 +110,22 @@ uint8_t Interpolator::InterpolateHalf5(uint8_t v0, uint8_t v1) const { return In
 uint8_t Interpolator::InterpolateHalf6(uint8_t v0, uint8_t v1) const { return InterpolateHalf8(scale6To8(v0), scale6To8(v1)); }
 
 std::array<Color, 4> Interpolator::InterpolateBC1(uint16_t low, uint16_t high) const {
-    auto colors = std::array<Color, 4>();
-    colors[0] = Color::Unpack565(low);
-    colors[1] = Color::Unpack565(high);
+    return InterpolateBC1(Color::Unpack565Unscaled(low), Color::Unpack565Unscaled(high), (high >= low));
+}
 
-    if (low > high) {
-        // 4-color mode
-        colors[2] = InterpolateColor24(colors[0], colors[1]);
-        colors[3] = InterpolateColor24(colors[1], colors[0]);
-    } else {
+std::array<Color, 4> Interpolator::InterpolateBC1(Color low, Color high, bool use_3color) const {
+    auto colors = std::array<Color, 4>();
+    colors[0] = low.ScaleFrom565();
+    colors[1] = high.ScaleFrom565();
+
+    if (use_3color) {
         // 3-color mode
         colors[2] = InterpolateHalfColor24(colors[0], colors[1]);
         colors[3] = Color(0, 0, 0, 0);  // transparent black
+    } else {
+        // 4-color mode
+        colors[2] = InterpolateColor24(colors[0], colors[1]);
+        colors[3] = InterpolateColor24(colors[1], colors[0]);
     }
 
     return colors;
@@ -147,7 +151,7 @@ uint8_t InterpolatorNvidia::Interpolate5(uint8_t v0, uint8_t v1) const {
 
 uint8_t InterpolatorNvidia::Interpolate6(uint8_t v0, uint8_t v1) const {
     assert(v0 < 64 && v1 < 64);
-    const int gdiff = (int) v1 - v0;
+    const int gdiff = (int)v1 - v0;
     return static_cast<uint8_t>((256 * v0 + (gdiff / 4) + 128 + gdiff * 80) >> 8);
 }
 
@@ -158,25 +162,23 @@ uint8_t InterpolatorNvidia::InterpolateHalf5(uint8_t v0, uint8_t v1) const {
 
 uint8_t InterpolatorNvidia::InterpolateHalf6(uint8_t v0, uint8_t v1) const {
     assert(v0 < 64 && v1 < 64);
-    const int gdiff = (int) v1 - v0;
+    const int gdiff = (int)v1 - v0;
     return static_cast<uint8_t>((256 * v0 + gdiff / 4 + 128 + gdiff * 128) >> 8);
 }
 
-std::array<Color, 4> InterpolatorNvidia::InterpolateBC1(uint16_t low, uint16_t high) const {
+std::array<Color, 4> InterpolatorNvidia::InterpolateBC1(Color low, Color high, bool use_3color) const {
     // Nvidia is special and interpolation cant be done with 8-bit values, so we need to override the default behavior
     std::array<Color, 4> colors;
-    auto low565 = Color::Unpack565Unscaled(low);
-    auto high565 = Color::Unpack565Unscaled(high);
-    colors[0] = low565.ScaleFrom565();
-    colors[1] = high565.ScaleFrom565();
+    colors[0] = low.ScaleFrom565();
+    colors[1] = high.ScaleFrom565();
 
-    if (low > high) {
+    if (!use_3color) {
         // 4-color mode
-        colors[2] = InterpolateColor565(low565, high565);
-        colors[3] = InterpolateColor565(high565, low565);
+        colors[2] = InterpolateColor565(low, high);
+        colors[3] = InterpolateColor565(high, low);
     } else {
         // 3-color mode
-        colors[2] = InterpolateHalfColor565(low565, high565);
+        colors[2] = InterpolateHalfColor565(low, high);
         colors[3] = Color(0, 0, 0, 0);  // transparent black
     }
 

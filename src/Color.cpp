@@ -21,6 +21,7 @@
 #include <algorithm>  // for max, Min
 
 #include "Vector4.h"
+#include "Vector4Int.h"
 #include "util.h"  // for scale5To8, scale8To5, assert5bit, scale6To8
 
 namespace rgbcx {
@@ -90,14 +91,14 @@ void Color::SetRGB(uint8_t vr, uint8_t vg, uint8_t vb) {
 }
 
 size_t Color::MinChannelRGB() {
-    if (r < g && r < b) return 0;
-    if (g < b && g < r) return 1;
+    if (r <= g && r <= b) return 0;
+    if (g <= b && g <= r) return 1;
     return 2;
 }
 
 size_t Color::MaxChannelRGB() {
-    if (r > g && r > b) return 0;
-    if (g > b && g > r) return 1;
+    if (r >= g && r >= b) return 0;
+    if (g >= b && g >=r) return 1;
     return 2;
 }
 
@@ -105,8 +106,11 @@ Color Color::Min(const Color &A, const Color &B) { return Color(std::min(A[0], B
 
 Color Color::Max(const Color &a, const Color &b) { return Color(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]), std::max(a[3], b[3])); }
 
-uint16_t Color::pack565() { return Pack565(r, g, b); }
-uint16_t Color::pack565Unscaled() { return Pack565Unscaled(r, g, b); }
+Color::operator Vector4() const { return Vector4(r, g, b, a); }
+Color::operator Vector4Int() const { return Vector4Int(r, g, b, a);}
+
+uint16_t Color::Pack565() const { return Pack565(r, g, b); }
+uint16_t Color::Pack565Unscaled() const { return Pack565Unscaled(r, g, b); }
 
 Color Color::ScaleTo565() const { return Color(scale8To5(r), scale8To6(g), scale8To5(b)); }
 Color Color::ScaleFrom565() const { return Color(scale5To8(r), scale6To8(g), scale5To8(b)); }

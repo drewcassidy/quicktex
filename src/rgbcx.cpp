@@ -666,8 +666,8 @@ static inline void bc1_get_block_colors3(uint32_t block_r[3], uint32_t block_g[3
     }
 }
 
-static inline void bc1_find_sels4_noerr(const Color *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb,
-                                        uint8_t sels[16]) {
+
+void bc1_find_sels4_noerr(const Color *pSrc_pixels, uint32_t lr, uint32_t lg, uint32_t lb, uint32_t hr, uint32_t hg, uint32_t hb, uint8_t *sels) {
     uint32_t block_r[4], block_g[4], block_b[4];
     bc1_get_block_colors4(block_r, block_g, block_b, lr, lg, lb, hr, hg, hb);
 
@@ -1454,9 +1454,9 @@ void encode_bc1(uint32_t level, void *pDst, const uint8_t *pPixels, bool allow_3
 }
 
 // Finds low and high colors to begin with
-static inline void encode_bc1_pick_initial(const Color *pSrc_pixels, uint32_t flags, bool grayscale_flag, int min_r, int min_g, int min_b, int max_r,
-                                           int max_g, int max_b, int avg_r, int avg_g, int avg_b, int total_r, int total_g, int total_b, int &lr, int &lg,
-                                           int &lb, int &hr, int &hg, int &hb) {
+
+void encode_bc1_pick_initial(const Color *pSrc_pixels, uint32_t flags, bool grayscale_flag, int min_r, int min_g, int min_b, int max_r, int max_g, int max_b,
+                             int avg_r, int avg_g, int avg_b, int total_r, int total_g, int total_b, int &lr, int &lg, int &lb, int &hr, int &hg, int &hb) {
     if (grayscale_flag) {
         const int fr = pSrc_pixels[0].r;
 

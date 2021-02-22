@@ -109,8 +109,6 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
     void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
 
    private:
-    using Vec3F = std::array<float, 3>;
-
     const InterpolatorPtr _interpolator;
 
     Flags _flags;
@@ -119,15 +117,19 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
     unsigned _orderings3;
 
     // Unpacked BC1 block with metadata
+    using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
     struct EncodeResults {
         Color low;
         Color high;
-        std::array<uint8_t, 16> selectors;
+        UnpackedSelectors selectors;
         bool is_3_color;
     };
 
     void EncodeBlockSingleColor(Color color, BC1Block *dest) const;
+    void EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const;
+
     void FindEndpoints(Color4x4 pixels, Flags flags, BlockMetrics const metrics, Color &low, Color &high) const;
+    unsigned FindSelectors4(Color4x4 pixels, EncodeResults &block, unsigned cur_err = 0, bool use_err = false) const;
 
     // match tables used for single-color blocks
     // Each entry includes a high and low pair that best reproduces the 8-bit index as well as possible,
