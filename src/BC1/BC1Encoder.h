@@ -117,12 +117,12 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
     unsigned _orderings3;
 
     // Unpacked BC1 block with metadata
-    using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
     struct EncodeResults {
         Color low;
         Color high;
-        UnpackedSelectors selectors;
+        std::array<uint8_t, 16> selectors;
         bool is_3_color;
+        bool is_1_color;
     };
 
     void EncodeBlockSingleColor(Color color, BC1Block *dest) const;
@@ -130,6 +130,9 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
 
     void FindEndpoints(Color4x4 pixels, Flags flags, BlockMetrics const metrics, Color &low, Color &high) const;
     unsigned FindSelectors4(Color4x4 pixels, EncodeResults &block, unsigned cur_err = 0, bool use_err = false) const;
+
+    bool ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, Vector4 &low, Vector4 &high, BlockMetrics metrics, bool is_3color = false,
+                             bool use_black = false) const;
 
     // match tables used for single-color blocks
     // Each entry includes a high and low pair that best reproduces the 8-bit index as well as possible,
@@ -154,5 +157,12 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
 
     static float g_selector_factors4[NUM_UNIQUE_TOTAL_ORDERINGS4][3];
     static float g_selector_factors3[NUM_UNIQUE_TOTAL_ORDERINGS3][3];
+
+    // This table is: 9 * (w * w), 9 * ((1.0f - w) * w), 9 * ((1.0f - w) * (1.0f - w))
+    // where w is [0,1/3,2/3,1]. 9 is the perfect multiplier.
+    static constexpr uint32_t g_weight_vals4[4] = {0x000009, 0x010204, 0x040201, 0x090000};
+
+    // multiplier is 4 for 3-color
+    static constexpr uint32_t g_weight_vals3[3] = {0x000004, 0x040000, 0x010101};
 };
 }  // namespace rgbcx

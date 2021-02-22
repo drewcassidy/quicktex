@@ -19,14 +19,15 @@
 
 #pragma once
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <vector>
 
 #include "Color.h"
+#include "Vector4Int.h"
 #include "ndebug.h"
 
 namespace rgbcx {
@@ -109,7 +110,7 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
         Color avg;
         bool is_greyscale;
         bool has_black;
-        std::array<unsigned, 3> sums;
+        Vector4Int sums;
     };
 
     ColorBlockView(Color *start, int row_stride = N, int pixel_stride = 1) : Base(start, row_stride, pixel_stride) {}

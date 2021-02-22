@@ -27,7 +27,6 @@ namespace rgbcx {
 class Vector4;
 class Vector4Int;
 
-
 #pragma pack(push, 1)
 class Color {
    public:
@@ -81,6 +80,7 @@ class Color {
     size_t MaxChannelRGB();
 
     bool IsGrayscale() const { return ((r == g) && (r == b)); }
+    bool IsBlack() const { return (r | g | b) < 4; }
 
     int GetLuma() const { return (13938U * r + 46869U * g + 4729U * b + 32768U) >> 16U; }  // REC709 weightings
 

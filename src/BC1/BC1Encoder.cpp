@@ -132,10 +132,28 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
         EncodeResults orig;
         FindEndpoints(pixels, _flags, metrics, orig.low, orig.high);
         FindSelectors4(pixels, orig);
-        if (orig.low == orig.high) {
+        EncodeResults best = orig;
+
+        const uint32_t total_ls_passes = (_flags & Flags::TwoLeastSquaresPasses) != Flags::None ? 2 : 1;
+        for (unsigned pass = 0; pass < total_ls_passes; pass++) {
+            EncodeResults trial = best;
+            Vector4 low, high;
+
+            bool multicolor = ComputeEndpointsLS(pixels, trial, low, high, metrics);
+            if (multicolor) {
+                trial.low = Color::PreciseRound565(low);
+                trial.high = Color::PreciseRound565(high);
+            }
+
+            if (trial.low == best.low && trial.high == best.high) break;
+            FindSelectors4(pixels, trial);
+            best = trial;
+        }
+
+        if (best.low == best.high) {
             EncodeBlockSingleColor(metrics.avg, dest);
         } else {
-            EncodeBlock4Color(orig, dest);
+            EncodeBlock4Color(best, dest);
         }
     }
 }
@@ -205,6 +223,7 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
 }
 
 void BC1Encoder::EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const {
+    const std::array<uint8_t, 4> lut = {0, 2, 3, 1};
     if (block.low == block.high) {
         EncodeBlockSingleColor(block.low.ScaleFrom565() /* Color(255, 0, 255)*/, dest);
         return;
@@ -218,25 +237,21 @@ void BC1Encoder::EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const {
         mask = 0x55;
     }
 
+    BC1Block::UnpackedSelectors selectors;
+
+    for (unsigned i = 0; i < 16; i++) {
+        unsigned x = i % 4;
+        unsigned y = i / 4;
+        selectors[y][x] = lut[block.selectors[i]];
+    }
+
     assert(low > high);
     dest->SetLowColor(low);
     dest->SetHighColor(high);
-    dest->PackSelectors(block.selectors, mask);
+    dest->PackSelectors(selectors, mask);
 }
 
-void encode_bc1_pick_initial(const Color *pSrc_pixels, uint32_t flags, bool grayscale_flag, int min_r, int min_g, int min_b, int max_r, int max_g, int max_b,
-                             int avg_r, int avg_g, int avg_b, int total_r, int total_g, int total_b, int &lr, int &lg, int &lb, int &hr, int &hg, int &hb);
-
 void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const BC1Encoder::BlockMetrics metrics, Color &low, Color &high) const {
-    int lr, lg, lb, hr, hg, hb;
-    auto colors = pixels.Flatten();
-    encode_bc1_pick_initial(&colors[0], (uint32_t)_flags, metrics.is_greyscale, metrics.min.r, metrics.min.g, metrics.min.b, metrics.max.r, metrics.max.g,
-                            metrics.max.b, metrics.avg.r, metrics.avg.g, metrics.avg.b, metrics.sums[0], metrics.sums[1], metrics.sums[2], lr, lg, lb, hr, hg,
-                            hb);
-    low = Color(lr, lg, lb);
-    high = Color(hr, hg, hb);
-        return;
-
     if (metrics.is_greyscale) {
         // specialized greyscale case
         const unsigned fr = pixels.Get(0).r;
@@ -276,8 +291,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
             for (unsigned c = 0; c < 3; c++) { sums_xy[c] += val[chan0] * val[c]; }
         }
 
-        auto &sum_x = sums[chan0];
-        auto &sum_xx = sums_xy[chan0];
+        const auto &sum_x = sums[chan0];
+        const auto &sum_xx = sums_xy[chan0];
 
         float denominator = (float)(16 * sum_xx) - (float)(sum_x * sum_x);
 
@@ -436,10 +451,6 @@ unsigned BC1Encoder::FindSelectors4(Color4x4 pixels, BC1Encoder::EncodeResults &
     // colors in selector order, 0, 1, 2, 3
     // 0 = low color, 1 = high color, 2/3 = interpolated
     std::array<Color, 4> colors = _interpolator->InterpolateBC1(block.low, block.high, false);
-    //    std::array<Vector4Int, 4> colorVectors;
-    //    for (unsigned i = 0; i < 4; i++) { colorVectors[i] = (Vector4Int)colors[i]; }
-
-    const std::array<uint8_t, 4> selectors = {1, 3, 2, 0};
     std::array<Vector4Int, 4> colorVectors = {(Vector4Int)colors[0], (Vector4Int)colors[2], (Vector4Int)colors[3], (Vector4Int)colors[1]};
 
     if (!use_err) {
@@ -455,14 +466,57 @@ unsigned BC1Encoder::FindSelectors4(Color4x4 pixels, BC1Encoder::EncodeResults &
             for (unsigned y = 0; y < 4; y++) {
                 int dot = a.Dot((Vector4Int)pixels.Get(x, y));
                 unsigned level = (dot <= t0) + (dot < t1) + (dot < t2);
-                unsigned selector = selectors[level];
+                unsigned selector = 3 - level;
                 assert(level < 4);
                 assert(selector < 4);
-                block.selectors[y][x] = selector;
+                block.selectors[x + (4 * y)] = selector;
             }
         }
         return 0;
     }
     return 0;
+}
+
+bool BC1Encoder::ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, Vector4 &low, Vector4 &high, BlockMetrics metrics, bool is_3color,
+                                    bool use_black) const {
+    Vector4 q00 = {0, 0, 0};
+    unsigned weight_accum = 0;
+    for (unsigned i = 0; i < 16; i++) {
+        const Color color = pixels.Get(i);
+        const int sel = (int)block.selectors[i];
+
+        if (use_black && color.IsBlack()) continue;
+        if (is_3color && sel == 3) continue; // NOTE: selectors for 3-color are in linear order here, but not in original
+        assert(sel <= 3);
+
+        const Vector4Int color_vector = Vector4Int::FromColorRGB(color);
+        q00 += color_vector * sel;
+        weight_accum += g_weight_vals4[sel];
+    }
+
+    int denominator = is_3color ? 2 : 3;
+    Vector4 q10 = (metrics.sums * denominator) - q00;
+
+    float z00 = (float)((weight_accum >> 16) & 0xFF);
+    float z10 = (float)((weight_accum >> 8) & 0xFF);
+    float z11 = (float)(weight_accum & 0xFF);
+    float z01 = z10;
+
+    // invert matrix
+    float det = z00 * z11 - z01 * z10;
+    if (fabs(det) < 1e-8f) return false;
+
+    det = ((float)denominator / 255.0f) / det;
+
+    float iz00, iz01, iz10, iz11;
+    iz00 = z11 * det;
+    iz01 = -z01 * det;
+    iz10 = -z10 * det;
+    iz11 = z00 * det;
+
+    low = (q00 * iz00) + (q10 * iz01);
+    high = (q00 * iz10) + (q10 * iz11);
+
+    return true;
 }
 }  // namespace rgbcx

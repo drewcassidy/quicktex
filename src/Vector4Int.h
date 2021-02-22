@@ -23,6 +23,7 @@
 #include <functional>
 
 #include "Color.h"
+#include "Vector4.h"
 
 namespace rgbcx {
 
@@ -61,6 +62,10 @@ class Vector4Int {
     int &operator[](size_t index) {
         assert(index < 4);
         return _c[index];
+    }
+
+    operator Vector4() const {
+        return Vector4(_c[0], _c[1], _c[2], _c[3]);
     }
 
     friend Vector4Int operator+(const Vector4Int &lhs, const Vector4Int &rhs) { return DoOp(lhs, rhs, std::plus()); }
