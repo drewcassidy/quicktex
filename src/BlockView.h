@@ -20,6 +20,7 @@
 #pragma once
 
 #include <array>
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -140,11 +141,8 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
         for (unsigned i = 0; i < M * N; i++) {
             auto val = Base::Get(i);
             for (unsigned c = 0; c < 3; c++) {
-                if (val[c] < metrics.min[c]) {
-                    metrics.min[c] = val[c];
-                } else {
-                    metrics.max[c] = val[c];
-                }
+                metrics.min[c] = std::min(metrics.min[c], val[c]);
+                metrics.max[c] = std::max(metrics.max[c], val[c]);
                 metrics.sums[c] += val[c];
             }
             metrics.is_greyscale &= ((val.r == val.g) && (val.r == val.b));

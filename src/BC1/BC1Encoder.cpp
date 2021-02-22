@@ -102,7 +102,7 @@ template <size_t S> void PrepSingleColorTable(MatchList &match_table, MatchList 
 BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
     PrepSingleColorTable<5>(*_single_match5, *_single_match5_half, *_interpolator);
     PrepSingleColorTable<6>(*_single_match6, *_single_match6_half, *_interpolator);
-    _flags = Flags::None;
+    _flags = Flags::BoundingBoxInt;
 }
 
 void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
@@ -230,11 +230,12 @@ void encode_bc1_pick_initial(const Color *pSrc_pixels, uint32_t flags, bool gray
 void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const BC1Encoder::BlockMetrics metrics, Color &low, Color &high) const {
     int lr, lg, lb, hr, hg, hb;
     auto colors = pixels.Flatten();
-    encode_bc1_pick_initial(&colors[0], 0, metrics.is_greyscale, metrics.min.r, metrics.min.g, metrics.min.b, metrics.max.r, metrics.max.g, metrics.max.b,
-                            metrics.avg.r, metrics.avg.g, metrics.avg.b, metrics.sums[0], metrics.sums[1], metrics.sums[2], lr, lg, lb, hr, hg, hb);
+    encode_bc1_pick_initial(&colors[0], (uint32_t)_flags, metrics.is_greyscale, metrics.min.r, metrics.min.g, metrics.min.b, metrics.max.r, metrics.max.g,
+                            metrics.max.b, metrics.avg.r, metrics.avg.g, metrics.avg.b, metrics.sums[0], metrics.sums[1], metrics.sums[2], lr, lg, lb, hr, hg,
+                            hb);
     low = Color(lr, lg, lb);
     high = Color(hr, hg, hb);
-    //    return;
+        return;
 
     if (metrics.is_greyscale) {
         // specialized greyscale case
