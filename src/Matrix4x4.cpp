@@ -21,7 +21,7 @@
 
 namespace rgbcx {
 
-Matrix4x4 operator*(Matrix4x4& lhs, Matrix4x4& rhs) {
+Matrix4x4 operator*(const Matrix4x4& lhs, const Matrix4x4& rhs) {
     Matrix4x4 trans_rhs = rhs.Transpose();  // 🏳️‍⚧️
     Matrix4x4 result;
     for (unsigned r = 0; r < 4; r++) {
@@ -31,7 +31,7 @@ Matrix4x4 operator*(Matrix4x4& lhs, Matrix4x4& rhs) {
     return result;
 }
 
-Vector4 operator*(Matrix4x4& lhs, Vector4& rhs) {
+Vector4 operator*(const Matrix4x4& lhs, const Vector4& rhs) {
     Vector4 result;
 
     for (unsigned r = 0; r < 4; r++) { result[r] = rhs.Dot(lhs[r]); }

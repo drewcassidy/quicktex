@@ -34,7 +34,7 @@ class Matrix4x4 {
         return result;
     }
 
-    static Matrix4x4 Transpose(Matrix4x4 &val) {
+    static Matrix4x4 Transpose(const Matrix4x4 &val) {
         Matrix4x4 result;
         for (unsigned r = 0; r < 3; r++) {
             for (unsigned c = 0; c < 3; c++) { result[r][c] = val[c][r]; }
@@ -71,7 +71,7 @@ class Matrix4x4 {
     friend Matrix4x4 &operator*=(Matrix4x4 &lhs, const float &rhs) { return lhs = lhs * rhs; }
     friend Matrix4x4 &operator/=(Matrix4x4 &lhs, const float &rhs) { return lhs = lhs / rhs; }
 
-    Matrix4x4 Transpose() { return Transpose(*this); }
+    Matrix4x4 Transpose() const { return Transpose(*this); }
 
     void Mirror();
 
