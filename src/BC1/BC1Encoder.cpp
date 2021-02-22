@@ -23,6 +23,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <climits>
 #include <memory>
 
 #include "../BlockView.h"
