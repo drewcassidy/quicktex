@@ -19,19 +19,23 @@
 
 #include "BC1Encoder.h"
 
-#include <algorithm>
 #include <array>
-#include <cmath>
-#include <cstdint>
+#include <cassert>
 #include <climits>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <type_traits>
 
 #include "../BlockView.h"
 #include "../Color.h"
+#include "../Interpolator.h"
 #include "../Matrix4x4.h"
 #include "../Vector4.h"
 #include "../Vector4Int.h"
 #include "../bitwiseEnums.h"
+#include "../util.h"
 
 namespace rgbcx {
 using MatchList = std::array<BC1MatchEntry, 256>;
@@ -230,7 +234,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
                             metrics.avg.r, metrics.avg.g, metrics.avg.b, metrics.sums[0], metrics.sums[1], metrics.sums[2], lr, lg, lb, hr, hg, hb);
     low = Color(lr, lg, lb);
     high = Color(hr, hg, hb);
-//    return;
+    //    return;
 
     if (metrics.is_greyscale) {
         // specialized greyscale case
