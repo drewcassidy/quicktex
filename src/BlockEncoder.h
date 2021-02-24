@@ -20,6 +20,7 @@
 #pragma once
 
 #include <cstdint>
+#include <climits>
 
 #include "BlockView.h"
 
