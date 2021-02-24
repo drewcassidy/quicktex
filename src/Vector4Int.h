@@ -64,9 +64,7 @@ class Vector4Int {
         return _c[index];
     }
 
-    operator Vector4() const {
-        return Vector4(_c[0], _c[1], _c[2], _c[3]);
-    }
+    operator Vector4() const { return Vector4(_c[0], _c[1], _c[2], _c[3]); }
 
     friend Vector4Int operator+(const Vector4Int &lhs, const Vector4Int &rhs) { return DoOp(lhs, rhs, std::plus()); }
     friend Vector4Int operator-(const Vector4Int &lhs, const Vector4Int &rhs) { return DoOp(lhs, rhs, std::minus()); }
@@ -99,6 +97,7 @@ class Vector4Int {
         }
         return max;
     }
+    unsigned int SqrMag() { return (unsigned)Dot(*this, *this); }
 
    private:
     template <typename Op> friend Vector4Int DoOp(const Vector4Int &lhs, const Vector4Int &rhs, Op f) {

@@ -94,7 +94,7 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
         Exhaustive = 8192,
 
         // Try 2 different ways of choosing the initial endpoints.
-        TryAllInitialEndponts = 16384,
+        TryAllInitialEndpoints = 16384,
 
         // Same as BoundingBox, but implemented using integer math (faster, slightly less quality)
         BoundingBoxInt = 32768,
@@ -123,16 +123,16 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
         std::array<uint8_t, 16> selectors;
         bool is_3_color;
         bool is_1_color;
+        unsigned error = UINT_MAX;
     };
 
     void EncodeBlockSingleColor(Color color, BC1Block *dest) const;
     void EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const;
 
     void FindEndpoints(Color4x4 pixels, Flags flags, BlockMetrics const metrics, Color &low, Color &high) const;
-    unsigned FindSelectors4(Color4x4 pixels, EncodeResults &block, unsigned cur_err = 0, bool use_err = false) const;
+    unsigned FindSelectors4(Color4x4 pixels, BC1Encoder::EncodeResults &block, bool use_err) const;
 
-    bool ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, Vector4 &low, Vector4 &high, BlockMetrics metrics, bool is_3color = false,
-                             bool use_black = false) const;
+    bool ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics, bool is_3color, bool use_black) const;
 
     // match tables used for single-color blocks
     // Each entry includes a high and low pair that best reproduces the 8-bit index as well as possible,

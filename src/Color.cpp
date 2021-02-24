@@ -108,6 +108,13 @@ Color Color::Max(const Color &a, const Color &b) { return Color(std::max(a[0], b
 
 Color::operator Vector4() const { return Vector4(r, g, b, a); }
 Color::operator Vector4Int() const { return Vector4Int(r, g, b, a);}
+Vector4Int operator-(const Color &lhs, const Color &rhs) {
+    Vector4Int result;
+    for (unsigned i = 0; i < 4; i++) {
+        result[i] = (int)lhs[i] - rhs[i];
+    }
+    return result;
+}
 
 uint16_t Color::Pack565() const { return Pack565(r, g, b); }
 uint16_t Color::Pack565Unscaled() const { return Pack565Unscaled(r, g, b); }
