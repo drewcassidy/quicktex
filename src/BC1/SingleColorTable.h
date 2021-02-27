@@ -24,7 +24,7 @@
 #include <memory>
 
 #include "../Interpolator.h"
-#include "../Util.h"
+#include "../util.h"
 
 namespace rgbcx {
 
