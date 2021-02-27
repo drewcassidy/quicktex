@@ -20,8 +20,8 @@
 #pragma once
 
 #include <array>
-#include <functional>
 #include <cmath>
+#include <functional>
 
 #include "Color.h"
 
@@ -29,7 +29,9 @@ namespace rgbcx {
 
 class Vector4 {
    public:
-    Vector4(float x = 0, float y = 0, float z = 0, float w = 0) {
+    Vector4() : Vector4(0) {}
+
+    Vector4(float x, float y, float z = 0, float w = 0) {
         _c[0] = x;
         _c[1] = y;
         _c[2] = z;
@@ -95,6 +97,9 @@ class Vector4 {
         }
         return max;
     }
+
+    unsigned int SqrMag() { return (unsigned)Dot(*this, *this); }
+
 
    private:
     template <typename Op> friend Vector4 DoOp(const Vector4 &lhs, const Vector4 &rhs, Op f) {

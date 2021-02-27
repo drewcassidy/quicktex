@@ -39,7 +39,7 @@ template <typename S> constexpr auto iabs(S i) {
 
 /**
  * Unpacks an unsigned integer into an array of smaller integers.
- * @tparam I Input data type. Must be an unsigned integral type large enough to hold C * S bits.
+ * @tparam I Input data type. Must be an unsigned integral type large enough to hold C * N bits.
  * @tparam O Output data type. must be an unsigned integral type large enough to hold C bits..
  * @tparam S Number of bits in each value.
  * @tparam C Number of values to unpack.
@@ -53,7 +53,7 @@ template <typename I, typename O, size_t S, size_t C> constexpr auto Unpack(I pa
     static_assert(std::numeric_limits<I>::digits >= (C * S), "Packed input type must be big enough to represent the number of bits multiplied by count");
     static_assert(std::numeric_limits<O>::digits >= S, "Unpacked output type must be big enough to represent the number of bits");
 
-    constexpr O mask = (1U << S) - 1U;  // maximum value representable by S bits
+    constexpr O mask = (1U << S) - 1U;  // maximum value representable by N bits
     std::array<O, C> vals;              // output values array of size C
 
     for (unsigned i = 0; i < C; i++) {
@@ -67,7 +67,7 @@ template <typename I, typename O, size_t S, size_t C> constexpr auto Unpack(I pa
 /**
  * Packs an array of unsigned integers into a single integer.
  * @tparam I Input data type. Must be an unsigned integral type large enough to hold C bits.
- * @tparam O Output data type. must be an unsigned integral type large enough to hold C * S bits.
+ * @tparam O Output data type. must be an unsigned integral type large enough to hold C * N bits.
  * @tparam S Number of bits in each value.
  * @tparam C Number of values to unpack.
  * @param vals Unpacked std::array of type I and size C.

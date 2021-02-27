@@ -36,7 +36,7 @@ template <class B, size_t M, size_t N> class BlockEncoder {
 
     virtual void EncodeBlock(DecodedBlock pixels, EncodedBlock *dest) const = 0;
 
-    void EncodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) {
+    virtual void EncodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) {
         assert(image_width % N == 0);
         assert(image_width % M == 0);
 

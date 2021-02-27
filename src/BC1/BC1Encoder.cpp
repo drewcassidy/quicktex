@@ -36,73 +36,39 @@
 #include "../Vector4Int.h"
 #include "../bitwiseEnums.h"
 #include "../util.h"
+#include "OrderTable.h"
+#include "SingleColorTable.h"
 
 namespace rgbcx {
-using MatchList = std::array<BC1MatchEntry, 256>;
-using MatchListPtr = std::shared_ptr<MatchList>;
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
+using Hist3 = OrderTable<3>::Histogram;
+using Hist4 = OrderTable<4>::Histogram;
 
 // region Free Functions/Templates
-inline void PrepSingleColorTableEntry(unsigned &error, MatchList &match_table, uint8_t v, unsigned i, uint8_t low, uint8_t high, uint8_t low8, uint8_t high8,
-                                      bool ideal) {
-    unsigned new_error = iabs(v - (int)i);
-
-    // We only need to factor in 3% error in BC1 ideal mode.
-    if (ideal) new_error += (iabs(high8 - (int)low8) * 3) / 100;
-
-    // Favor equal endpoints, for lower error on actual GPU's which approximate the interpolation.
-    if ((new_error < error) || (new_error == error && low == high)) {
-        assert(new_error <= UINT8_MAX);
-
-        match_table[i].low = (uint8_t)low;
-        match_table[i].high = (uint8_t)high;
-        match_table[i].error = (uint8_t)new_error;
-
-        error = new_error;
-    }
-}
-
-template <size_t S> void PrepSingleColorTable(MatchList &match_table, MatchList &match_table_half, Interpolator &interpolator) {
-    unsigned size = 1 << S;
-
-    assert((S == 5 && size == 32) || (S == 6 && size == 64));
-
-    bool ideal = interpolator.IsIdeal();
-    bool use_8bit = interpolator.CanInterpolate8Bit();
-
-    for (unsigned i = 0; i < 256; i++) {
-        unsigned error = 256;
-        unsigned error_half = 256;
-
-        // TODO: Can probably avoid testing for values that definitely wont yield good results,
-        // e.g. low8 and high8 both much smaller or larger than index
-        for (uint8_t low = 0; low < size; low++) {
-            uint8_t low8 = (S == 5) ? scale5To8(low) : scale6To8(low);
-
-            for (uint8_t high = 0; high < size; high++) {
-                uint8_t high8 = (S == 5) ? scale5To8(high) : scale6To8(high);
-                uint8_t value, value_half;
-
-                if (use_8bit) {
-                    value = interpolator.Interpolate8(high8, low8);
-                    value_half = interpolator.InterpolateHalf8(high8, low8);
-                } else {
-                    value = (S == 5) ? interpolator.Interpolate5(high, low) : interpolator.Interpolate6(high, low);
-                    value_half = (S == 5) ? interpolator.InterpolateHalf5(high, low) : interpolator.InterpolateHalf6(high, low);
-                }
-
-                PrepSingleColorTableEntry(error, match_table, value, i, low, high, low8, high8, ideal);
-                PrepSingleColorTableEntry(error_half, match_table_half, value_half, i, low, high, low8, high8, ideal);
-            }
-        }
-    }
-}
 // endregion
 
+// Static Fields
+OrderTable<3> *BC1Encoder::order_table3 = nullptr;
+OrderTable<4> *BC1Encoder::order_table4 = nullptr;
+std::mutex BC1Encoder::order_table_mutex = std::mutex();
+bool BC1Encoder::order_tables_generated = false;
+
 BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
-    PrepSingleColorTable<5>(*_single_match5, *_single_match5_half, *_interpolator);
-    PrepSingleColorTable<6>(*_single_match6, *_single_match6_half, *_interpolator);
-    _flags = Flags::UseFullMSEEval | Flags::TwoLeastSquaresPasses;
+    _flags = Flags::UseFasterMSEEval | Flags::TwoLeastSquaresPasses;
+
+    // generate lookup tables
+    order_table_mutex.lock();
+    if (!order_tables_generated) {
+        assert(order_table3 == nullptr);
+        assert(order_table4 == nullptr);
+
+        order_table3 = new OrderTable<3>();
+        order_table4 = new OrderTable<4>();
+        order_tables_generated = true;
+    }
+    assert(order_table3 != nullptr);
+    assert(order_table4 != nullptr);
+    order_table_mutex.unlock();
 }
 
 void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
@@ -125,10 +91,11 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
     needs_block_error |= metrics.has_black && ((_flags & Flags::Use3ColorBlocksForBlackPixels) != Flags::None);
 
     unsigned total_ls_passes = (_flags & Flags::TwoLeastSquaresPasses) != Flags::None ? 2 : 1;
-    unsigned total_rounds = needs_block_error && ((_flags & Flags::TryAllInitialEndpoints) != Flags::None) ? 2 : 1;
+    unsigned total_ep_rounds = needs_block_error && ((_flags & Flags::TryAllInitialEndpoints) != Flags::None) ? 2 : 1;
 
+    // Initial block generation
     EncodeResults result;
-    for (unsigned round = 0; round < total_rounds; round++) {
+    for (unsigned round = 0; round < total_ep_rounds; round++) {
         Flags modified_flags = _flags;
         if (round == 1) {
             modified_flags &= ~(Flags::Use2DLS | Flags::BoundingBoxInt);
@@ -158,6 +125,54 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
         if (!needs_block_error || round_result.error < result.error) { result = round_result; }
     }
 
+    // First refinement pass using ordered cluster fit
+    if (result.error > 0 && (_flags & Flags::UseLikelyTotalOrderings) != Flags::None) {
+        const unsigned total_iters = (_flags & Flags::Iterative) != Flags::None ? 2 : 1;
+        for (unsigned iter = 0; iter < total_iters; iter++) {
+            EncodeResults orig = result;
+            Hist4 h(orig.selectors);
+
+            const Hash order_index = order_table4->GetHash(h);
+
+            Color low = orig.low.ScaleFrom565();
+            Color high = orig.high.ScaleFrom565();
+
+            Vector4Int axis = high - low;
+            std::array<Vector4, 16> color_vectors;
+
+            std::array<uint32_t, 16> dots;
+            for (unsigned i = 0; i < 16; i++) {
+                color_vectors[i] = Vector4::FromColorRGB(pixels.Get(i));
+                int dot = 0x1000000 + color_vectors[i].Dot(axis);
+                assert(dot >= 0);
+                dots[i] = (uint32_t)(dot << 4) | i;
+            }
+
+            std::sort(dots.begin(), dots.end());
+
+            // we now have a list of indices and their dot products along the primary axis
+            std::array<Vector4, 17> sums;
+            for (unsigned i = 0; i < 16; i++) {
+                const unsigned p = dots[i] & 0xF;
+                sums[i + 1] = sums[i] + color_vectors[p];
+            }
+
+            const unsigned q_total = ((_flags & Flags::Exhaustive) != Flags::None) ? order_table4->UniqueOrderings
+                                                                                   : (unsigned)clampi(_orderings4, MIN_TOTAL_ORDERINGS, MAX_TOTAL_ORDERINGS4);
+            for (unsigned q = 0; q < q_total; q++) {
+                Hash s = ((_flags & Flags::Exhaustive) != Flags::None) ? q : g_best_total_orderings4[order_index][q];
+
+                EncodeResults trial = orig;
+                Vector4 low, high;
+                if (order_table4->IsSingleColor(order_index)) {
+                    trial.is_1_color = true;
+                    trial.is_3_color = false;
+                } else {
+                }
+            }
+        }
+    }
+
     if (result.low == result.high) {
         EncodeBlockSingleColor(metrics.avg, dest);
     } else {
@@ -172,19 +187,15 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
     bool using_3color = false;
 
     // why is there no subscript operator for shared_ptr<array>
-    MatchList &match5 = *_single_match5;
-    MatchList &match6 = *_single_match6;
-    MatchList &match5_half = *_single_match5_half;
-    MatchList &match6_half = *_single_match6_half;
 
-    BC1MatchEntry match_r = match5[color.r];
-    BC1MatchEntry match_g = match6[color.g];
-    BC1MatchEntry match_b = match5[color.b];
+    auto match_r = _single_match5[color.r];
+    auto match_g = _single_match6[color.g];
+    auto match_b = _single_match5[color.b];
 
     if ((_flags & (Flags::Use3ColorBlocks | Flags::Use3ColorBlocksForBlackPixels)) != Flags::None) {
-        BC1MatchEntry match_r_half = match5_half[color.r];
-        BC1MatchEntry match_g_half = match6_half[color.g];
-        BC1MatchEntry match_b_half = match5_half[color.b];
+        auto match_r_half = _single_match5_half[color.r];
+        auto match_g_half = _single_match6_half[color.g];
+        auto match_b_half = _single_match5_half[color.b];
 
         const unsigned err4 = match_r.error + match_g.error + match_b.error;
         const unsigned err3 = match_r_half.error + match_g_half.error + match_b_half.error;
@@ -590,4 +601,17 @@ bool BC1Encoder::ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, Block
     block.high = Color::PreciseRound565(high);
     return true;
 }
+/*
+bool BC1Encoder::ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics, Hash hash, Vector4 &matrix, std::array<Vector4, 17> &sums,
+                                    bool is_3color, bool use_black) const {
+    unsigned f1, f2, f3;
+    int denominator = is_3color ? 2 : 3;
+
+    if (is_3color) {
+        order_table3->GetUniqueOrderingSums(hash, f1, f2, f3);
+    } else {
+        order_table4->GetUniqueOrderingSums(hash, f1, f2, f3);
+    }
+}*/
+
 }  // namespace rgbcx
