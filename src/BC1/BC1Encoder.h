@@ -36,7 +36,7 @@
 
 namespace rgbcx {
 
-class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
+class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
@@ -99,11 +99,6 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
         EndpointSearchRoundsMask = 1023U << EndpointSearchRoundsShift,
     };
 
-    BC1Encoder(InterpolatorPtr interpolator);
-
-    void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
-
-   private:
     // Unpacked BC1 block with metadata
     struct EncodeResults {
         Color low;
@@ -114,6 +109,11 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
         unsigned error = UINT_MAX;
     };
 
+    BC1Encoder(InterpolatorPtr interpolator);
+
+    void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
+
+   private:
     using Hash = uint16_t;
     using BlockMetrics = Color4x4::BlockMetrics;
 
@@ -123,10 +123,10 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
     // Each entry includes a high and low pair that best reproduces the 8-bit index as well as possible,
     // with an included error value
     // these depend on the interpolator
-    const SingleColorTable<5, 4> _single_match5 = SingleColorTable<5, 4>(_interpolator);
-    const SingleColorTable<6, 4> _single_match6 = SingleColorTable<6, 4>(_interpolator);
-    const SingleColorTable<5, 3> _single_match5_half = SingleColorTable<5, 3>(_interpolator);
-    const SingleColorTable<6, 3> _single_match6_half = SingleColorTable<6, 3>(_interpolator);
+    const MatchListPtr _single_match5 = SingleColorTable<5, 4>(_interpolator);
+    const MatchListPtr _single_match6 = SingleColorTable<6, 4>(_interpolator);
+    const MatchListPtr _single_match5_half = SingleColorTable<5, 3>(_interpolator);
+    const MatchListPtr _single_match6_half = SingleColorTable<6, 3>(_interpolator);
 
     Flags _flags;
     unsigned _search_rounds;
@@ -145,7 +145,7 @@ class BC1Encoder : public BlockEncoder<BC1Block, 4, 4> {
     unsigned FindSelectors4(Color4x4 pixels, BC1Encoder::EncodeResults &block, bool use_err) const;
 
     bool ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics, bool is_3color, bool use_black) const;
-/*    bool ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics, Hash hash, Vector4 &matrix, std::array<Vector4, 17> &sums,
-                            bool is_3color, bool use_black) const;*/
+    /*    bool ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics, Hash hash, Vector4 &matrix, std::array<Vector4, 17> &sums,
+                                bool is_3color, bool use_black) const;*/
 };
 }  // namespace rgbcx

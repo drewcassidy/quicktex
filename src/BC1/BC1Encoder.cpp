@@ -187,15 +187,14 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
     bool using_3color = false;
 
     // why is there no subscript operator for shared_ptr<array>
-
-    auto match_r = _single_match5[color.r];
-    auto match_g = _single_match6[color.g];
-    auto match_b = _single_match5[color.b];
+    BC1MatchEntry match_r = _single_match5->at(color.r);
+    BC1MatchEntry match_g = _single_match6->at(color.g);
+    BC1MatchEntry match_b = _single_match5->at(color.b);
 
     if ((_flags & (Flags::Use3ColorBlocks | Flags::Use3ColorBlocksForBlackPixels)) != Flags::None) {
-        auto match_r_half = _single_match5_half[color.r];
-        auto match_g_half = _single_match6_half[color.g];
-        auto match_b_half = _single_match5_half[color.b];
+        BC1MatchEntry match_r_half = _single_match5_half->at(color.r);
+        BC1MatchEntry match_g_half = _single_match6_half->at(color.g);
+        BC1MatchEntry match_b_half = _single_match5_half->at(color.b);
 
         const unsigned err4 = match_r.error + match_g.error + match_b.error;
         const unsigned err3 = match_r_half.error + match_g_half.error + match_b_half.error;
