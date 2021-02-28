@@ -280,32 +280,20 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
     bool using_3color = false;
 
     // why is there no subscript operator for shared_ptr<array>
-    // TODO use endpoint finder below
-    BC1MatchEntry match_r = _single_match5->at(color.r);
-    BC1MatchEntry match_g = _single_match6->at(color.g);
-    BC1MatchEntry match_b = _single_match5->at(color.b);
+    EncodeResults result;
+    FindEndpointsSingleColor(result, color, false);
 
     if ((_flags & (Flags::Use3ColorBlocks | Flags::Use3ColorBlocksForBlackPixels)) != Flags::None) {
-        BC1MatchEntry match_r_half = _single_match5_half->at(color.r);
-        BC1MatchEntry match_g_half = _single_match6_half->at(color.g);
-        BC1MatchEntry match_b_half = _single_match5_half->at(color.b);
+        EncodeResults result_3color;
+        FindEndpointsSingleColor(result_3color, color, true);
 
-        const unsigned err4 = match_r.error + match_g.error + match_b.error;
-        const unsigned err3 = match_r_half.error + match_g_half.error + match_b_half.error;
-
-        if (err3 < err4) {
-            min16 = Color::Pack565Unscaled(match_r_half.low, match_g_half.low, match_b_half.low);
-            max16 = Color::Pack565Unscaled(match_r_half.high, match_g_half.high, match_b_half.high);
-
-            if (max16 > min16) std::swap(min16, max16);
-            using_3color = true;
-        }
+        if (result_3color.error < result.error) { result = result_3color; }
     }
 
-    if (!using_3color) {
-        min16 = Color::Pack565Unscaled(match_r.low, match_g.low, match_b.low);
-        max16 = Color::Pack565Unscaled(match_r.high, match_g.high, match_b.high);
+    min16 = result.low.Pack565Unscaled();
+    max16 = result.high.Pack565Unscaled();
 
+    if (result.color_mode == ColorMode::Solid) {
         if (min16 == max16) {
             // make sure this isnt accidentally a 3-color block
             // so make max16 > min16 (l > h)
@@ -323,6 +311,8 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
             mask = 0xFF;  // invert mask to 3333
         }
         assert(max16 > min16);
+    } else if (max16 > min16) {
+        std::swap(min16, max16);
     }
 
     dest->SetLowColor(max16);
@@ -583,18 +573,9 @@ void BC1Encoder::FindEndpointsSingleColor(EncodeResults &block, Color4x4 &pixels
     std::array<Color, 4> colors = _interpolator->InterpolateBC1(block.low, block.high, is_3color);
     Vector4Int result_vector = (Vector4Int)colors[2];
 
-    auto &match5 = is_3color ? _single_match5_half : _single_match5;
-    auto &match6 = is_3color ? _single_match6_half : _single_match6;
+    FindEndpointsSingleColor(block, color, is_3color);
 
-    BC1MatchEntry match_r = match5->at(color.r);
-    BC1MatchEntry match_g = match6->at(color.g);
-    BC1MatchEntry match_b = match5->at(color.b);
-
-    block.color_mode = is_3color ? ColorMode::SolidThreeColor : ColorMode::Solid;
     block.error = 0;
-    block.low = Color(match_r.low, match_g.low, match_b.low);
-    block.high = Color(match_r.high, match_g.high, match_b.high);
-
     for (unsigned i = 0; i < 16; i++) {
         Vector4Int pixel_vector = (Vector4Int)pixels.Get(i);
         auto diff = pixel_vector - result_vector;
