@@ -194,10 +194,10 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
             Vector4 low, high;
 
             bool multicolor = ComputeEndpoints<ColorMode::FourColor>(pixels, trial_result, metrics);
-            if (multicolor) {
-                FindSelectors4(pixels, trial_result, needs_block_error);
-            } else {
+            if (!multicolor) {
                 FindEndpointsSingleColor(trial_result, pixels, metrics.avg, false);
+            } else {
+                FindSelectors4(pixels, trial_result, needs_block_error);
             }
 
             if (trial_result.low == round_result.low && trial_result.high == round_result.high) break;
@@ -211,7 +211,6 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
         if (!needs_block_error || round_result.error < result.error) { result = round_result; }
     }
 
-    bool usedCF = false;
     // First refinement pass using ordered cluster fit
     if (result.error > 0 && (_flags & Flags::UseLikelyTotalOrderings) != Flags::None) {
         const unsigned total_iters = (_flags & Flags::Iterative) != Flags::None ? 2 : 1;
@@ -253,31 +252,22 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
                     FindEndpointsSingleColor(trial_result, pixels, metrics.avg, false);
                 } else {
                     ComputeEndpoints<ColorMode::FourColor>(sums, trial_result, trial_matrix, trial_hash);
+                    FindSelectors4(pixels, trial_result, true);
                 }
-                FindSelectors4(pixels, trial_result, true);
 
-                if (trial_result.error < result.error) {
-                    result = trial_result;
-                    usedCF = true;
-                }
+                if (trial_result.error < result.error) { result = trial_result; }
                 if (trial_result.error == 0) break;
             }
         }
     }
     EncodeBlock4Color(result, dest);
-
-    //    if (result.low == result.high) {
-    //        EncodeBlockSingleColor(metrics.avg, dest);
-    //    } else {
-    //        EncodeBlock4Color(result, dest);
-    //    }
 }
 
 void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
     uint8_t mask = 0xAA;  // 2222
     uint16_t min16, max16;
 
-    if ((color.r | color.g | color.g) == 0) {
+    if ((color.r | color.g | color.b) == 0) {
         // quick shortcut for all-black blocks
         min16 = 0;
         max16 = 1;
@@ -316,7 +306,7 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
             }
             assert(max16 > min16);
         } else if (max16 > min16) {
-            std::swap(min16, max16); // assure 3-color blocks
+            std::swap(min16, max16);  // assure 3-color blocks
         }
     }
 
