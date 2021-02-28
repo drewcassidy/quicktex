@@ -100,15 +100,14 @@ class Vector4 {
 
     unsigned int SqrMag() { return (unsigned)Dot(*this, *this); }
 
-
    private:
-    template <typename Op> friend Vector4 DoOp(const Vector4 &lhs, const Vector4 &rhs, Op f) {
+    template <typename Op> static inline Vector4 DoOp(const Vector4 &lhs, const Vector4 &rhs, Op f) {
         Vector4 r;
         for (unsigned i = 0; i < 4; i++) { r[i] = f(lhs[i], rhs[i]); }
         return r;
     }
 
-    template <typename Op> friend Vector4 DoOp(const Vector4 &lhs, const float &rhs, Op f) {
+    template <typename Op> static inline Vector4 DoOp(const Vector4 &lhs, const float &rhs, Op f) {
         Vector4 r;
         for (unsigned i = 0; i < 4; i++) { r[i] = f(lhs[i], rhs); }
         return r;

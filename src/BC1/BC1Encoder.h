@@ -99,14 +99,26 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
         EndpointSearchRoundsMask = 1023U << EndpointSearchRoundsShift,
     };
 
-    enum class BlockColorMode {FourColor, ThreeColor, ThreeColorBlack, Solid, SolidThreeColor, Incomplete };
+    enum class ColorMode {
+        Incomplete = 0x00,
+        ThreeColor = 0x03,
+        FourColor = 0x04,
+        UseBlack = 0x10,
+        Solid = 0x20,
+        ThreeColorBlack = ThreeColor | UseBlack,
+        ThreeColorSolid = ThreeColor | Solid,
+        FourColorSolid = FourColor | Solid,
+    };
+
+    enum class ErrorMode { None, Faster, Check2, Full };
+    enum class EndpointMode { LeastSquares, BoundingBox, BoundingBoxInt, PCA };
 
     // Unpacked BC1 block with metadata
     struct EncodeResults {
         Color low;
         Color high;
         std::array<uint8_t, 16> selectors;
-        BlockColorMode color_mode;
+        ColorMode color_mode;
         unsigned error = UINT_MAX;
     };
 
@@ -130,6 +142,8 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
     const MatchListPtr _single_match6_half = SingleColorTable<6, 3>(_interpolator);
 
     Flags _flags;
+    ErrorMode _error_mode;
+    EndpointMode _endpoint_mode;
     unsigned _search_rounds;
     unsigned _orderings4;
     unsigned _orderings3;
@@ -142,9 +156,16 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
     void EncodeBlockSingleColor(Color color, BC1Block *dest) const;
     void EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const;
 
-    void FindEndpoints(EncodeResults &block, Color4x4 pixels, Flags flags, BlockMetrics const &metrics) const;
+    void FindEndpoints(Color4x4 pixels, EncodeResults &block, const BlockMetrics &metrics, EndpointMode endpoint_mode) const;
     void FindEndpointsSingleColor(EncodeResults &block, Color color, bool is_3color = false) const;
     void FindEndpointsSingleColor(EncodeResults &block, Color4x4 &pixels, Color color, bool is_3color) const;
-    unsigned FindSelectors4(Color4x4 pixels, BC1Encoder::EncodeResults &block, bool use_err) const;
+
+    template <ColorMode M> void FindSelectors(Color4x4 &pixels, EncodeResults &block, ErrorMode error_mode) const;
+
+    template <ColorMode M> bool RefineEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics) const;
+
+    template <ColorMode M> void RefineEndpointsLS(std::array<Vector4, 17> &sums, EncodeResults &block, Vector4 &matrix, Hash hash) const;
+
+    template <ColorMode M> void RefineBlockLS(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned passes) const;
 };
 }  // namespace rgbcx

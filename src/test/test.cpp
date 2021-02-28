@@ -744,7 +744,7 @@ int main(int argc, char *argv[]) {
 
     clock_t end_t = clock();
 
-    printf("\nTotal time: %f secs\n", (double)(end_t - start_t) / CLOCKS_PER_SEC / test_count);
+    printf("\nTotal time: %f secs\n", (double)(end_t - start_t) / CLOCKS_PER_SEC / 1);
 
     if (dxgi_format == DXGI_FORMAT_BC7_UNORM) {
         printf("BC7 mode histogram:\n");
