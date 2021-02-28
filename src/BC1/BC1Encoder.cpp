@@ -277,42 +277,47 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
     uint8_t mask = 0xAA;  // 2222
     uint16_t min16, max16;
 
-    bool using_3color = false;
+    if ((color.r | color.g | color.g) == 0) {
+        // quick shortcut for all-black blocks
+        min16 = 0;
+        max16 = 1;
+        mask = 0x55;  // 1111 (Min value only, max is ignored)
+    } else {
+        // why is there no subscript operator for shared_ptr<array>
+        EncodeResults result;
+        FindEndpointsSingleColor(result, color, false);
 
-    // why is there no subscript operator for shared_ptr<array>
-    EncodeResults result;
-    FindEndpointsSingleColor(result, color, false);
+        if ((_flags & (Flags::Use3ColorBlocks | Flags::Use3ColorBlocksForBlackPixels)) != Flags::None) {
+            EncodeResults result_3color;
+            FindEndpointsSingleColor(result_3color, color, true);
 
-    if ((_flags & (Flags::Use3ColorBlocks | Flags::Use3ColorBlocksForBlackPixels)) != Flags::None) {
-        EncodeResults result_3color;
-        FindEndpointsSingleColor(result_3color, color, true);
-
-        if (result_3color.error < result.error) { result = result_3color; }
-    }
-
-    min16 = result.low.Pack565Unscaled();
-    max16 = result.high.Pack565Unscaled();
-
-    if (result.color_mode == ColorMode::Solid) {
-        if (min16 == max16) {
-            // make sure this isnt accidentally a 3-color block
-            // so make max16 > min16 (l > h)
-            if (min16 > 0) {
-                min16--;
-                mask = 0;  // endpoints are equal so mask doesnt matter
-            } else {
-                assert(min16 == 0 && max16 == 0);
-                max16 = 1;
-                min16 = 0;
-                mask = 0x55;  // 1111 (Min value only, max is ignored)
-            }
-        } else if (max16 < min16) {
-            std::swap(min16, max16);
-            mask = 0xFF;  // invert mask to 3333
+            if (result_3color.error < result.error) { result = result_3color; }
         }
-        assert(max16 > min16);
-    } else if (max16 > min16) {
-        std::swap(min16, max16);
+
+        min16 = result.low.Pack565Unscaled();
+        max16 = result.high.Pack565Unscaled();
+
+        if (result.color_mode == ColorMode::Solid) {
+            if (min16 == max16) {
+                // make sure this isnt accidentally a 3-color block
+                // so make max16 > min16 (l > h)
+                if (min16 > 0) {
+                    min16--;
+                    mask = 0;  // endpoints are equal so mask doesnt matter
+                } else {
+                    assert(min16 == 0 && max16 == 0);
+                    max16 = 1;
+                    min16 = 0;
+                    mask = 0x55;  // 1111 (Min value only, max is ignored)
+                }
+            } else if (max16 < min16) {
+                std::swap(min16, max16);
+                mask = 0xFF;  // invert mask to 3333
+            }
+            assert(max16 > min16);
+        } else if (max16 > min16) {
+            std::swap(min16, max16); // assure 3-color blocks
+        }
     }
 
     dest->SetLowColor(max16);
