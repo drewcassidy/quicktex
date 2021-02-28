@@ -56,7 +56,7 @@ bool BC1Encoder::order_tables_generated = false;
 
 // constructors
 BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
-    _flags = Flags::UseFullMSEEval | Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings;
+    _flags = Flags::UseFullMSEEval | Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use3ColorBlocks;
     _error_mode = ErrorMode::Full;
     _endpoint_mode = EndpointMode::PCA;
     _orderings4 = 8;
@@ -103,8 +103,8 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
     EncodeResults result;
     for (unsigned round = 0; round < total_ep_rounds; round++) {
         EndpointMode endpoint_mode = (round == 1) ? EndpointMode::BoundingBox : _endpoint_mode;
-        EncodeResults round_result;
 
+        EncodeResults round_result;
         FindEndpoints(pixels, round_result, metrics, endpoint_mode);
         FindSelectors<ColorMode::FourColor>(pixels, round_result, error_mode);
 
@@ -114,7 +114,7 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
     }
 
     // First refinement pass using ordered cluster fit
-    if (result.error > 0 && (_flags & Flags::UseLikelyTotalOrderings) != Flags::None) {
+    if (result.error > 0 && (bool)(_flags & Flags::UseLikelyTotalOrderings)) {
         const unsigned total_iters = (_flags & Flags::Iterative) != Flags::None ? 2 : 1;
         for (unsigned iter = 0; iter < total_iters; iter++) {
             EncodeResults orig = result;
@@ -161,6 +161,16 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
                 if (trial_result.error == 0) break;
             }
         }
+    }
+
+    // try for 3-color block
+    if (result.error > 0 && (bool)(_flags & Flags::Use3ColorBlocks)) {
+        EncodeResults trial_result = result;
+        FindSelectors<ColorMode::ThreeColor>(pixels, trial_result, ErrorMode::Full);
+
+        RefineBlockLS<ColorMode::ThreeColor>(pixels, trial_result, metrics, ErrorMode::Full, total_ls_passes);
+
+        if (trial_result.error < result.error) { result = trial_result; };
     }
 
     WriteBlock(result, dest);
@@ -250,11 +260,11 @@ void BC1Encoder::WriteBlock(EncodeResults &block, BC1Block *dest) const {
 
         assert(color0 > color1);
     } else {
-        lut = {0, 2, 1, 3};
+        lut = {1, 2, 0, 3};
 
         if (color1 < color0) {
             std::swap(color1, color0);
-            lut = {1, 2, 0, 3};
+            lut = {0, 2, 1, 3};
         }
 
         assert(color0 <= color1);
@@ -264,7 +274,12 @@ void BC1Encoder::WriteBlock(EncodeResults &block, BC1Block *dest) const {
         unsigned x = i % 4;
         unsigned y = i / 4;
         selectors[y][x] = lut[block.selectors[i]];
+        if (block.color_mode == ColorMode::ThreeColor) {
+            assert(selectors[y][x] != 3);
+        }
     }
+
+//    if (block.color_mode != ColorMode::ThreeColor) return;
 
     dest->SetLowColor(color0);
     dest->SetHighColor(color1);
@@ -574,12 +589,7 @@ template <ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixels, EncodeRe
             block.selectors[i] = best_sel;
         }
     } else if (error_mode == ErrorMode::Full) {
-        unsigned max_selector;
-        if ((bool)(M & ColorMode::FourColor) || (bool)(M & ColorMode::ThreeColorBlack)) {
-            max_selector = 4;
-        } else {
-            max_selector = 3;
-        }
+        unsigned max_sel = (bool)(M == ColorMode::ThreeColor) ? 3 : 4;
 
         for (unsigned i = 0; i < 16; i++) {
             unsigned best_error = UINT_MAX;
@@ -587,7 +597,7 @@ template <ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixels, EncodeRe
             Vector4Int pixel_vector = (Vector4Int)pixels.Get(i);
 
             // exhasustively check every pixel's distance from each color, and calculate the error
-            for (uint8_t j = 0; j < max_selector; j++) {
+            for (uint8_t j = 0; j < max_sel; j++) {
                 auto diff = color_vectors[j] - pixel_vector;
                 unsigned err = diff.SqrMag();
                 if (err < best_error || ((err == best_error) && (j == 3))) {
@@ -599,6 +609,7 @@ template <ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixels, EncodeRe
             total_error += best_error;
             if (total_error >= block.error) { break; }
 
+            assert(best_sel < max_sel);
             block.selectors[i] = best_sel;
         }
     } else {
