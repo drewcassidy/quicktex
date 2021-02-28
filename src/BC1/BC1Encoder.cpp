@@ -85,7 +85,7 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
 
     if (pixels.IsSingleColor()) {
         // single-color pixel block, do it the fast way
-        EncodeBlockSingleColor(first, dest);
+        WriteBlockSolid(first, dest);
         return;
     }
 
@@ -162,10 +162,11 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
             }
         }
     }
-    EncodeBlock4Color(result, dest);
+
+    WriteBlock(result, dest);
 }
 
-void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
+void BC1Encoder::WriteBlockSolid(Color color, BC1Block *dest) const {
     uint8_t mask = 0xAA;  // 2222
     uint16_t min16, max16;
 
@@ -220,22 +221,44 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
     dest->selectors[3] = mask;
 }
 
-void BC1Encoder::EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const {
-    const std::array<uint8_t, 4> lut = {0, 2, 3, 1};
-    if (block.low == block.high) {
-        EncodeBlockSingleColor(block.low.ScaleFrom565() /* Color(255, 0, 255)*/, dest);
-        return;
-    }
-
-    uint8_t mask = 0;
-    uint16_t low = block.low.Pack565Unscaled();
-    uint16_t high = block.high.Pack565Unscaled();
-    if (low < high) {
-        std::swap(low, high);
-        mask = 0x55;
-    }
-
+void BC1Encoder::WriteBlock(EncodeResults &block, BC1Block *dest) const {
+    bool flip = false;
     BC1Block::UnpackedSelectors selectors;
+    uint16_t color1 = block.low.Pack565Unscaled();
+    uint16_t color0 = block.high.Pack565Unscaled();
+    std::array<uint8_t, 4> lut;
+
+    assert(block.color_mode != ColorMode::Incomplete);
+
+    if ((bool)(block.color_mode & ColorMode::FourColor)) {
+        lut = {1, 3, 2, 0};
+
+        if (color1 > color0) {
+            std::swap(color1, color0);
+            lut = {0, 2, 3, 1};
+        } else if (color1 == color0) {
+            if (color1 > 0) {
+                color1--;
+                lut = {0, 0, 0, 0};
+            } else {
+                assert(color1 == 0 && color0 == 0);
+                color0 = 1;
+                color1 = 0;
+                lut = {1, 1, 1, 1};
+            }
+        }
+
+        assert(color0 > color1);
+    } else {
+        lut = {0, 2, 1, 3};
+
+        if (color1 < color0) {
+            std::swap(color1, color0);
+            lut = {1, 2, 0, 3};
+        }
+
+        assert(color0 <= color1);
+    }
 
     for (unsigned i = 0; i < 16; i++) {
         unsigned x = i % 4;
@@ -243,10 +266,9 @@ void BC1Encoder::EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const {
         selectors[y][x] = lut[block.selectors[i]];
     }
 
-    assert(low > high);
-    dest->SetLowColor(low);
-    dest->SetHighColor(high);
-    dest->PackSelectors(selectors, mask);
+    dest->SetLowColor(color0);
+    dest->SetHighColor(color1);
+    dest->PackSelectors(selectors);
 }
 
 void BC1Encoder::FindEndpointsSingleColor(EncodeResults &block, Color color, bool is_3color) const {
