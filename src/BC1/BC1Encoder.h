@@ -99,13 +99,14 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
         EndpointSearchRoundsMask = 1023U << EndpointSearchRoundsShift,
     };
 
+    enum class BlockColorMode {FourColor, ThreeColor, ThreeColorBlack, Solid, SolidThreeColor, Incomplete };
+
     // Unpacked BC1 block with metadata
     struct EncodeResults {
         Color low;
         Color high;
         std::array<uint8_t, 16> selectors;
-        bool is_3_color;
-        bool is_1_color;
+        BlockColorMode color_mode;
         unsigned error = UINT_MAX;
     };
 
@@ -141,11 +142,9 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
     void EncodeBlockSingleColor(Color color, BC1Block *dest) const;
     void EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const;
 
-    void FindEndpoints(Color4x4 pixels, Flags flags, BlockMetrics const metrics, Color &low, Color &high) const;
+    void FindEndpoints(EncodeResults &block, Color4x4 pixels, Flags flags, BlockMetrics const &metrics) const;
+    void FindEndpointsSingleColor(EncodeResults &block, Color color, bool is_3color = false) const;
+    void FindEndpointsSingleColor(EncodeResults &block, Color4x4 &pixels, Color color, bool is_3color) const;
     unsigned FindSelectors4(Color4x4 pixels, BC1Encoder::EncodeResults &block, bool use_err) const;
-
-    bool ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics, bool is_3color, bool use_black) const;
-    /*    bool ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics, Hash hash, Vector4 &matrix, std::array<Vector4, 17> &sums,
-                                bool is_3color, bool use_black) const;*/
 };
 }  // namespace rgbcx

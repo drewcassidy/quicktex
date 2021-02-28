@@ -43,8 +43,90 @@ namespace rgbcx {
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
 using Hist3 = OrderTable<3>::Histogram;
 using Hist4 = OrderTable<4>::Histogram;
+using Hash = uint16_t;
+using BlockMetrics = Color4x4::BlockMetrics;
+using EncodeResults = BC1Encoder::EncodeResults;
+using ColorMode = BC1Encoder::BlockColorMode;
 
 // region Free Functions/Templates
+template <ColorMode M> bool ComputeEndpoints(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics) {
+    const int N = (M == ColorMode::FourColor) ? 4 : 3;
+    const bool is_3color = N == 3;
+
+    static_assert(M == ColorMode::FourColor || M == ColorMode::ThreeColor || M == ColorMode::ThreeColorBlack);
+    static_assert(N == 3 || N == 4);
+
+    Vector4 q00 = {0, 0, 0};
+    unsigned weight_accum = 0;
+
+    for (unsigned i = 0; i < 16; i++) {
+        const Color color = pixels.Get(i);
+        const uint8_t sel = block.selectors[i];
+
+        if (M == ColorMode::ThreeColorBlack && color.IsBlack()) continue;
+        if (is_3color && sel == 3U) continue;  // NOTE: selectors for 3-color are in linear order here, but not in original
+        assert(sel < N);
+
+        const Vector4Int color_vector = Vector4Int::FromColorRGB(color);
+        q00 += color_vector * sel;
+
+        weight_accum += (N == 3) ? g_weight_vals3[sel] : g_weight_vals4[sel];
+    }
+
+    int denominator = N - 1;
+    Vector4 q10 = (metrics.sums * denominator) - q00;
+
+    float z00 = (float)((weight_accum >> 16) & 0xFF);
+    float z10 = (float)((weight_accum >> 8) & 0xFF);
+    float z11 = (float)(weight_accum & 0xFF);
+    float z01 = z10;
+
+    // invert matrix
+    float det = z00 * z11 - z01 * z10;
+    if (fabs(det) < 1e-8f) {
+        block.color_mode = ColorMode::Solid;
+        return false;
+    }
+
+    det = ((float)denominator / 255.0f) / det;
+
+    float iz00, iz01, iz10, iz11;
+    iz00 = z11 * det;
+    iz01 = -z01 * det;
+    iz10 = -z10 * det;
+    iz11 = z00 * det;
+
+    Vector4 low = (q00 * iz00) + (q10 * iz01);
+    Vector4 high = (q00 * iz10) + (q10 * iz11);
+
+    block.color_mode = M;
+    block.low = Color::PreciseRound565(low);
+    block.high = Color::PreciseRound565(high);
+    return true;
+}
+template <ColorMode M> void ComputeEndpoints(std::array<Vector4, 17> &sums, EncodeResults &block, Vector4 &matrix, Hash hash) {
+    const int N = (M == ColorMode::FourColor) ? 4 : 3;
+    const bool is_3color = N == 3;
+
+    static_assert(M != ColorMode::Solid);
+    static_assert(N == 3 || N == 4);
+
+    Vector4 q10 = {0, 0, 0};
+    unsigned level = 0;
+    for (unsigned i = 0; i < (N - 1); i++) {
+        level += OrderTable<N>::GetUniqueOrdering(hash, i);
+        q10 += sums[level];
+    }
+
+    Vector4 q00 = (sums[16] * (N - 1)) - q10;
+
+    Vector4 low = (matrix[0] * q00) + (matrix[1] * q10);
+    Vector4 high = (matrix[2] * q00) + (matrix[3] * q10);
+
+    block.color_mode = M;
+    block.low = Color::PreciseRound565(low);
+    block.high = Color::PreciseRound565(high);
+}
 // endregion
 
 // Static Fields
@@ -54,7 +136,8 @@ std::mutex BC1Encoder::order_table_mutex = std::mutex();
 bool BC1Encoder::order_tables_generated = false;
 
 BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
-    _flags = Flags::UseFasterMSEEval | Flags::TwoLeastSquaresPasses;
+    _flags = Flags::UseFullMSEEval | Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings;
+    _orderings4 = 8;
 
     // generate lookup tables
     order_table_mutex.lock();
@@ -103,18 +186,21 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
         }
 
         EncodeResults round_result;
-        FindEndpoints(pixels, modified_flags, metrics, round_result.low, round_result.high);
+        FindEndpoints(round_result, pixels, modified_flags, metrics);
         FindSelectors4(pixels, round_result, needs_block_error);
 
         for (unsigned pass = 0; pass < total_ls_passes; pass++) {
             EncodeResults trial_result = round_result;
             Vector4 low, high;
 
-            bool multicolor = ComputeEndpointsLS(pixels, trial_result, metrics, false, false);
+            bool multicolor = ComputeEndpoints<ColorMode::FourColor>(pixels, trial_result, metrics);
+            if (multicolor) {
+                FindSelectors4(pixels, trial_result, needs_block_error);
+            } else {
+                FindEndpointsSingleColor(trial_result, pixels, metrics.avg, false);
+            }
 
             if (trial_result.low == round_result.low && trial_result.high == round_result.high) break;
-
-            FindSelectors4(pixels, trial_result, needs_block_error);
 
             if (!needs_block_error || trial_result.error < round_result.error) {
                 round_result = trial_result;
@@ -125,6 +211,7 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
         if (!needs_block_error || round_result.error < result.error) { result = round_result; }
     }
 
+    bool usedCF = false;
     // First refinement pass using ordered cluster fit
     if (result.error > 0 && (_flags & Flags::UseLikelyTotalOrderings) != Flags::None) {
         const unsigned total_iters = (_flags & Flags::Iterative) != Flags::None ? 2 : 1;
@@ -132,18 +219,15 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
             EncodeResults orig = result;
             Hist4 h(orig.selectors);
 
-            const Hash order_index = order_table4->GetHash(h);
+            const Hash start_hash = order_table4->GetHash(h);
 
-            Color low = orig.low.ScaleFrom565();
-            Color high = orig.high.ScaleFrom565();
-
-            Vector4Int axis = high - low;
+            Vector4 axis = orig.high.ScaleFrom565() - orig.low.ScaleFrom565();
             std::array<Vector4, 16> color_vectors;
-
             std::array<uint32_t, 16> dots;
+
             for (unsigned i = 0; i < 16; i++) {
                 color_vectors[i] = Vector4::FromColorRGB(pixels.Get(i));
-                int dot = 0x1000000 + color_vectors[i].Dot(axis);
+                int dot = 0x1000000 + (int)color_vectors[i].Dot(axis);
                 assert(dot >= 0);
                 dots[i] = (uint32_t)(dot << 4) | i;
             }
@@ -157,27 +241,36 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
                 sums[i + 1] = sums[i] + color_vectors[p];
             }
 
-            const unsigned q_total = ((_flags & Flags::Exhaustive) != Flags::None) ? order_table4->UniqueOrderings
-                                                                                   : (unsigned)clampi(_orderings4, MIN_TOTAL_ORDERINGS, MAX_TOTAL_ORDERINGS4);
-            for (unsigned q = 0; q < q_total; q++) {
-                Hash s = ((_flags & Flags::Exhaustive) != Flags::None) ? q : g_best_total_orderings4[order_index][q];
+            const Hash q_total = ((_flags & Flags::Exhaustive) != Flags::None) ? order_table4->UniqueOrderings
+                                                                               : (Hash)clamp(_orderings4, MIN_TOTAL_ORDERINGS, MAX_TOTAL_ORDERINGS4);
+            for (Hash q = 0; q < q_total; q++) {
+                Hash trial_hash = ((_flags & Flags::Exhaustive) != Flags::None) ? q : g_best_total_orderings4[start_hash][q];
+                Vector4 trial_matrix = order_table4->GetFactors(trial_hash);
 
-                EncodeResults trial = orig;
+                EncodeResults trial_result = orig;
                 Vector4 low, high;
-                if (order_table4->IsSingleColor(order_index)) {
-                    trial.is_1_color = true;
-                    trial.is_3_color = false;
+                if (order_table4->IsSingleColor(trial_hash)) {
+                    FindEndpointsSingleColor(trial_result, pixels, metrics.avg, false);
                 } else {
+                    ComputeEndpoints<ColorMode::FourColor>(sums, trial_result, trial_matrix, trial_hash);
                 }
+                FindSelectors4(pixels, trial_result, true);
+
+                if (trial_result.error < result.error) {
+                    result = trial_result;
+                    usedCF = true;
+                }
+                if (trial_result.error == 0) break;
             }
         }
     }
+    EncodeBlock4Color(result, dest);
 
-    if (result.low == result.high) {
-        EncodeBlockSingleColor(metrics.avg, dest);
-    } else {
-        EncodeBlock4Color(result, dest);
-    }
+    //    if (result.low == result.high) {
+    //        EncodeBlockSingleColor(metrics.avg, dest);
+    //    } else {
+    //        EncodeBlock4Color(result, dest);
+    //    }
 }
 
 void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
@@ -187,6 +280,7 @@ void BC1Encoder::EncodeBlockSingleColor(Color color, BC1Block *dest) const {
     bool using_3color = false;
 
     // why is there no subscript operator for shared_ptr<array>
+    // TODO use endpoint finder below
     BC1MatchEntry match_r = _single_match5->at(color.r);
     BC1MatchEntry match_g = _single_match6->at(color.g);
     BC1MatchEntry match_b = _single_match5->at(color.b);
@@ -268,22 +362,26 @@ void BC1Encoder::EncodeBlock4Color(EncodeResults &block, BC1Block *dest) const {
     dest->PackSelectors(selectors, mask);
 }
 
-void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const BC1Encoder::BlockMetrics metrics, Color &low, Color &high) const {
+void BC1Encoder::FindEndpoints(EncodeResults &block, Color4x4 pixels, BC1Encoder::Flags flags, const BC1Encoder::BlockMetrics &metrics) const {
     if (metrics.is_greyscale) {
         // specialized greyscale case
         const unsigned fr = pixels.Get(0).r;
 
         if (metrics.max.r - metrics.min.r < 2) {
             // single color block
-            low.r = high.r = (uint8_t)scale8To5(fr);
-            low.g = high.g = (uint8_t)scale8To6(fr);
-            low.b = high.b = low.r;
-        } else {
-            low.r = low.b = scale8To5(metrics.min.r);
-            low.g = scale8To6(metrics.min.r);
+            uint8_t fr5 = (uint8_t)scale8To5(fr);
+            uint8_t fr6 = (uint8_t)scale8To6(fr);
 
-            high.r = high.b = scale8To5(metrics.max.r);
-            high.g = scale8To6(metrics.max.r);
+            block.low = Color(fr5, fr6, fr5);
+            block.high = block.low;
+        } else {
+            uint8_t lr5 = scale8To5(metrics.min.r);
+            uint8_t lr6 = scale8To6(metrics.min.r);
+
+            uint8_t hr5 = scale8To5(metrics.max.r);
+            uint8_t hr6 = scale8To6(metrics.max.r);
+
+            block.low = Color(lr5, lr6, lr5);
         }
     } else if ((flags & Flags::Use2DLS) != Flags::None) {
         //  2D Least Squares approach from Humus's example, with added inset and optimal rounding.
@@ -342,8 +440,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
             h[c] = ((h[c] - inset) / 255.0f);
         }
 
-        low = Color::PreciseRound565(l);
-        high = Color::PreciseRound565(h);
+        block.low = Color::PreciseRound565(l);
+        block.high = Color::PreciseRound565(h);
     } else if ((flags & Flags::BoundingBox) != Flags::None) {
         // Algorithm from icbc.h compress_dxt1_fast()
         Vector4 l, h;
@@ -370,8 +468,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         if (icov_xz < 0) std::swap(l[0], h[0]);
         if (icov_yz < 0) std::swap(l[1], h[1]);
 
-        low = Color::PreciseRound565(l);
-        high = Color::PreciseRound565(h);
+        block.low = Color::PreciseRound565(l);
+        block.high = Color::PreciseRound565(h);
     } else if ((flags & Flags::BoundingBoxInt) != Flags::None) {
         // Algorithm from icbc.h compress_dxt1_fast(), but converted to integer.
 
@@ -395,8 +493,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
         if (icov_xz < 0) std::swap(min.r, max.r);
         if (icov_yz < 0) std::swap(min.g, max.g);
 
-        low = min.ScaleTo565();
-        high = max.ScaleTo565();
+        block.low = min.ScaleTo565();
+        block.high = max.ScaleTo565();
     } else {
         // the slow way
         // Select 2 colors along the principle axis. (There must be a faster/simpler way.)
@@ -459,14 +557,53 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, BC1Encoder::Flags flags, const B
             }
         }
 
-        low = pixels.Get(min_index).ScaleTo565();
-        high = pixels.Get(max_index).ScaleTo565();
+        block.low = pixels.Get(min_index).ScaleTo565();
+        block.high = pixels.Get(max_index).ScaleTo565();
+    }
+
+    block.color_mode = ColorMode::Incomplete;
+}
+
+void BC1Encoder::FindEndpointsSingleColor(EncodeResults &block, Color color, bool is_3color) const {
+    auto &match5 = is_3color ? _single_match5_half : _single_match5;
+    auto &match6 = is_3color ? _single_match6_half : _single_match6;
+
+    BC1MatchEntry match_r = match5->at(color.r);
+    BC1MatchEntry match_g = match6->at(color.g);
+    BC1MatchEntry match_b = match5->at(color.b);
+
+    block.color_mode = is_3color ? ColorMode::SolidThreeColor : ColorMode::Solid;
+    block.error = match_r.error + match_g.error + match_b.error;
+    block.low = Color(match_r.low, match_g.low, match_b.low);
+    block.high = Color(match_r.high, match_g.high, match_b.high);
+    // selectors decided when writing, no point deciding them now
+}
+
+void BC1Encoder::FindEndpointsSingleColor(EncodeResults &block, Color4x4 &pixels, Color color, bool is_3color) const {
+    std::array<Color, 4> colors = _interpolator->InterpolateBC1(block.low, block.high, is_3color);
+    Vector4Int result_vector = (Vector4Int)colors[2];
+
+    auto &match5 = is_3color ? _single_match5_half : _single_match5;
+    auto &match6 = is_3color ? _single_match6_half : _single_match6;
+
+    BC1MatchEntry match_r = match5->at(color.r);
+    BC1MatchEntry match_g = match6->at(color.g);
+    BC1MatchEntry match_b = match5->at(color.b);
+
+    block.color_mode = is_3color ? ColorMode::SolidThreeColor : ColorMode::Solid;
+    block.error = 0;
+    block.low = Color(match_r.low, match_g.low, match_b.low);
+    block.high = Color(match_r.high, match_g.high, match_b.high);
+
+    for (unsigned i = 0; i < 16; i++) {
+        Vector4Int pixel_vector = (Vector4Int)pixels.Get(i);
+        auto diff = pixel_vector - result_vector;
+        block.error += diff.SqrMag();
+        block.selectors[i] = 1;
     }
 }
 
 unsigned BC1Encoder::FindSelectors4(Color4x4 pixels, BC1Encoder::EncodeResults &block, bool use_err) const {
-    // colors in selector order, 0, 1, 2, 3
-    // 0 = low color, 1 = high color, 2/3 = interpolated
     std::array<Color, 4> colors = _interpolator->InterpolateBC1(block.low, block.high, false);
     std::array<Vector4Int, 4> color_vectors = {(Vector4Int)colors[0], (Vector4Int)colors[2], (Vector4Int)colors[3], (Vector4Int)colors[1]};
     unsigned total_error = 0;
@@ -546,71 +683,8 @@ unsigned BC1Encoder::FindSelectors4(Color4x4 pixels, BC1Encoder::EncodeResults &
             block.selectors[i] = best_sel;
         }
     }
-    block.is_3_color = false;
-    block.is_1_color = false;
+    block.color_mode = ColorMode::FourColor;
     block.error = total_error;
     return total_error;
 }
-
-bool BC1Encoder::ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics, bool is_3color, bool use_black) const {
-    Vector4 low, high;
-    Vector4 q00 = {0, 0, 0};
-    unsigned weight_accum = 0;
-    for (unsigned i = 0; i < 16; i++) {
-        const Color color = pixels.Get(i);
-        const int sel = (int)block.selectors[i];
-
-        if (use_black && color.IsBlack()) continue;
-        if (is_3color && sel == 3) continue;  // NOTE: selectors for 3-color are in linear order here, but not in original
-        assert(sel <= 3);
-
-        const Vector4Int color_vector = Vector4Int::FromColorRGB(color);
-        q00 += color_vector * sel;
-        weight_accum += g_weight_vals4[sel];
-    }
-
-    int denominator = is_3color ? 2 : 3;
-    Vector4 q10 = (metrics.sums * denominator) - q00;
-
-    float z00 = (float)((weight_accum >> 16) & 0xFF);
-    float z10 = (float)((weight_accum >> 8) & 0xFF);
-    float z11 = (float)(weight_accum & 0xFF);
-    float z01 = z10;
-
-    // invert matrix
-    float det = z00 * z11 - z01 * z10;
-    if (fabs(det) < 1e-8f) {
-        block.is_1_color = true;
-        return false;
-    }
-
-    det = ((float)denominator / 255.0f) / det;
-
-    float iz00, iz01, iz10, iz11;
-    iz00 = z11 * det;
-    iz01 = -z01 * det;
-    iz10 = -z10 * det;
-    iz11 = z00 * det;
-
-    low = (q00 * iz00) + (q10 * iz01);
-    high = (q00 * iz10) + (q10 * iz11);
-
-    block.is_1_color = false;
-    block.low = Color::PreciseRound565(low);
-    block.high = Color::PreciseRound565(high);
-    return true;
-}
-/*
-bool BC1Encoder::ComputeEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics, Hash hash, Vector4 &matrix, std::array<Vector4, 17> &sums,
-                                    bool is_3color, bool use_black) const {
-    unsigned f1, f2, f3;
-    int denominator = is_3color ? 2 : 3;
-
-    if (is_3color) {
-        order_table3->GetUniqueOrderingSums(hash, f1, f2, f3);
-    } else {
-        order_table4->GetUniqueOrderingSums(hash, f1, f2, f3);
-    }
-}*/
-
 }  // namespace rgbcx

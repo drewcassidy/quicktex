@@ -82,12 +82,6 @@ template <size_t N> class OrderTable {
         return g_unique_total_orders3[hash][selector];
     }
 
-    static inline constexpr void GetUniqueOrderingSums(Hash hash, unsigned &f1, unsigned &f2, unsigned &f3) {
-        f1 = GetUniqueOrdering(hash, 0);
-        f2 = f1 + GetUniqueOrdering(hash, 1);
-        f3 = f2 + GetUniqueOrdering(hash, 2);
-    }
-
     OrderTable<N>() {
         static_assert(N == 4 || N == 3);
 

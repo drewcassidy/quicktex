@@ -28,11 +28,6 @@
 
 namespace rgbcx {
 
-/**
- * Lookup table for single-color blocks
- * @tparam B Number of bits (5 or 6)
- * @tparam N Number of colors (3 or 4)
- */
 struct BC1MatchEntry {
     uint8_t high;
     uint8_t low;
@@ -43,9 +38,14 @@ using MatchList = std::array<BC1MatchEntry, 256>;
 using MatchListPtr = std::shared_ptr<MatchList>;
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
+/**
+ * Lookup table for single-color blocks
+ * @tparam B Number of bits (5 or 6)
+ * @tparam N Number of colors (3 or 4)
+ */
 template <size_t B, size_t N> MatchListPtr SingleColorTable(InterpolatorPtr interpolator) {
     constexpr size_t Size = 1 << B;
-    MatchListPtr _matches = std::make_shared<MatchList>();
+    MatchListPtr matches = std::make_shared<MatchList>();
 
     static_assert((B == 5 && Size == 32) || (B == 6 && Size == 64));
     static_assert(N == 4 || N == 3);
@@ -79,14 +79,15 @@ template <size_t B, size_t N> MatchListPtr SingleColorTable(InterpolatorPtr inte
                 if ((new_error < error) || (new_error == error && low == high)) {
                     assert(new_error <= UINT8_MAX);
 
-                    (*_matches)[i].low = (uint8_t)low;
-                    (*_matches)[i].high = (uint8_t)high;
-                    (*_matches)[i].error = (uint8_t)new_error;
+                    (*matches)[i].low = (uint8_t)low;
+                    (*matches)[i].high = (uint8_t)high;
+                    (*matches)[i].error = (uint8_t)new_error;
 
                     error = new_error;
                 }
             }
         }
     }
+    return matches;
 }
 }  // namespace rgbcx
