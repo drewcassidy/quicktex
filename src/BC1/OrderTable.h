@@ -128,7 +128,7 @@ template <size_t N> class OrderTable {
     Vector4 GetFactors(Hash hash) { return Vector4(_factors[hash][0], _factors[hash][1], _factors[hash][1], _factors[hash][2]); }
 
     static inline constexpr std::array<Hash, N> GetSingleColorHashes() {
-        if (N == 4) { return {15, 700, 753, 515}; }
+        if constexpr (N == 4) { return {15, 700, 753, 515}; }
         return {12, 15, 89};
     }
 

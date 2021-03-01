@@ -59,7 +59,8 @@ BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolato
     _flags = Flags::UseFullMSEEval | Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use3ColorBlocks;
     _error_mode = ErrorMode::Full;
     _endpoint_mode = EndpointMode::PCA;
-    _orderings4 = 8;
+    _orderings4 = 16;
+    _orderings3 = 8;
 
     // generate lookup tables
     order_table_mutex.lock();
@@ -96,79 +97,49 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
     needs_block_error |= metrics.has_black && ((_flags & Flags::Use3ColorBlocksForBlackPixels) != Flags::None);
     ErrorMode error_mode = needs_block_error ? _error_mode : ErrorMode::None;
 
-    unsigned total_ls_passes = (_flags & Flags::TwoLeastSquaresPasses) != Flags::None ? 2 : 1;
-    unsigned total_ep_rounds = needs_block_error && ((_flags & Flags::TryAllInitialEndpoints) != Flags::None) ? 2 : 1;
+    const unsigned total_ls_passes = (_flags & Flags::TwoLeastSquaresPasses) != Flags::None ? 2 : 1;
+    const unsigned total_ep_rounds = needs_block_error && ((_flags & Flags::TryAllInitialEndpoints) != Flags::None) ? 2 : 1;
+    const unsigned total_cf_iters = (_flags & Flags::Iterative) != Flags::None ? 2 : 1;
 
     // Initial block generation
+    EncodeResults orig;
     EncodeResults result;
     for (unsigned round = 0; round < total_ep_rounds; round++) {
         EndpointMode endpoint_mode = (round == 1) ? EndpointMode::BoundingBox : _endpoint_mode;
 
-        EncodeResults round_result;
-        FindEndpoints(pixels, round_result, metrics, endpoint_mode);
-        FindSelectors<ColorMode::FourColor>(pixels, round_result, error_mode);
+        EncodeResults trial_orig;
+        FindEndpoints(pixels, trial_orig, metrics, endpoint_mode);
 
-        RefineBlockLS<ColorMode::FourColor>(pixels, round_result, metrics, error_mode, total_ls_passes);
+        EncodeResults trial_result = trial_orig;
 
-        if (!needs_block_error || round_result.error < result.error) { result = round_result; }
+        FindSelectors<ColorMode::FourColor>(pixels, trial_result, error_mode);
+        RefineBlockLS<ColorMode::FourColor>(pixels, trial_result, metrics, error_mode, total_ls_passes);
+
+        if (!needs_block_error || trial_result.error < result.error) {
+            result = trial_result;
+            orig = trial_orig;
+        }
     }
 
     // First refinement pass using ordered cluster fit
     if (result.error > 0 && (bool)(_flags & Flags::UseLikelyTotalOrderings)) {
-        const unsigned total_iters = (_flags & Flags::Iterative) != Flags::None ? 2 : 1;
-        for (unsigned iter = 0; iter < total_iters; iter++) {
-            EncodeResults orig = result;
-            Hist4 h(orig.selectors);
-
-            const Hash start_hash = order_table4->GetHash(h);
-
-            Vector4 axis = orig.high.ScaleFrom565() - orig.low.ScaleFrom565();
-            std::array<Vector4, 16> color_vectors;
-            std::array<uint32_t, 16> dots;
-
-            for (unsigned i = 0; i < 16; i++) {
-                color_vectors[i] = Vector4::FromColorRGB(pixels.Get(i));
-                int dot = 0x1000000 + (int)color_vectors[i].Dot(axis);
-                assert(dot >= 0);
-                dots[i] = (uint32_t)(dot << 4) | i;
-            }
-
-            std::sort(dots.begin(), dots.end());
-
-            // we now have a list of indices and their dot products along the primary axis
-            std::array<Vector4, 17> sums;
-            for (unsigned i = 0; i < 16; i++) {
-                const unsigned p = dots[i] & 0xF;
-                sums[i + 1] = sums[i] + color_vectors[p];
-            }
-
-            const Hash q_total = ((_flags & Flags::Exhaustive) != Flags::None) ? order_table4->UniqueOrderings
-                                                                               : (Hash)clamp(_orderings4, MIN_TOTAL_ORDERINGS, MAX_TOTAL_ORDERINGS4);
-            for (Hash q = 0; q < q_total; q++) {
-                Hash trial_hash = ((_flags & Flags::Exhaustive) != Flags::None) ? q : g_best_total_orderings4[start_hash][q];
-                Vector4 trial_matrix = order_table4->GetFactors(trial_hash);
-
-                EncodeResults trial_result = orig;
-                Vector4 low, high;
-                if (order_table4->IsSingleColor(trial_hash)) {
-                    FindEndpointsSingleColor(trial_result, pixels, metrics.avg, false);
-                } else {
-                    RefineEndpointsLS<ColorMode::FourColor>(sums, trial_result, trial_matrix, trial_hash);
-                    FindSelectors<ColorMode::FourColor>(pixels, trial_result, _error_mode);
-                }
-
-                if (trial_result.error < result.error) { result = trial_result; }
-                if (trial_result.error == 0) break;
-            }
+        for (unsigned iter = 0; iter < total_cf_iters; iter++) { RefineBlockCF<ColorMode::FourColor>(pixels, result, metrics, _error_mode, _orderings4);
         }
     }
 
     // try for 3-color block
     if (result.error > 0 && (bool)(_flags & Flags::Use3ColorBlocks)) {
-        EncodeResults trial_result = result;
-        FindSelectors<ColorMode::ThreeColor>(pixels, trial_result, ErrorMode::Full);
+        EncodeResults trial_result = orig;
 
+        FindSelectors<ColorMode::ThreeColor>(pixels, trial_result, ErrorMode::Full);
         RefineBlockLS<ColorMode::ThreeColor>(pixels, trial_result, metrics, ErrorMode::Full, total_ls_passes);
+
+        // First refinement pass using ordered cluster fit
+        if (trial_result.error > 0 && (bool)(_flags & Flags::UseLikelyTotalOrderings)) {
+            for (unsigned iter = 0; iter < total_cf_iters; iter++) {
+                RefineBlockCF<ColorMode::ThreeColor>(pixels, trial_result, metrics, ErrorMode::Full, _orderings3);
+            }
+        }
 
         if (trial_result.error < result.error) { result = trial_result; };
     }
@@ -274,12 +245,10 @@ void BC1Encoder::WriteBlock(EncodeResults &block, BC1Block *dest) const {
         unsigned x = i % 4;
         unsigned y = i / 4;
         selectors[y][x] = lut[block.selectors[i]];
-        if (block.color_mode == ColorMode::ThreeColor) {
-            assert(selectors[y][x] != 3);
-        }
+        if (block.color_mode == ColorMode::ThreeColor) { assert(selectors[y][x] != 3); }
     }
 
-//    if (block.color_mode != ColorMode::ThreeColor) return;
+    //    if (block.color_mode != ColorMode::ThreeColor) return;
 
     dest->SetLowColor(color0);
     dest->SetHighColor(color1);
@@ -719,6 +688,75 @@ void BC1Encoder::RefineBlockLS(Color4x4 &pixels, EncodeResults &block, BlockMetr
         } else {
             return;
         }
+    }
+}
+template <ColorMode M>
+void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const {
+    const int color_count = (unsigned)M & 0x0F;
+    static_assert(color_count == 3 || color_count == 4);
+    static_assert(!(bool)(M & ColorMode::Solid));
+    assert(block.color_mode != ColorMode::Incomplete);
+
+    using OrderTable = OrderTable<color_count>;
+    using Hist = typename OrderTable::Histogram;
+
+    EncodeResults orig = block;
+    Hist h = Hist(orig.selectors);
+
+    Hash start_hash;
+
+    if constexpr (color_count == 4) {
+        start_hash = order_table4->GetHash(h);
+    }
+    else {
+        start_hash = order_table3->GetHash(h);
+    }
+
+    Vector4 axis = orig.high.ScaleFrom565() - orig.low.ScaleFrom565();
+    std::array<Vector4, 16> color_vectors;
+    std::array<uint32_t, 16> dots;
+
+    for (unsigned i = 0; i < 16; i++) {
+        color_vectors[i] = Vector4::FromColorRGB(pixels.Get(i));
+        int dot = 0x1000000 + (int)color_vectors[i].Dot(axis);
+        assert(dot >= 0);
+        dots[i] = (uint32_t)(dot << 4) | i;
+    }
+
+    std::sort(dots.begin(), dots.end());
+
+    // we now have a list of indices and their dot products along the primary axis
+    std::array<Vector4, 17> sums;
+    for (unsigned i = 0; i < 16; i++) {
+        const unsigned p = dots[i] & 0xF;
+        sums[i + 1] = sums[i] + color_vectors[p];
+    }
+
+    const Hash q_total =
+        ((_flags & Flags::Exhaustive) != Flags::None) ? OrderTable::UniqueOrderings : orderings;
+    for (Hash q = 0; q < q_total; q++) {
+        Hash trial_hash;
+        Vector4 trial_matrix;
+
+        if (color_count == 4) {
+            trial_hash = ((_flags & Flags::Exhaustive) != Flags::None) ? q : g_best_total_orderings4[start_hash][q];
+            trial_matrix = order_table4->GetFactors(trial_hash);
+        } else {
+            trial_hash = ((_flags & Flags::Exhaustive) != Flags::None) ? q : g_best_total_orderings3[start_hash][q];
+            trial_matrix = order_table3->GetFactors(trial_hash);
+        }
+
+        EncodeResults trial_result = orig;
+        Vector4 low, high;
+        if (OrderTable::IsSingleColor(trial_hash)) {
+            FindEndpointsSingleColor(trial_result, pixels, metrics.avg, (color_count == 3));
+        } else {
+            RefineEndpointsLS<M>(sums, trial_result, trial_matrix, trial_hash);
+            FindSelectors<M>(pixels, trial_result, _error_mode);
+        }
+
+        if (trial_result.error < block.error) { block = trial_result; }
+        if (trial_result.error == 0) break;
     }
 }
 
