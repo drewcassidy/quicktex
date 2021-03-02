@@ -27,10 +27,9 @@
 #include <cstdint>
 
 #include "../Vector4.h"
+#include "Histogram.h"
 
 namespace rgbcx {
-template <size_t N> class Histogram;
-
 template <size_t N> class OrderTable {
    public:
     static constexpr unsigned HashCount = 1 << ((N - 1) * 4);     // 16**(N-1)
