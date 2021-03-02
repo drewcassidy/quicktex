@@ -29,18 +29,16 @@
 
 #include "../Vector4.h"
 #include "../util.h"
-#include "OrderTable.h"
-#include "Tables.h"
 
 namespace rgbcx {
 template <size_t N> class Histogram {
    public:
     using Hash = uint16_t;
 
-    Histogram() { _bins = {0}; }
+    Histogram() { _bins.fill(0); }
 
     Histogram(std::array<uint8_t, 16> sels) {
-        _bins = {0};
+        _bins.fill(0);
         for (unsigned i = 0; i < 16; i++) {
             assert(sels[i] < N);
             _bins[sels[i]]++;
@@ -73,8 +71,6 @@ template <size_t N> class Histogram {
     unsigned GetPacked() const {
         unsigned packed = 0;
         for (unsigned i = 0; i < (N - 1); i++) { packed |= (_bins[i] << (4U * i)); }
-
-        //        assert(packed < HashCount);
 
         return packed;
     }

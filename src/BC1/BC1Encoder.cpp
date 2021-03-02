@@ -37,6 +37,7 @@
 #include "Histogram.h"
 #include "OrderTable.h"
 #include "SingleColorTable.h"
+#include "Tables.h"
 
 namespace rgbcx {
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
