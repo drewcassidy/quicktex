@@ -37,7 +37,6 @@
 #include "Histogram.h"
 #include "OrderTable.h"
 #include "SingleColorTable.h"
-#include "Tables.h"
 
 namespace rgbcx {
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
@@ -577,8 +576,10 @@ template <ColorMode M> bool BC1Encoder::RefineEndpointsLS(Color4x4 pixels, Encod
     static_assert(!(bool)(M & ColorMode::Solid));
     assert(block.color_mode != ColorMode::Incomplete);
 
+    int denominator = color_count - 1;
+
     Vector4 q00 = {0, 0, 0};
-    unsigned weight_accum = 0;
+    Vector4 matrix = Vector4(0);
 
     for (unsigned i = 0; i < 16; i++) {
         const Color color = pixels.Get(i);
@@ -591,34 +592,23 @@ template <ColorMode M> bool BC1Encoder::RefineEndpointsLS(Color4x4 pixels, Encod
         const Vector4Int color_vector = Vector4Int::FromColorRGB(color);
         q00 += color_vector * sel;
 
-        weight_accum += (color_count == 3) ? g_weight_vals3[sel] : g_weight_vals4[sel];
+        matrix += OrderTable<color_count>::Weights[sel];
     }
 
-    int denominator = color_count - 1;
-    Vector4 q10 = (metrics.sums * denominator) - q00;
-
-    float z00 = (float)((weight_accum >> 16) & 0xFF);
-    float z10 = (float)((weight_accum >> 8) & 0xFF);
-    float z11 = (float)(weight_accum & 0xFF);
-    float z01 = z10;
-
     // invert matrix
-    float det = z00 * z11 - z01 * z10;
+    float det = matrix.Determinant2x2();  // z00 * z11 - z01 * z10;
     if (fabs(det) < 1e-8f) {
         block.color_mode = ColorMode::Incomplete;
         return false;
     }
 
-    det = ((float)denominator / 255.0f) / det;
+    matrix *= Vector4(1, -1, -1, 1);
+    matrix *= ((float)denominator / 255.0f) / det;
 
-    float iz00, iz01, iz10, iz11;
-    iz00 = z11 * det;
-    iz01 = -z01 * det;
-    iz10 = -z10 * det;
-    iz11 = z00 * det;
+    Vector4 q10 = (metrics.sums * denominator) - q00;
 
-    Vector4 low = (q00 * iz00) + (q10 * iz01);
-    Vector4 high = (q00 * iz10) + (q10 * iz11);
+    Vector4 low = (matrix[0] * q00) + (matrix[1] * q10);
+    Vector4 high = (matrix[2] * q00) + (matrix[3] * q10);
 
     block.color_mode = M;
     block.low = Color::PreciseRound565(low);
@@ -632,6 +622,8 @@ template <ColorMode M> void BC1Encoder::RefineEndpointsLS(std::array<Vector4, 17
     static_assert(!(bool)(M & ColorMode::Solid));
     assert(block.color_mode != ColorMode::Incomplete);
 
+    int denominator = color_count - 1;
+
     Vector4 q10 = {0, 0, 0};
     unsigned level = 0;
     Histogram<color_count> h = OrderTable<color_count>::Orders[hash];
@@ -640,7 +632,7 @@ template <ColorMode M> void BC1Encoder::RefineEndpointsLS(std::array<Vector4, 17
         q10 += sums[level];
     }
 
-    Vector4 q00 = (sums[16] * (color_count - 1)) - q10;
+    Vector4 q00 = (sums[16] * denominator) - q10;
 
     Vector4 low = (matrix[0] * q00) + (matrix[1] * q10);
     Vector4 high = (matrix[2] * q00) + (matrix[3] * q10);
