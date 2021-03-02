@@ -74,6 +74,7 @@ template <size_t N> class OrderTable {
             if (fabs(det) < 1e-8f) {
                 factors->at(i) = Vector4(0);
             } else {
+                std::swap(factor_matrix[0], factor_matrix[3]);
                 factor_matrix *= Vector4(1, -1, -1, 1);
                 factor_matrix *= (denominator / 255.0f) / det;
                 factors->at(i) = factor_matrix;

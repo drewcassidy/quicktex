@@ -602,6 +602,7 @@ template <ColorMode M> bool BC1Encoder::RefineEndpointsLS(Color4x4 pixels, Encod
         return false;
     }
 
+    std::swap(matrix[0], matrix[3]);
     matrix *= Vector4(1, -1, -1, 1);
     matrix *= ((float)denominator / 255.0f) / det;
 
