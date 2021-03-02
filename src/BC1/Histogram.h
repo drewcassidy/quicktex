@@ -72,7 +72,7 @@ template <size_t N> class Histogram {
 
     unsigned GetPacked() const {
         unsigned packed = 0;
-        for (unsigned i = 0; i < (N - 1); i++) { packed |= (_bins[i] << (4 * i)); }
+        for (unsigned i = 0; i < (N - 1); i++) { packed |= (_bins[i] << (4U * i)); }
 
         //        assert(packed < HashCount);
 

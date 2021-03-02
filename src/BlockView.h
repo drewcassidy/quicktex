@@ -150,7 +150,7 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
             metrics.has_black |= (val.r | val.g | val.b < black_threshold);
         }
 
-        for (unsigned c = 0; c < 3; c++) { metrics.avg[c] = (uint8_t)(metrics.sums[c] / (M * N)); }
+        for (unsigned c = 0; c < 3; c++) { metrics.avg[c] = (uint8_t)((unsigned)metrics.sums[c] / (M * N)); }
 
         return metrics;
     }

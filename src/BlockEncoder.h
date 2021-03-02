@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include <cstdint>
 #include <climits>
+#include <cstdint>
 
 #include "BlockView.h"
 
@@ -59,11 +59,7 @@ template <class B, size_t M, size_t N> class BlockEncoder {
                 assert(pixel_x + N <= image_width);
 
                 unsigned top_left = pixel_x + (pixel_y * image_width);
-                auto src = DecodedBlock(&decoded[top_left], image_width);
-
-                if (pixel_x == 272 && pixel_y == 748) {
-                    int foo = 3;
-                }
+                auto src = DecodedBlock(&decoded[top_left], (int)image_width);
 
                 EncodeBlock(src, &blocks[x + block_width * y]);
             }

@@ -19,23 +19,22 @@
 
 #include "BC1Encoder.h"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
-#include <climits>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <type_traits>
 
 #include "../BlockView.h"
 #include "../Color.h"
-#include "../Interpolator.h"
 #include "../Matrix4x4.h"
 #include "../Vector4.h"
 #include "../Vector4Int.h"
 #include "../bitwiseEnums.h"
 #include "../util.h"
+#include "Histogram.h"
 #include "OrderTable.h"
 #include "SingleColorTable.h"
 
@@ -288,6 +287,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
             uint8_t hr6 = scale8To6(metrics.max.r);
 
             block.low = Color(lr5, lr6, lr5);
+            block.high = Color(hr5, hr6, hr5);
         }
     } else if (endpoint_mode == EndpointMode::LeastSquares) {
         //  2D Least Squares approach from Humus's example, with added inset and optimal rounding.
@@ -297,7 +297,6 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
 
         auto &sums = metrics.sums;
         auto &min = metrics.min;
-        auto &max = metrics.max;
 
         unsigned chan0 = (unsigned)diff.MaxChannelRGB();  // primary axis of the bounding box
         l[chan0] = (float)min[chan0];
@@ -312,8 +311,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
             for (unsigned c = 0; c < 3; c++) { sums_xy[c] += val[chan0] * val[c]; }
         }
 
-        const auto &sum_x = sums[chan0];
-        const auto &sum_xx = sums_xy[chan0];
+        const unsigned sum_x = (unsigned)sums[chan0];
+        const unsigned sum_xx = sums_xy[chan0];
 
         float denominator = (float)(16 * sum_xx) - (float)(sum_x * sum_x);
 
@@ -326,9 +325,9 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
                  *  a = (m∑xy - ∑x∑y) / m∑x² - (∑x)²
                  *  b = (∑x²∑y - ∑xy∑x) / m∑x² - (∑x)²
                  * see Giordano/Weir pg.103 */
-                const auto chan = (chan0 + i) % 3;
-                const auto &sum_y = sums[chan];
-                const auto &sum_xy = sums_xy[chan];
+                const unsigned chan = (chan0 + i) % 3;
+                const unsigned sum_y = (unsigned)sums[chan];
+                const unsigned sum_xy = sums_xy[chan];
 
                 float a = (float)((16 * sum_xy) - (sum_x * sum_y)) / denominator;
                 float b = (float)((sum_xx * sum_y) - (sum_xy * sum_x)) / denominator;
@@ -709,9 +708,8 @@ void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetr
         sums[i + 1] = sums[i] + color_vectors[p];
     }
 
-    const Hash q_total = ((_flags & Flags::Exhaustive) != Flags::None) ? OrderTable::OrderCount : orderings;
+    const unsigned q_total = ((_flags & Flags::Exhaustive) != Flags::None) ? OrderTable::OrderCount : orderings;
     for (Hash q = 0; q < q_total; q++) {
-
         Hash trial_hash = ((_flags & Flags::Exhaustive) != Flags::None) ? q : OrderTable::BestOrders[start_hash][q];
         Vector4 trial_matrix = OrderTable::GetFactors(trial_hash);
 

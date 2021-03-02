@@ -22,7 +22,6 @@
 #include <array>
 
 #include "../Vector4.h"
-#include "Histogram.h"
 
 namespace rgbcx {
 using Hash = uint16_t;

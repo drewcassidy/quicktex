@@ -20,21 +20,19 @@
 #pragma once
 
 #include <array>
-#include <cassert>
+#include <climits>
 #include <cstdint>
-#include <mutex>
+#include <memory>
 
 #include "../BlockEncoder.h"
 #include "../BlockView.h"
-#include "../Interpolator.h"
-#include "../bitwiseEnums.h"
-#include "../ndebug.h"
+#include "../Color.h"
 #include "BC1Block.h"
-#include "OrderTable.h"
 #include "SingleColorTable.h"
-#include "Tables.h"
 
 namespace rgbcx {
+class Interpolator;
+class Vector4;
 
 class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
    public:
@@ -163,6 +161,6 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
 
     template <ColorMode M> void RefineBlockLS(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned passes) const;
 
-    template<ColorMode M> void RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const;
+    template <ColorMode M> void RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const;
 };
 }  // namespace rgbcx

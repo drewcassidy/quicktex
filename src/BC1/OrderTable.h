@@ -21,14 +21,12 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
+#include <cassert>
+#include <cmath>
 #include <cstdint>
-#include <mutex>
-#include <numeric>
 
 #include "../Vector4.h"
-#include "../util.h"
-#include "Histogram.h"
-#include "Tables.h"
 
 namespace rgbcx {
 template <size_t N> class Histogram;
@@ -106,7 +104,7 @@ template <size_t N> class OrderTable {
     }
 
     static Vector4 GetFactors(Hash hash) {
-        assert(generated);
+        assert(generated.load());
         assert(factors != nullptr);
 
         return factors->at(hash);
