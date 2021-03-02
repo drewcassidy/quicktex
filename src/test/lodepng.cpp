@@ -675,7 +675,7 @@ Jyrki Katajainen, Alistair Moffat, Andrew Turpin, 1995.*/
 /*chain node for boundary package merge*/
 typedef struct BPMNode
 {
-	int weight; /*the sum of all weights in this chain*/
+	int weight; /*the sum of all Weights in this chain*/
 	unsigned index; /*index of this leaf node (called "count" in the paper)*/
 	struct BPMNode* tail; /*the next nodes in this chain (null if last)*/
 	int in_use;
@@ -769,7 +769,7 @@ static void boundaryPM(BPMLists* lists, BPMNode* leaves, size_t numpresent, int 
 	}
 	else
 	{
-		/*sum of the weights of the head nodes of the previous lookahead chains.*/
+		/*sum of the Weights of the head nodes of the previous lookahead chains.*/
 		int sum = lists->chains0[c - 1]->weight + lists->chains1[c - 1]->weight;
 		lists->chains0[c] = lists->chains1[c];
 		if (lastindex < numpresent && sum > leaves[lastindex].weight)

@@ -3,13 +3,14 @@
 
 #pragma once
 #include <cstdint>
+#include <array>
 
 // This table is: 9 * (w * w), 9 * ((1.0f - w) * w), 9 * ((1.0f - w) * (1.0f - w))
 // where w is [0,1/3,2/3,1]. 9 is the perfect multiplier.
-static constexpr uint32_t g_weight_vals4[4] = {0x000009, 0x010204, 0x040201, 0x090000};
+static constexpr std::array<uint32_t, 4> g_weight_vals4 = {0x000009, 0x010204, 0x040201, 0x090000};
 
 // multiplier is 4 for 3-color
-static constexpr uint32_t g_weight_vals3[3] = {0x000004, 0x040000, 0x010101};
+static constexpr std::array<uint32_t, 3> g_weight_vals3 = {0x000004, 0x040000, 0x010101};
 
 const uint32_t MIN_TOTAL_ORDERINGS = 1;
 const uint32_t MAX_TOTAL_ORDERINGS3 = 32;

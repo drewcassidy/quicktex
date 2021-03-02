@@ -19,7 +19,7 @@ typedef struct
 	// m_max_partitions_mode may range from 0 (disables mode 1) to BC7ENC_MAX_PARTITIONS1. The higher this value, the slower the compressor, but the higher the quality.
 	uint32_t m_max_partitions_mode;
 	
-	// Relative RGBA or YCbCrA weights.
+	// Relative RGBA or YCbCrA Weights.
 	uint32_t m_weights[4];
 	
 	// m_uber_level may range from 0 to BC7ENC_MAX_UBER_LEVEL. The higher this value, the slower the compressor, but the higher the quality.

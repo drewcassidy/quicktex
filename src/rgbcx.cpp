@@ -13,7 +13,7 @@
 #include <type_traits>
 
 #include "BC1/BC1Block.h"
-#include "BC1/tables.h"
+#include "BC1/Tables.h"
 #include "Color.h"
 #include "util.h"
 

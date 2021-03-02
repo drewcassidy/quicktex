@@ -41,18 +41,10 @@
 
 namespace rgbcx {
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
-using Hist3 = OrderTable<3>::Histogram;
-using Hist4 = OrderTable<4>::Histogram;
 using Hash = uint16_t;
 using BlockMetrics = Color4x4::BlockMetrics;
 using EncodeResults = BC1Encoder::EncodeResults;
 using ColorMode = BC1Encoder::ColorMode;
-
-// Static Fields
-OrderTable<3> *BC1Encoder::order_table3 = nullptr;
-OrderTable<4> *BC1Encoder::order_table4 = nullptr;
-std::mutex BC1Encoder::order_table_mutex = std::mutex();
-bool BC1Encoder::order_tables_generated = false;
 
 // constructors
 BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
@@ -62,19 +54,11 @@ BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolato
     _orderings4 = 16;
     _orderings3 = 8;
 
-    // generate lookup tables
-    order_table_mutex.lock();
-    if (!order_tables_generated) {
-        assert(order_table3 == nullptr);
-        assert(order_table4 == nullptr);
+    OrderTable<3>::Generate();
+    OrderTable<4>::Generate();
 
-        order_table3 = new OrderTable<3>();
-        order_table4 = new OrderTable<4>();
-        order_tables_generated = true;
-    }
-    assert(order_table3 != nullptr);
-    assert(order_table4 != nullptr);
-    order_table_mutex.unlock();
+    assert(OrderTable<3>::generated);
+    assert(OrderTable<4>::generated);
 }
 
 void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
@@ -123,8 +107,7 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
 
     // First refinement pass using ordered cluster fit
     if (result.error > 0 && (bool)(_flags & Flags::UseLikelyTotalOrderings)) {
-        for (unsigned iter = 0; iter < total_cf_iters; iter++) { RefineBlockCF<ColorMode::FourColor>(pixels, result, metrics, _error_mode, _orderings4);
-        }
+        for (unsigned iter = 0; iter < total_cf_iters; iter++) { RefineBlockCF<ColorMode::FourColor>(pixels, result, metrics, _error_mode, _orderings4); }
     }
 
     // try for 3-color block
@@ -651,8 +634,9 @@ template <ColorMode M> void BC1Encoder::RefineEndpointsLS(std::array<Vector4, 17
 
     Vector4 q10 = {0, 0, 0};
     unsigned level = 0;
+    Histogram<color_count> h = OrderTable<color_count>::Orders[hash];
     for (unsigned i = 0; i < (color_count - 1); i++) {
-        level += OrderTable<color_count>::GetUniqueOrdering(hash, i);
+        level += h[i];
         q10 += sums[level];
     }
 
@@ -698,19 +682,12 @@ void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetr
     assert(block.color_mode != ColorMode::Incomplete);
 
     using OrderTable = OrderTable<color_count>;
-    using Hist = typename OrderTable::Histogram;
+    using Hist = Histogram<color_count>;
 
     EncodeResults orig = block;
     Hist h = Hist(orig.selectors);
 
-    Hash start_hash;
-
-    if constexpr (color_count == 4) {
-        start_hash = order_table4->GetHash(h);
-    }
-    else {
-        start_hash = order_table3->GetHash(h);
-    }
+    Hash start_hash = OrderTable::GetHash(h);
 
     Vector4 axis = orig.high.ScaleFrom565() - orig.low.ScaleFrom565();
     std::array<Vector4, 16> color_vectors;
@@ -732,19 +709,11 @@ void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetr
         sums[i + 1] = sums[i] + color_vectors[p];
     }
 
-    const Hash q_total =
-        ((_flags & Flags::Exhaustive) != Flags::None) ? OrderTable::UniqueOrderings : orderings;
+    const Hash q_total = ((_flags & Flags::Exhaustive) != Flags::None) ? OrderTable::OrderCount : orderings;
     for (Hash q = 0; q < q_total; q++) {
-        Hash trial_hash;
-        Vector4 trial_matrix;
 
-        if (color_count == 4) {
-            trial_hash = ((_flags & Flags::Exhaustive) != Flags::None) ? q : g_best_total_orderings4[start_hash][q];
-            trial_matrix = order_table4->GetFactors(trial_hash);
-        } else {
-            trial_hash = ((_flags & Flags::Exhaustive) != Flags::None) ? q : g_best_total_orderings3[start_hash][q];
-            trial_matrix = order_table3->GetFactors(trial_hash);
-        }
+        Hash trial_hash = ((_flags & Flags::Exhaustive) != Flags::None) ? q : OrderTable::BestOrders[start_hash][q];
+        Vector4 trial_matrix = OrderTable::GetFactors(trial_hash);
 
         EncodeResults trial_result = orig;
         Vector4 low, high;

@@ -98,7 +98,12 @@ class Vector4 {
         return max;
     }
 
-    unsigned int SqrMag() { return (unsigned)Dot(*this, *this); }
+    float SqrMag() { return Dot(*this, *this); }
+
+    float Determinant2x2() {
+        //z00 * z11 - z01 * z10;
+        return (_c[0] * _c[3]) - (_c[1] * _c[2]);
+    }
 
    private:
     template <typename Op> static inline Vector4 DoOp(const Vector4 &lhs, const Vector4 &rhs, Op f) {

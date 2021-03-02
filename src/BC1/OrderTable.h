@@ -27,119 +27,124 @@
 
 #include "../Vector4.h"
 #include "../util.h"
-#include "tables.h"
+#include "Histogram.h"
+#include "Tables.h"
 
 namespace rgbcx {
+template <size_t N> class Histogram;
 
 template <size_t N> class OrderTable {
    public:
+    static constexpr unsigned HashCount = 1 << ((N - 1) * 4);     // 16**(N-1)
+    static constexpr unsigned OrderCount = (N == 4) ? 969 : 153;  //(16+N-1)C(N-1)
+#if RGBCX_USE_SMALLER_TABLES
+    static constexpr unsigned BestOrderCount = 32;
+#else
+    static constexpr unsigned BestOrderCount = (N == 4) ? 128 : 32;
+#endif
+
     using Hash = uint16_t;
-    using FactorMatrix = std::array<float, 3>;
+    using OrderArray = std::array<Histogram<N>, OrderCount>;
+    using BestOrderRow = std::array<Hash, BestOrderCount>;
+    using BestOrderArray = std::array<BestOrderRow, OrderCount>;
 
-    class Histogram {
-       public:
-        Histogram() { _bins = {0}; }
+    static std::atomic<bool> generated;
 
-        Histogram(std::array<uint8_t, 16> sels) {
-            _bins = {0};
-            for (unsigned i = 0; i < 16; i++) {
-                assert(sels[i] < N);
-                _bins[sels[i]]++;
-            }
-        }
+    static const OrderArray Orders;
+    static const BestOrderArray BestOrders;
+    static const std::array<Vector4, N> Weights;
+    static const std::array<Hash, N> SingleColorHashes;
 
-        uint8_t operator[](size_t index) const {
-            assert(index < N);
-            return _bins[index];
-        }
-        uint8_t &operator[](size_t index) {
-            assert(index < N);
-            return _bins[index];
-        }
-
-        bool Any16() {
-            return std::any_of(_bins.begin(), _bins.end(), [](int i) { return i == 16; });
-        }
-
-        unsigned GetPacked() const {
-            unsigned packed = 0;
-            for (unsigned i = 0; i < (N - 1); i++) { packed |= (_bins[i] << (4 * i)); }
-
-            assert(packed < TotalHashes);
-
-            return packed;
-        }
-
-       private:
-        std::array<uint8_t, N> _bins;
-    };
-
-    static inline constexpr size_t UniqueOrderings = (N == 4) ? NUM_UNIQUE_TOTAL_ORDERINGS4 : NUM_UNIQUE_TOTAL_ORDERINGS3;
-    static inline constexpr size_t TotalHashes = (N == 4) ? 4096 : 256;
-
-    static inline constexpr uint8_t GetUniqueOrdering(Hash hash, unsigned selector) {
-        if constexpr (N == 4) { return g_unique_total_orders4[hash][selector]; }
-        return g_unique_total_orders3[hash][selector];
-    }
-
-    OrderTable<N>() {
+    static bool Generate() {
         static_assert(N == 4 || N == 3);
 
-        const unsigned *weight_vals = (N == 4) ? g_weight_vals4 : g_weight_vals3;
+        table_mutex.lock();
+        if (generated) return false;
+
+        hashes = new std::array<Hash, HashCount>();
+        factors = new std::array<Vector4, OrderCount>();
+
         const float denominator = (N == 4) ? 3.0f : 2.0f;
 
-        for (unsigned i = 0; i < UniqueOrderings; i++) {
-            Histogram h;
-            for (unsigned j = 0; j < N; j++) { h[j] = GetUniqueOrdering(i, j); }
+        for (uint16_t i = 0; i < OrderCount; i++) {
+            Histogram<N> h = Orders[i];
+            if (!h.Any16()) hashes->at(h.GetPacked()) = i;
 
-            if (!h.Any16()) _hashes[h.GetPacked()] = (Hash)i;
+            Vector4 factor_matrix = 0;
+            for (unsigned sel = 0; sel < N; sel++) factor_matrix += (Weights[sel] * h[sel]);
 
-            unsigned weight_accum = 0;
-            for (unsigned sel = 0; sel < N; sel++) weight_accum += (weight_vals[sel] * h[sel]);
-
-            // todo: use a Vector4 here instead for SIMD readiness
-            float z00 = (float)((weight_accum >> 16) & 0xFF);
-            float z10 = (float)((weight_accum >> 8) & 0xFF);
-            float z11 = (float)(weight_accum & 0xFF);
-            float z01 = z10;
-
-            float det = z00 * z11 - z01 * z10;
+            float det = factor_matrix.Determinant2x2();
             if (fabs(det) < 1e-8f) {
-                _factors[i][0] = 0;
-                _factors[i][1] = 0;
-                _factors[i][2] = 0;
+                factors->at(i) = Vector4(0);
             } else {
-                det = (denominator / 255.0f) / det;
-                _factors[i][0] = z11 * det;
-                _factors[i][1] = -z10 * det;
-                _factors[i][2] = z00 * det;
+                factor_matrix *= Vector4(1, -1, -1, 1);
+                factor_matrix *= (denominator / 255.0f) / det;
+                factors->at(i) = factor_matrix;
             }
         }
+
+        generated = true;
+        table_mutex.unlock();
+
+        assert(generated);
+        return true;
     }
 
-    Hash GetHash(Histogram &hist) const {
+    static Hash GetHash(Histogram<N> &hist) {
         for (unsigned i = 0; i < N; i++) {
-            if (hist[i] == 16) return GetSingleColorHashes()[i];
+            if (hist[i] == 16) return SingleColorHashes[i];
         }
 
-        return _hashes[hist.GetPacked()];
+        assert(generated);
+        assert(hashes != nullptr);
+
+        auto hash = hashes->at(hist.GetPacked());
+
+        assert(hash < OrderCount);
+
+        return hash;
     }
 
-    Vector4 GetFactors(Hash hash) { return Vector4(_factors[hash][0], _factors[hash][1], _factors[hash][1], _factors[hash][2]); }
+    static Vector4 GetFactors(Hash hash) {
+        assert(generated);
+        assert(factors != nullptr);
 
-    static inline constexpr std::array<Hash, N> GetSingleColorHashes() {
-        if constexpr (N == 4) { return {15, 700, 753, 515}; }
-        return {12, 15, 89};
+        return factors->at(hash);
     }
 
-    static inline constexpr bool IsSingleColor(Hash hash) {
-        auto hashes = GetSingleColorHashes();
-        return (std::find(hashes.begin(), hashes.end(), hash) != hashes.end());
-    }
+    static bool IsSingleColor(Hash hash) { return (std::find(SingleColorHashes.begin(), SingleColorHashes.end(), hash) != SingleColorHashes.end()); }
 
    private:
-    std::array<Hash, TotalHashes> _hashes;
-    std::array<FactorMatrix, UniqueOrderings> _factors;
+    static std::mutex table_mutex;
+    static std::array<Hash, HashCount> *hashes;
+    static std::array<Vector4, OrderCount> *factors;
 };
+
+template <> std::atomic<bool> OrderTable<3>::generated;
+template <> std::atomic<bool> OrderTable<4>::generated;
+
+template <> std::mutex OrderTable<3>::table_mutex;
+template <> std::mutex OrderTable<4>::table_mutex;
+
+template <> std::array<OrderTable<3>::Hash, OrderTable<3>::HashCount> *OrderTable<3>::hashes;
+template <> std::array<OrderTable<4>::Hash, OrderTable<4>::HashCount> *OrderTable<4>::hashes;
+
+template <> std::array<Vector4, OrderTable<3>::OrderCount> *OrderTable<3>::factors;
+template <> std::array<Vector4, OrderTable<4>::OrderCount> *OrderTable<4>::factors;
+
+template <> const std::array<Vector4, 3> OrderTable<3>::Weights;
+template <> const std::array<Vector4, 4> OrderTable<4>::Weights;
+
+template <> const std::array<uint16_t, 3> OrderTable<3>::SingleColorHashes;
+template <> const std::array<uint16_t, 4> OrderTable<4>::SingleColorHashes;
+
+template <> const OrderTable<3>::OrderArray OrderTable<3>::Orders;
+template <> const OrderTable<4>::OrderArray OrderTable<4>::Orders;
+
+template <> const OrderTable<3>::BestOrderArray OrderTable<3>::BestOrders;
+template <> const OrderTable<4>::BestOrderArray OrderTable<4>::BestOrders;
+
+extern template class OrderTable<3>;
+extern template class OrderTable<4>;
 
 }  // namespace rgbcx
