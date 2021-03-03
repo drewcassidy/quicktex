@@ -61,15 +61,9 @@ BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolato
 }
 
 void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
-    auto r_view = pixels.GetChannel(0);
-    auto g_view = pixels.GetChannel(1);
-    auto b_view = pixels.GetChannel(2);
-
-    Color first = pixels.Get(0, 0);
-
     if (pixels.IsSingleColor()) {
         // single-color pixel block, do it the fast way
-        WriteBlockSolid(first, dest);
+        WriteBlockSolid(pixels.Get(0, 0), dest);
         return;
     }
 
@@ -201,7 +195,6 @@ void BC1Encoder::WriteBlockSolid(Color color, BC1Block *dest) const {
 }
 
 void BC1Encoder::WriteBlock(EncodeResults &block, BC1Block *dest) const {
-    bool flip = false;
     BC1Block::UnpackedSelectors selectors;
     uint16_t color1 = block.low.Pack565Unscaled();
     uint16_t color0 = block.high.Pack565Unscaled();
