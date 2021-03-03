@@ -29,7 +29,7 @@ namespace rgbcx {
 
 class Vector4Int {
    public:
-    Vector4Int(int x = 0, int y = 0, int z = 0, int w = 0) {
+    Vector4Int(int x, int y, int z = 0, int w = 0) {
         _c[0] = x;
         _c[1] = y;
         _c[2] = z;

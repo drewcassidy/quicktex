@@ -131,7 +131,7 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
         return true;
     }
 
-    BlockMetrics GetMetrics(unsigned black_threshold = 4) {
+    BlockMetrics GetMetrics(bool ignore_black = false) {
         BlockMetrics metrics;
         metrics.min = Color(UINT8_MAX, UINT8_MAX, UINT8_MAX);
         metrics.max = Color(0, 0, 0);
@@ -139,18 +139,26 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
         metrics.is_greyscale = true;
         metrics.sums = {0, 0, 0};
 
+        unsigned total = 0;
+
         for (unsigned i = 0; i < M * N; i++) {
-            auto val = Base::Get(i);
+            Color val = Base::Get(i);
+            bool is_black = val.IsBlack();
+
+            metrics.has_black |= is_black;
+
+            if (ignore_black && is_black) { continue; }
+
+            metrics.is_greyscale &= val.IsGrayscale();
             for (unsigned c = 0; c < 3; c++) {
                 metrics.min[c] = std::min(metrics.min[c], val[c]);
                 metrics.max[c] = std::max(metrics.max[c], val[c]);
                 metrics.sums[c] += val[c];
             }
-            metrics.is_greyscale &= ((val.r == val.g) && (val.r == val.b));
-            metrics.has_black |= (val.r | val.g | val.b < black_threshold);
+            total++;
         }
 
-        for (unsigned c = 0; c < 3; c++) { metrics.avg[c] = (uint8_t)((unsigned)metrics.sums[c] / (M * N)); }
+        if (total > 0) metrics.avg = (metrics.sum + Vector4Int(total / 2)) / total;  // half-total added for better rounding
 
         return metrics;
     }

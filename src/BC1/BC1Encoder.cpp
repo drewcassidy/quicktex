@@ -667,6 +667,7 @@ void BC1Encoder::RefineBlockLS(Color4x4 &pixels, EncodeResults &block, BlockMetr
         }
     }
 }
+
 template <ColorMode M>
 void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const {
     const int color_count = (unsigned)M & 0x0F;
