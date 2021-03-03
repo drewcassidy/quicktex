@@ -55,6 +55,7 @@ BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolato
     _endpoint_mode = EndpointMode::PCA;
     _orderings4 = 16;
     _orderings3 = 8;
+    _search_rounds = 256;
 
     OrderTable<3>::Generate();
     OrderTable<4>::Generate();
@@ -138,8 +139,12 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
         FindSelectors<ColorMode::ThreeColorBlack>(pixels, trial_result, ErrorMode::Full);
         RefineBlockLS<ColorMode::ThreeColorBlack>(pixels, trial_result, metrics_no_black, ErrorMode::Full, total_ls_passes);
 
-        if (trial_result.error < result.error) {
-            result = trial_result; }
+        if (trial_result.error < result.error) { result = trial_result; }
+    }
+
+    // refine endpoints by searching for nearby colors
+    if (result.error > 0 && _search_rounds > 0) {
+        EndpointSearch(pixels, result, metrics);
     }
 
     WriteBlock(result, dest);
@@ -740,6 +745,74 @@ void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetr
 
         if (trial_result.error < block.error) { block = trial_result; }
         if (trial_result.error == 0) break;
+    }
+}
+
+void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics) const {
+    if ((bool)(block.color_mode & ColorMode::Solid)) return;
+
+    static const std::array<Vector4Int, 16> voxels = {{
+        {1, 0, 0, 3},    // 0
+        {0, 1, 0, 4},    // 1
+        {0, 0, 1, 5},    // 2
+        {-1, 0, 0, 0},   // 3
+        {0, -1, 0, 1},   // 4
+        {0, 0, -1, 2},   // 5
+        {1, 1, 0, 9},    // 6
+        {1, 0, 1, 10},   // 7
+        {0, 1, 1, 11},   // 8
+        {-1, -1, 0, 6},  // 9
+        {-1, 0, -1, 7},  // 10
+        {0, -1, -1, 8},  // 11
+        {-1, 1, 0, 13},  // 12
+        {1, -1, 0, 12},  // 13
+        {0, -1, 1, 15},  // 14
+        {0, 1, -1, 14},  // 15
+    }};
+
+    unsigned prev_improvement_index = 0;
+    int forbidden_direction = -1;
+
+    for (unsigned i = 0; i < _search_rounds; i++) {
+        const unsigned voxel_index = (unsigned)(i & 15);
+        assert((unsigned)voxels[(unsigned)voxels[voxel_index][3]][3] == voxel_index); // make sure voxels are symmetrical
+
+        if ((int)(i & 31) == forbidden_direction) continue;
+
+        Vector4Int delta = voxels[voxel_index];
+        EncodeResults trial_result = block;
+
+        if (i & 16) {
+            trial_result.low.r = (uint8_t)clamp(trial_result.low.r + delta[0], 0, 31);
+            trial_result.low.g = (uint8_t)clamp(trial_result.low.g + delta[1], 0, 63);
+            trial_result.low.b = (uint8_t)clamp(trial_result.low.b + delta[2], 0, 31);
+        } else {
+            trial_result.high.r = (uint8_t)clamp(trial_result.high.r + delta[0], 0, 31);
+            trial_result.high.g = (uint8_t)clamp(trial_result.high.g + delta[1], 0, 63);
+            trial_result.high.b = (uint8_t)clamp(trial_result.high.b + delta[2], 0, 31);
+        }
+
+        switch(block.color_mode) {
+            default:
+            case ColorMode::FourColor:
+                FindSelectors<ColorMode::FourColor>(pixels, trial_result, _error_mode);
+                break;
+            case ColorMode::ThreeColor:
+                FindSelectors<ColorMode::ThreeColor>(pixels, trial_result, ErrorMode::Full);
+                break;
+            case ColorMode::ThreeColorBlack:
+                FindSelectors<ColorMode::ThreeColorBlack>(pixels, trial_result, ErrorMode::Full);
+                break;
+        }
+
+        if (trial_result.error < block.error) {
+            block = trial_result;
+
+            forbidden_direction = delta[3] | (i & 16);
+            prev_improvement_index = i;
+        }
+
+        if (i - prev_improvement_index > 32) break;
     }
 }
 
