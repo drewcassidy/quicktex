@@ -26,7 +26,7 @@
 #include "../Interpolator.h"
 #include "../util.h"
 
-namespace rgbcx {
+namespace rgbcx::BC1 {
 
 struct BC1MatchEntry {
     uint8_t high;

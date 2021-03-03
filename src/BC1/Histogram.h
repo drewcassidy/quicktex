@@ -30,7 +30,7 @@
 #include "../Vector4.h"
 #include "../util.h"
 
-namespace rgbcx {
+namespace rgbcx::BC1 {
 template <size_t N> class Histogram {
    public:
     using Hash = uint16_t;

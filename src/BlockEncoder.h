@@ -61,6 +61,8 @@ template <class B, size_t M, size_t N> class BlockEncoder {
                 unsigned top_left = pixel_x + (pixel_y * image_width);
                 auto src = DecodedBlock(&decoded[top_left], (int)image_width);
 
+//                if (pixel_x != 684 || pixel_y != 492) continue;
+
                 EncodeBlock(src, &blocks[x + block_width * y]);
             }
         }

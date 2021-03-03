@@ -134,10 +134,10 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
     // Each entry includes a high and low pair that best reproduces the 8-bit index as well as possible,
     // with an included error value
     // these depend on the interpolator
-    const MatchListPtr _single_match5 = SingleColorTable<5, 4>(_interpolator);
-    const MatchListPtr _single_match6 = SingleColorTable<6, 4>(_interpolator);
-    const MatchListPtr _single_match5_half = SingleColorTable<5, 3>(_interpolator);
-    const MatchListPtr _single_match6_half = SingleColorTable<6, 3>(_interpolator);
+    const BC1::MatchListPtr _single_match5 = BC1::SingleColorTable<5, 4>(_interpolator);
+    const BC1::MatchListPtr _single_match6 = BC1::SingleColorTable<6, 4>(_interpolator);
+    const BC1::MatchListPtr _single_match5_half = BC1::SingleColorTable<5, 3>(_interpolator);
+    const BC1::MatchListPtr _single_match6_half = BC1::SingleColorTable<6, 3>(_interpolator);
 
     Flags _flags;
     ErrorMode _error_mode;
@@ -149,7 +149,7 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
     void WriteBlockSolid(Color color, BC1Block *dest) const;
     void WriteBlock(EncodeResults &block, BC1Block *dest) const;
 
-    void FindEndpoints(Color4x4 pixels, EncodeResults &block, const BlockMetrics &metrics, EndpointMode endpoint_mode) const;
+    void FindEndpoints(Color4x4 pixels, EncodeResults &block, const BlockMetrics &metrics, EndpointMode endpoint_mode, bool ignore_black = false) const;
     void FindEndpointsSingleColor(EncodeResults &block, Color color, bool is_3color = false) const;
     void FindEndpointsSingleColor(EncodeResults &block, Color4x4 &pixels, Color color, bool is_3color) const;
 

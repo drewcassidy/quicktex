@@ -29,7 +29,7 @@
 #include "../Vector4.h"
 #include "Histogram.h"
 
-namespace rgbcx {
+namespace rgbcx::BC1 {
 template <size_t N> class OrderTable {
    public:
     static constexpr unsigned HashCount = 1 << ((N - 1) * 4);     // 16**(N-1)

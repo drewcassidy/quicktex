@@ -39,6 +39,8 @@
 #include "SingleColorTable.h"
 
 namespace rgbcx {
+using namespace BC1;
+
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
 using Hash = uint16_t;
 using BlockMetrics = Color4x4::BlockMetrics;
@@ -47,7 +49,8 @@ using ColorMode = BC1Encoder::ColorMode;
 
 // constructors
 BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
-    _flags = Flags::UseFullMSEEval | Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use3ColorBlocks;
+    _flags =
+        Flags::UseFullMSEEval | Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use3ColorBlocks | Flags::Use3ColorBlocksForBlackPixels;
     _error_mode = ErrorMode::Full;
     _endpoint_mode = EndpointMode::PCA;
     _orderings4 = 16;
@@ -123,7 +126,20 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
             }
         }
 
-        if (trial_result.error < result.error) { result = trial_result; };
+        if (trial_result.error < result.error) { result = trial_result; }
+    }
+
+    // try for 3-color block with black
+    if (result.error > 0 && (bool)(_flags & Flags::Use3ColorBlocksForBlackPixels) && metrics.has_black && !metrics.max.IsBlack()) {
+        EncodeResults trial_result;
+        BlockMetrics metrics_no_black = pixels.GetMetrics(true);
+
+        FindEndpoints(pixels, trial_result, metrics_no_black, EndpointMode::PCA, true);
+        FindSelectors<ColorMode::ThreeColorBlack>(pixels, trial_result, ErrorMode::Full);
+        RefineBlockLS<ColorMode::ThreeColorBlack>(pixels, trial_result, metrics_no_black, ErrorMode::Full, total_ls_passes);
+
+        if (trial_result.error < result.error) {
+            result = trial_result; }
     }
 
     WriteBlock(result, dest);
@@ -230,8 +246,6 @@ void BC1Encoder::WriteBlock(EncodeResults &block, BC1Block *dest) const {
         if (block.color_mode == ColorMode::ThreeColor) { assert(selectors[y][x] != 3); }
     }
 
-    //    if (block.color_mode != ColorMode::ThreeColor) return;
-
     dest->SetLowColor(color0);
     dest->SetHighColor(color1);
     dest->PackSelectors(selectors);
@@ -267,7 +281,7 @@ void BC1Encoder::FindEndpointsSingleColor(EncodeResults &block, Color4x4 &pixels
     }
 }
 
-void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const BlockMetrics &metrics, EndpointMode endpoint_mode) const {
+void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const BlockMetrics &metrics, EndpointMode endpoint_mode, bool ignore_black) const {
     if (metrics.is_greyscale) {
         // specialized greyscale case
         const unsigned fr = pixels.Get(0).r;
@@ -407,15 +421,16 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
         auto max = Vector4::FromColorRGB(metrics.max);
         auto avg = Vector4::FromColorRGB(metrics.avg);
 
-        std::array<Vector4, 16> colors;
-
         Vector4 axis = {306, 601, 117};  // Luma vector
         Matrix4x4 covariance = Matrix4x4::Identity();
         const unsigned total_power_iters = (_flags & Flags::Use6PowerIters) != Flags::None ? 6 : 4;
 
         for (unsigned i = 0; i < 16; i++) {
-            colors[i] = Vector4::FromColorRGB(pixels.Get(i));
-            Vector4 diff = colors[i] - avg;
+            auto val = pixels.Get(i);
+            if (ignore_black && val.IsBlack()) continue;
+
+            auto colorVec = Vector4::FromColorRGB(val);
+            Vector4 diff = colorVec - avg;
             for (unsigned c1 = 0; c1 < 3; c1++) {
                 for (unsigned c2 = c1; c2 < 3; c2++) {
                     covariance[c1][c2] += (diff[c1] * diff[c2]);
@@ -449,9 +464,13 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
         unsigned min_index = 0, max_index = 0;
 
         for (unsigned i = 0; i < 16; i++) {
+            auto val = pixels.Get(i);
+            if (ignore_black && val.IsBlack()) continue;
+
+            auto colorVec = Vector4::FromColorRGB(val);
             // since axis is constant here, I dont think its magnitude actually matters,
             // since we only care about the min or max dot product
-            float dot = colors[i].Dot(axis);
+            float dot = colorVec.Dot(axis);
             if (dot > max_dot) {
                 max_dot = dot;
                 max_index = i;
@@ -479,9 +498,11 @@ template <ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixels, EncodeRe
     std::array<Vector4Int, 4> color_vectors;
 
     if (color_count == 4) {
-        color_vectors = {(Vector4Int)colors[0], (Vector4Int)colors[2], (Vector4Int)colors[3], (Vector4Int)colors[1]};
+        color_vectors = {Vector4Int::FromColorRGB(colors[0]), Vector4Int::FromColorRGB(colors[2]), Vector4Int::FromColorRGB(colors[3]),
+                         Vector4Int::FromColorRGB(colors[1])};
     } else {
-        color_vectors = {(Vector4Int)colors[0], (Vector4Int)colors[2], (Vector4Int)colors[1], (Vector4Int)colors[3]};
+        color_vectors = {Vector4Int::FromColorRGB(colors[0]), Vector4Int::FromColorRGB(colors[2]), Vector4Int::FromColorRGB(colors[1]),
+                         Vector4Int::FromColorRGB(colors[3])};
     }
 
     unsigned total_error = 0;
@@ -545,7 +566,7 @@ template <ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixels, EncodeRe
         for (unsigned i = 0; i < 16; i++) {
             unsigned best_error = UINT_MAX;
             uint8_t best_sel = 0;
-            Vector4Int pixel_vector = (Vector4Int)pixels.Get(i);
+            Vector4Int pixel_vector = Vector4Int::FromColorRGB(pixels.Get(i));
 
             // exhasustively check every pixel's distance from each color, and calculate the error
             for (uint8_t j = 0; j < max_sel; j++) {

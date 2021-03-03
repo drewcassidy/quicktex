@@ -23,7 +23,7 @@
 
 #include "../Vector4.h"
 
-namespace rgbcx {
+namespace rgbcx::BC1 {
 using Hash = uint16_t;
 
 template <> std::atomic<bool> OrderTable<3>::generated = false;
