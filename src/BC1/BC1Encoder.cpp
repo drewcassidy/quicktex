@@ -763,7 +763,7 @@ void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block) const {
 
     for (unsigned i = 0; i < _search_rounds; i++) {
         const unsigned voxel_index = (unsigned)(i & 15);
-        assert((unsigned)voxels[(unsigned)voxels[voxel_index][3]][3] == voxel_index); // make sure voxels are symmetrical
+        assert((unsigned)Voxels[(unsigned)Voxels[voxel_index][3]][3] == voxel_index); // make sure voxels are symmetrical
 
         if ((int)(i & 31) == forbidden_direction) continue;
 
