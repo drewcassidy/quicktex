@@ -30,6 +30,8 @@ Color::Color() { SetRGBA(0, 0, 0, 0xFF); }
 
 Color::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { SetRGBA(r, g, b, a); }
 
+Color::Color(Vector4Int v) { SetRGBA(v[0], v[1], v[2], v[3]); }
+
 uint16_t Color::Pack565Unscaled(uint8_t r, uint8_t g, uint8_t b) {
     assert5bit(r);
     assert6bit(g);
@@ -98,7 +100,7 @@ size_t Color::MinChannelRGB() {
 
 size_t Color::MaxChannelRGB() {
     if (r >= g && r >= b) return 0;
-    if (g >= b && g >=r) return 1;
+    if (g >= b && g >= r) return 1;
     return 2;
 }
 
@@ -107,12 +109,10 @@ Color Color::Min(const Color &A, const Color &B) { return Color(std::min(A[0], B
 Color Color::Max(const Color &a, const Color &b) { return Color(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]), std::max(a[3], b[3])); }
 
 Color::operator Vector4() const { return Vector4(r, g, b, a); }
-Color::operator Vector4Int() const { return Vector4Int(r, g, b, a);}
+Color::operator Vector4Int() const { return Vector4Int(r, g, b, a); }
 Vector4Int operator-(const Color &lhs, const Color &rhs) {
     Vector4Int result;
-    for (unsigned i = 0; i < 4; i++) {
-        result[i] = (int)lhs[i] - rhs[i];
-    }
+    for (unsigned i = 0; i < 4; i++) { result[i] = (int)lhs[i] - rhs[i]; }
     return result;
 }
 

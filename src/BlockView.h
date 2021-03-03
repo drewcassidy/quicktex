@@ -158,7 +158,7 @@ template <size_t M, size_t N> class ColorBlockView : public BlockView<Color, M, 
             total++;
         }
 
-        if (total > 0) metrics.avg = (metrics.sum + Vector4Int(total / 2)) / total;  // half-total added for better rounding
+        if (total > 0) metrics.avg = (metrics.sums + Vector4Int(total / 2)) / total;  // half-total added for better rounding
 
         return metrics;
     }
