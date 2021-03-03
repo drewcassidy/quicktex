@@ -41,10 +41,6 @@
 namespace rgbcx {
 using namespace BC1;
 
-using InterpolatorPtr = std::shared_ptr<Interpolator>;
-using Hash = uint16_t;
-using BlockMetrics = Color4x4::BlockMetrics;
-using EncodeResults = BC1Encoder::EncodeResults;
 using ColorMode = BC1Encoder::ColorMode;
 
 // constructors
@@ -53,8 +49,8 @@ BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolato
         Flags::UseFullMSEEval | Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use3ColorBlocks | Flags::Use3ColorBlocksForBlackPixels;
     _error_mode = ErrorMode::Full;
     _endpoint_mode = EndpointMode::PCA;
-    _orderings4 = 16;
-    _orderings3 = 8;
+    _orderings4 = 128;
+    _orderings3 = 32;
     _search_rounds = 256;
 
     OrderTable<3>::Generate();
@@ -143,8 +139,7 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
     }
 
     // refine endpoints by searching for nearby colors
-    if (result.error > 0 && _search_rounds > 0) {
-        EndpointSearch(pixels, result, metrics);
+    if (result.error > 0 && _search_rounds > 0) { EndpointSearch(pixels, result);
     }
 
     WriteBlock(result, dest);
@@ -434,8 +429,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
             auto val = pixels.Get(i);
             if (ignore_black && val.IsBlack()) continue;
 
-            auto colorVec = Vector4::FromColorRGB(val);
-            Vector4 diff = colorVec - avg;
+            auto color_vec = Vector4::FromColorRGB(val);
+            Vector4 diff = color_vec - avg;
             for (unsigned c1 = 0; c1 < 3; c1++) {
                 for (unsigned c2 = c1; c2 < 3; c2++) {
                     covariance[c1][c2] += (diff[c1] * diff[c2]);
@@ -472,10 +467,10 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
             auto val = pixels.Get(i);
             if (ignore_black && val.IsBlack()) continue;
 
-            auto colorVec = Vector4::FromColorRGB(val);
+            auto color_vec = Vector4::FromColorRGB(val);
             // since axis is constant here, I dont think its magnitude actually matters,
             // since we only care about the min or max dot product
-            float dot = colorVec.Dot(axis);
+            float dot = color_vec.Dot(axis);
             if (dot > max_dot) {
                 max_dot = dot;
                 max_index = i;
@@ -659,7 +654,7 @@ template <ColorMode M> void BC1Encoder::RefineEndpointsLS(std::array<Vector4, 17
         q10 += sums[level];
     }
 
-    Vector4 q00 = (sums[16] * denominator) - q10;
+    Vector4 q00 = (sums[16] * (float)denominator) - q10;
 
     Vector4 low = (matrix[0] * q00) + (matrix[1] * q10);
     Vector4 high = (matrix[2] * q00) + (matrix[3] * q10);
@@ -740,7 +735,7 @@ void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetr
             FindEndpointsSingleColor(trial_result, pixels, metrics.avg, (color_count == 3));
         } else {
             RefineEndpointsLS<M>(sums, trial_result, trial_matrix, trial_hash);
-            FindSelectors<M>(pixels, trial_result, _error_mode);
+            FindSelectors<M>(pixels, trial_result, error_mode);
         }
 
         if (trial_result.error < block.error) { block = trial_result; }
@@ -748,10 +743,10 @@ void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetr
     }
 }
 
-void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics) const {
+void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block) const {
     if ((bool)(block.color_mode & ColorMode::Solid)) return;
 
-    static const std::array<Vector4Int, 16> voxels = {{
+    static const std::array<Vector4Int, 16> Voxels = {{
         {1, 0, 0, 3},    // 0
         {0, 1, 0, 4},    // 1
         {0, 0, 1, 5},    // 2
@@ -779,7 +774,7 @@ void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block, BlockMet
 
         if ((int)(i & 31) == forbidden_direction) continue;
 
-        Vector4Int delta = voxels[voxel_index];
+        Vector4Int delta = Voxels[voxel_index];
         EncodeResults trial_result = block;
 
         if (i & 16) {
@@ -808,7 +803,7 @@ void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block, BlockMet
         if (trial_result.error < block.error) {
             block = trial_result;
 
-            forbidden_direction = delta[3] | (i & 16);
+            forbidden_direction = delta[3] | (int)(i & 16);
             prev_improvement_index = i;
         }
 

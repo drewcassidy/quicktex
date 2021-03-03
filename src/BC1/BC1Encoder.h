@@ -163,6 +163,6 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
 
     template <ColorMode M> void RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const;
 
-    void EndpointSearch(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics) const;
+    void EndpointSearch(Color4x4 &pixels, EncodeResults &block) const;
 };
 }  // namespace rgbcx
