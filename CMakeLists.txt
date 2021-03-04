@@ -10,7 +10,7 @@ add_subdirectory(extern/pybind11)
 # Collect source files
 file(GLOB SOURCE_FILES "src/*.cpp" "src/BC*/*.cpp")
 file(GLOB HEADER_FILES "src/*.h" "src/BC*/*.h")
-file(GLOB PYTHON_FILES "python/*.cpp" "python/*.h")
+file(GLOB PYTHON_FILES "src/python/*.cpp" "src/python/*.h")
 file(GLOB TEST_FILES "src/test/*.c" "src/test/*.cpp" "src/test/*.h")
 
 # Organize source files together for some IDEs
