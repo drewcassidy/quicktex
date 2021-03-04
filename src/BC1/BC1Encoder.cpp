@@ -44,14 +44,14 @@ using namespace BC1;
 using ColorMode = BC1Encoder::ColorMode;
 
 // constructors
+
 BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
-    _flags =
-        Flags::UseFullMSEEval | Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use3ColorBlocks | Flags::Use3ColorBlocksForBlackPixels;
-    _error_mode = ErrorMode::Full;
+    _flags = Flags::None;
+    _error_mode = ErrorMode::Check2;
     _endpoint_mode = EndpointMode::PCA;
-    _orderings4 = 128;
-    _orderings3 = 32;
-    _search_rounds = 256;
+    _search_rounds = 0;
+    _orderings3 = 1;
+    _orderings4 = 1;
 
     OrderTable<3>::Generate();
     OrderTable<4>::Generate();
@@ -60,6 +60,165 @@ BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolato
     assert(OrderTable<4>::generated);
 }
 
+BC1Encoder::BC1Encoder(unsigned int level, bool allow_3color, bool allow_3color_black) : BC1Encoder(Interpolator::MakeInterpolator()) {
+    SetLevel(level, allow_3color, allow_3color_black);
+}
+
+BC1Encoder::BC1Encoder(InterpolatorPtr interpolator, unsigned level, bool allow_3color, bool allow_3color_black) : BC1Encoder(interpolator) {
+    SetLevel(level, allow_3color, allow_3color_black);
+}
+
+BC1Encoder::BC1Encoder(InterpolatorPtr interpolator, Flags flags, ErrorMode error_mode, EndpointMode endpoint_mode, unsigned search_rounds, unsigned orderings4,
+                       unsigned orderings3)
+    : BC1Encoder(interpolator) {
+    SetFlags(flags);
+    SetErrorMode(error_mode);
+    SetEndpointMode(endpoint_mode);
+    SetSearchRounds(search_rounds);
+    SetOrderings(orderings4, orderings3);
+}
+
+// Getters and Setters
+void BC1Encoder::SetLevel(unsigned level, bool allow_3color, bool allow_3color_black) {
+    _flags = Flags::None;
+    _error_mode = ErrorMode::Check2;
+    _endpoint_mode = EndpointMode::PCA;
+    _search_rounds = 0;
+    _orderings3 = 1;
+    _orderings4 = 1;
+
+    switch (level) {
+        case 0:
+            // Faster/higher quality than stb_dxt default.
+            _endpoint_mode = EndpointMode::BoundingBoxInt;
+            break;
+        case 1:
+            // Faster/higher quality than stb_dxt default. a bit higher average quality vs. mode 0.
+            _endpoint_mode = EndpointMode::LeastSquares;
+            break;
+        case 2:
+            // On average mode 2 is a little weaker than modes 0/1, but it's stronger on outliers (very tough textures).
+            // Slightly stronger than stb_dxt.
+            // Uses default settings.
+            break;
+        case 3:
+            // Slightly stronger than stb_dxt HIGHQUAL.
+            _flags = Flags::TwoLeastSquaresPasses;
+            break;
+        case 4:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::Use6PowerIters;
+            _error_mode = ErrorMode::Full;
+            break;
+        default:
+        case 5:
+            // stb_dxt HIGHQUAL + permit 3 color (if it's enabled).
+            _flags = Flags::TwoLeastSquaresPasses;
+            _error_mode = ErrorMode::Faster;
+            break;
+        case 6:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings;
+            _error_mode = ErrorMode::Faster;
+            break;
+        case 7:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings;
+            _error_mode = ErrorMode::Faster;
+            _orderings4 = 4;
+            break;
+        case 8:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings;
+            _error_mode = ErrorMode::Faster;
+            _orderings4 = 8;
+            break;
+        case 9:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings;
+            _error_mode = ErrorMode::Check2;
+            _orderings4 = 11;
+            _orderings3 = 3;
+            break;
+        case 10:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings;
+            _error_mode = ErrorMode::Check2;
+            _orderings4 = 20;
+            _orderings3 = 8;
+            break;
+        case 11:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings;
+            _error_mode = ErrorMode::Check2;
+            _orderings4 = 28;
+            _orderings3 = 16;
+            break;
+        case 12:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings;
+            _error_mode = ErrorMode::Check2;
+            _orderings4 = 32;
+            _orderings3 = 32;
+            break;
+        case 13:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use6PowerIters | Flags::TryAllInitialEndpoints;
+            _error_mode = ErrorMode::Full;
+            _orderings4 = 32;
+            _orderings3 = 32;
+            _search_rounds = 20;
+            break;
+        case 14:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use6PowerIters | Flags::TryAllInitialEndpoints;
+            _error_mode = ErrorMode::Full;
+            _orderings4 = 32;
+            _orderings3 = 32;
+            _search_rounds = 32;
+            break;
+        case 15:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use6PowerIters | Flags::TryAllInitialEndpoints;
+            _error_mode = ErrorMode::Full;
+            _orderings4 = 56;
+            _orderings3 = 32;
+            _search_rounds = 32;
+            break;
+        case 16:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use6PowerIters | Flags::TryAllInitialEndpoints;
+            _error_mode = ErrorMode::Full;
+            _orderings4 = 80;
+            _orderings3 = 32;
+            _search_rounds = 256;
+            break;
+        case 17:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use6PowerIters | Flags::TryAllInitialEndpoints;
+            _error_mode = ErrorMode::Full;
+            _orderings4 = 128;
+            _orderings3 = 32;
+            _search_rounds = 256;
+            break;
+        case 18:
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use6PowerIters | Flags::TryAllInitialEndpoints | Flags::Iterative;
+            _error_mode = ErrorMode::Full;
+            _orderings4 = 128;
+            _orderings3 = 32;
+            _search_rounds = 256;
+            break;
+        case 19:
+            // This hidden mode is *extremely* slow and abuses the encoder. It's just for testing/training.
+            _flags = Flags::TwoLeastSquaresPasses | Flags::UseLikelyTotalOrderings | Flags::Use6PowerIters | Flags::TryAllInitialEndpoints | Flags::Iterative |
+                     Flags::Exhaustive;
+            _error_mode = ErrorMode::Full;
+            _orderings4 = 128;
+            _orderings3 = 32;
+            _search_rounds = 256;
+            break;
+    }
+
+    if (level >= 5 && allow_3color) { _flags |= Flags::Use3ColorBlocks; }
+    if (level >= 5 && allow_3color_black) { _flags |= Flags::Use3ColorBlocksForBlackPixels; }
+
+    _orderings4 = clamp(_orderings4, 1U, OrderTable<4>::BestOrderCount);
+    _orderings3 = clamp(_orderings3, 1U, OrderTable<3>::BestOrderCount);
+}
+
+void BC1Encoder::SetOrderings(unsigned orderings4, unsigned orderings3) {
+    _orderings4 = clamp(orderings4, 1U, OrderTable<4>::BestOrderCount);
+    _orderings3 = clamp(orderings3, 1U, OrderTable<3>::BestOrderCount);
+}
+
+// Public methods
 void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
     if (pixels.IsSingleColor()) {
         // single-color pixel block, do it the fast way
@@ -69,10 +228,13 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
 
     auto metrics = pixels.GetMetrics();
 
-    bool needs_block_error = (_flags & Flags::UseLikelyTotalOrderings | Flags::Use3ColorBlocks | Flags::UseFullMSEEval) != Flags::None;
+    bool needs_block_error = (_flags & Flags::UseLikelyTotalOrderings | Flags::Use3ColorBlocks) != Flags::None;
+    needs_block_error |= (_error_mode != ErrorMode::None);
     needs_block_error |= (_search_rounds > 0);
     needs_block_error |= metrics.has_black && ((_flags & Flags::Use3ColorBlocksForBlackPixels) != Flags::None);
     ErrorMode error_mode = needs_block_error ? _error_mode : ErrorMode::None;
+
+    assert(!((_error_mode == ErrorMode::None) && needs_block_error));
 
     const unsigned total_ls_passes = (_flags & Flags::TwoLeastSquaresPasses) != Flags::None ? 2 : 1;
     const unsigned total_ep_rounds = needs_block_error && ((_flags & Flags::TryAllInitialEndpoints) != Flags::None) ? 2 : 1;
@@ -133,12 +295,12 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
     }
 
     // refine endpoints by searching for nearby colors
-    if (result.error > 0 && _search_rounds > 0) { EndpointSearch(pixels, result);
-    }
+    if (result.error > 0 && _search_rounds > 0) { EndpointSearch(pixels, result); }
 
     WriteBlock(result, dest);
 }
 
+// Private methods
 void BC1Encoder::WriteBlockSolid(Color color, BC1Block *dest) const {
     uint8_t mask = 0xAA;  // 2222
     uint16_t min16, max16;
@@ -763,7 +925,7 @@ void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block) const {
 
     for (unsigned i = 0; i < _search_rounds; i++) {
         const unsigned voxel_index = (unsigned)(i & 15);
-        assert((unsigned)Voxels[(unsigned)Voxels[voxel_index][3]][3] == voxel_index); // make sure voxels are symmetrical
+        assert((unsigned)Voxels[(unsigned)Voxels[voxel_index][3]][3] == voxel_index);  // make sure voxels are symmetrical
 
         if ((int)(i & 31) == forbidden_direction) continue;
 
@@ -780,7 +942,7 @@ void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block) const {
             trial_result.high.b = (uint8_t)clamp(trial_result.high.b + delta[2], 0, 31);
         }
 
-        switch(block.color_mode) {
+        switch (block.color_mode) {
             default:
             case ColorMode::FourColor:
                 FindSelectors<ColorMode::FourColor>(pixels, trial_result, _error_mode);

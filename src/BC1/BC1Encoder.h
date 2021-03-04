@@ -38,63 +38,42 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
-    enum class Flags : uint32_t {
+    enum class Flags {
         None = 0,
 
         // Try to improve quality using the most likely total orderings.
         // The total_orderings_to_try parameter will then control the number of total orderings to try for 4 color blocks, and the
         // total_orderings_to_try3 parameter will control the number of total orderings to try for 3 color blocks (if they are enabled).
-        UseLikelyTotalOrderings = 2,
+        UseLikelyTotalOrderings = 1,
 
         // Use 2 least squares pass, instead of one (same as stb_dxt's HIGHQUAL option).
         // Recommended if you're enabling UseLikelyTotalOrderings.
-        TwoLeastSquaresPasses = 4,
+        TwoLeastSquaresPasses = 2,
 
         // Use3ColorBlocksForBlackPixels allows the BC1 encoder to use 3-color blocks for blocks containing black or very dark pixels.
         // You shader/engine MUST ignore the alpha channel on textures encoded with this flag.
         // Average quality goes up substantially for my 100 texture corpus (~.5 dB), so it's worth using if you can.
         // Note the BC1 encoder does not actually support transparency in 3-color mode.
         // Don't set when encoding to BC3.
-        Use3ColorBlocksForBlackPixels = 8,
+        Use3ColorBlocksForBlackPixels = 4,
 
         // If Use3ColorBlocks is set, the encoder can use 3-color mode for a small but noticeable gain in average quality, but lower perf.
         // If you also specify the UseLikelyTotalOrderings flag, set the total_orderings_to_try3 paramter to the number of total orderings to try.
         // Don't set when encoding to BC3.
-        Use3ColorBlocks = 16,
+        Use3ColorBlocks = 8,
 
         // Iterative will greatly increase encode time, but is very slightly higher quality.
         // Same as squish's iterative cluster fit option. Not really worth the tiny boost in quality, unless you just don't care about perf. at all.
-        Iterative = 32,
-
-        // BoundingBox enables a fast all-integer PCA approximation on 4-color blocks.
-        // At level 0 options (no other flags), this is ~15% faster, and higher *average* quality.
-        BoundingBox = 64,
-
-        // Use a slightly lower quality, but ~30% faster MSE evaluation function for 4-color blocks.
-        UseFasterMSEEval = 128,
-
-        // Examine all colors to compute selectors/MSE (slower than default)
-        UseFullMSEEval = 256,
-
-        // Use 2D least squares+inset+optimal rounding (the method used in Humus's GPU texture encoding demo), instead of PCA.
-        // Around 18% faster, very slightly lower average quality to better (depends on the content).
-        Use2DLS = 512,
+        Iterative = 16,
 
         // Use 6 power iterations vs. 4 for PCA.
-        Use6PowerIters = 2048,
+        Use6PowerIters = 32,
 
         // Check all total orderings - *very* slow. The encoder is not designed to be used in this way.
-        Exhaustive = 8192,
+        Exhaustive = 64,
 
         // Try 2 different ways of choosing the initial endpoints.
-        TryAllInitialEndpoints = 16384,
-
-        // Same as BoundingBox, but implemented using integer math (faster, slightly less quality)
-        BoundingBoxInt = 32768,
-
-        // Try refining the final endpoints by examining nearby colors.
-        EndpointSearchRoundsShift = 22,
-        EndpointSearchRoundsMask = 1023U << EndpointSearchRoundsShift,
+        TryAllInitialEndpoints = 128,
     };
 
     enum class ColorMode {
@@ -108,8 +87,70 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
         FourColorSolid = FourColor | Solid,
     };
 
-    enum class ErrorMode { None, Faster, Check2, Full };
-    enum class EndpointMode { LeastSquares, BoundingBox, BoundingBoxInt, PCA };
+    enum class ErrorMode {
+        // Perform no error checking at all.
+        None,
+
+        // Use a slightly lower quality, but ~30% faster MSE evaluation function for 4-color blocks.
+        Faster,
+
+        // Default error mode.
+        Check2,
+
+        // Examine all colors to compute selectors/MSE (slower than default).
+        Full
+    };
+
+    enum class EndpointMode {
+        // Use 2D least squares+inset+optimal rounding (the method used in Humus's GPU texture encoding demo), instead of PCA.
+        // Around 18% faster, very slightly lower average quality to better (depends on the content).
+        LeastSquares,
+
+        // BoundingBox enables a fast all-integer PCA approximation on 4-color blocks.
+        // At level 0 options (no other flags), this is ~15% faster, and higher *average* quality.
+        BoundingBox,
+
+        // Same as BoundingBox, but implemented using integer math (faster, slightly less quality)
+        BoundingBoxInt,
+
+        // Full PCA implementation
+        PCA
+    };
+
+    BC1Encoder(InterpolatorPtr interpolator);
+
+    BC1Encoder(unsigned level = 5, bool allow_3color = true, bool allow_3color_black = true);
+
+    BC1Encoder(InterpolatorPtr interpolator, unsigned level, bool allow_3color = true, bool allow_3color_black = true);
+
+    BC1Encoder(InterpolatorPtr interpolator, Flags flags, ErrorMode error_mode = ErrorMode::Full, EndpointMode endpoint_mode = EndpointMode::PCA,
+               unsigned search_rounds = 16, unsigned orderings4 = 32, unsigned orderings3 = 32);
+
+    const InterpolatorPtr &GetInterpolator() const;
+
+    void SetLevel(unsigned level, bool allow_3color = true, bool allow_3color_black = true);
+
+    Flags GetFlags() const { return _flags; }
+    void SetFlags(Flags flags) { _flags = flags; };
+
+    ErrorMode GetErrorMode() const { return _error_mode; }
+    void SetErrorMode(ErrorMode error_mode) { _error_mode = error_mode; };
+
+    EndpointMode GetEndpointMode() const { return _endpoint_mode; }
+    void SetEndpointMode(EndpointMode endpoint_mode) { _endpoint_mode = endpoint_mode; }
+
+    unsigned int GetSearchRounds() const { return _search_rounds; }
+    void SetSearchRounds(unsigned search_rounds) { _search_rounds = search_rounds; }
+
+    unsigned int GetOrderings4() const { return _orderings4; }
+    unsigned int GetOrderings3() const { return _orderings3; }
+    void SetOrderings(unsigned orderings4, unsigned orderings3);
+
+    void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
+
+   private:
+    using Hash = uint16_t;
+    using BlockMetrics = Color4x4::BlockMetrics;
 
     // Unpacked BC1 block with metadata
     struct EncodeResults {
@@ -119,14 +160,6 @@ class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
         ColorMode color_mode;
         unsigned error = UINT_MAX;
     };
-
-    BC1Encoder(InterpolatorPtr interpolator);
-
-    void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
-
-   private:
-    using Hash = uint16_t;
-    using BlockMetrics = Color4x4::BlockMetrics;
 
     const InterpolatorPtr _interpolator;
 

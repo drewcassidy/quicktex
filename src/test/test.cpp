@@ -673,7 +673,7 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < test_count; i++)
             bc4_encoder.EncodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), src, source_image.width(), source_image.height());
     } else if (dxgi_format == DXGI_FORMAT_BC1_UNORM) {
-        auto bc1_encoder = BC1Encoder(Interpolator::MakeInterpolator());
+        auto bc1_encoder = BC1Encoder(bc1_quality_level, use_bc1_3color_mode, use_bc1_3color_mode_for_black);
         Color *src = &source_image.get_pixels()[0];
 
         bc1_encoder.EncodeImage(reinterpret_cast<uint8_t *>(&packed_image8[0]), src, source_image.width(), source_image.height());
