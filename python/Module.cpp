@@ -17,27 +17,22 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <pybind11/pybind11.h>
+#include "../src/BlockEncoder.h"
 
-#include <cassert>
-#include <cstdint>
+#define STRINGIFY(x) #x
+#define MACRO_STRINGIFY(x) STRINGIFY(x)
 
-#include "../BlockEncoder.h"
-#include "../BlockView.h"
-#include "../ndebug.h"
-#include "BC4Block.h"
+namespace py = pybind11;
+namespace rgbcx::bindings {
 
-namespace rgbcx {
+void InitBlockEncoder(py::module_ &m);
+void InitBC1(py::module_ &m);
 
-class BC4Encoder : public BlockEncoderTemplate<BC4Block, 4, 4> {
-   public:
-    BC4Encoder(const uint8_t channel) : _channel(channel) { assert(channel < 4); }
+PYBIND11_MODULE(python_rgbcx, m) {
+    m.doc() = "More Stuff";
+    InitBlockEncoder(m);
+    InitBC1(m);
+}
 
-    void EncodeBlock(Color4x4 pixels, BC4Block *dest) const override { EncodeBlock(pixels.GetChannel(_channel), dest); }
-    void EncodeBlock(Color4x4 pixels, BC4Block *const dest, uint8_t channel) const noexcept(ndebug) { EncodeBlock(pixels.GetChannel(channel), dest); }
-    void EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug);
-
-   private:
-    const uint8_t _channel;
-};
-}  // namespace rgbcx
+}  // namespace python_rgbcx::py

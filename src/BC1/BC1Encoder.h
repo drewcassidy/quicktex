@@ -34,7 +34,7 @@ namespace rgbcx {
 class Interpolator;
 class Vector4;
 
-class BC1Encoder final : public BlockEncoder<BC1Block, 4, 4> {
+class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
 

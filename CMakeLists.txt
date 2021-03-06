@@ -10,7 +10,7 @@ add_subdirectory(extern/pybind11)
 # Collect source files
 file(GLOB SOURCE_FILES "src/*.cpp" "src/BC*/*.cpp")
 file(GLOB HEADER_FILES "src/*.h" "src/BC*/*.h")
-file(GLOB PYTHON_FILES "src/python/*.cpp" "src/python/*.h")
+file(GLOB PYTHON_FILES "python/*.cpp" "python/*.h")
 file(GLOB TEST_FILES "src/test/*.c" "src/test/*.cpp" "src/test/*.h")
 
 # Organize source files together for some IDEs
@@ -38,7 +38,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Rpass=loop-vectorize -Rpass-analysis=loop-vectorize")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
     set(PROJECT_WARNINGS ${CLANG_WARNINGS})
 endif ()

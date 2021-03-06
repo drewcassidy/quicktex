@@ -16,15 +16,10 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "BlockEncoder.h"
 
-#include <pybind11/pybind11.h>
-#include "../BC1/BC1Encoder.h"
+#include "BC1/BC1Encoder.h"
 
-#define STRINGIFY(x) #x
-#define MACRO_STRINGIFY(x) STRINGIFY(x)
-
-namespace py = pybind11;
-
-PYBIND11_MODULE(python_rgbcx, m) {
-    m.doc() = "More Stuff";
-}
+namespace rgbcx {
+std::shared_ptr<BlockEncoder> rgbcx::BlockEncoder::MakeEncoder(std::string fourcc) { return std::make_shared<BC1Encoder>(); }
+}  // namespace rgbcx

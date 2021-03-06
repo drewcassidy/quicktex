@@ -21,22 +21,37 @@
 
 #include <climits>
 #include <cstdint>
+#include <memory>
+#include <string>
 
 #include "BlockView.h"
 
 namespace rgbcx {
 
-template <class B, size_t M, size_t N> class BlockEncoder {
+class BlockEncoder {
+   public:
+    using EncoderPtr = std::shared_ptr<BlockEncoder>;
+
+    virtual ~BlockEncoder() = default;
+    virtual void EncodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) const = 0;
+    virtual size_t BlockSize() const = 0;
+    virtual size_t BlockWidth() const = 0;
+    virtual size_t BlockHeight() const = 0;
+
+    static EncoderPtr MakeEncoder(std::string fourcc);
+};
+
+template <class B, size_t M, size_t N> class BlockEncoderTemplate : public BlockEncoder {
    public:
     using DecodedBlock = ColorBlockView<M, N>;
     using EncodedBlock = B;
 
-    BlockEncoder() noexcept = default;
-    virtual ~BlockEncoder() noexcept = default;
+    BlockEncoderTemplate() noexcept = default;
+    virtual ~BlockEncoderTemplate() noexcept = default;
 
     virtual void EncodeBlock(DecodedBlock pixels, EncodedBlock *dest) const = 0;
 
-    virtual void EncodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) {
+    virtual void EncodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) const override {
         assert(image_width % N == 0);
         assert(image_width % M == 0);
 
@@ -61,11 +76,13 @@ template <class B, size_t M, size_t N> class BlockEncoder {
                 unsigned top_left = pixel_x + (pixel_y * image_width);
                 auto src = DecodedBlock(&decoded[top_left], (int)image_width);
 
-//                if (pixel_x != 684 || pixel_y != 492) continue;
-
                 EncodeBlock(src, &blocks[x + block_width * y]);
             }
         }
     }
+
+    virtual size_t BlockSize() const override { return sizeof(B); }
+    virtual size_t BlockWidth() const override { return N; }
+    virtual size_t BlockHeight() const override { return M; }
 };
 }  // namespace rgbcx
