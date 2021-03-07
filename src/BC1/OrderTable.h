@@ -56,32 +56,32 @@ template <size_t N> class OrderTable {
         static_assert(N == 4 || N == 3);
 
         table_mutex.lock();
-        if (generated) return false;
+        if (!generated) {
+            hashes = new std::array<Hash, HashCount>();
+            factors = new std::array<Vector4, OrderCount>();
 
-        hashes = new std::array<Hash, HashCount>();
-        factors = new std::array<Vector4, OrderCount>();
+            const float denominator = (N == 4) ? 3.0f : 2.0f;
 
-        const float denominator = (N == 4) ? 3.0f : 2.0f;
+            for (uint16_t i = 0; i < OrderCount; i++) {
+                Histogram<N> h = Orders[i];
+                if (!h.Any16()) hashes->at(h.GetPacked()) = i;
 
-        for (uint16_t i = 0; i < OrderCount; i++) {
-            Histogram<N> h = Orders[i];
-            if (!h.Any16()) hashes->at(h.GetPacked()) = i;
+                Vector4 factor_matrix = 0;
+                for (unsigned sel = 0; sel < N; sel++) factor_matrix += (Weights[sel] * h[sel]);
 
-            Vector4 factor_matrix = 0;
-            for (unsigned sel = 0; sel < N; sel++) factor_matrix += (Weights[sel] * h[sel]);
-
-            float det = factor_matrix.Determinant2x2();
-            if (fabs(det) < 1e-8f) {
-                factors->at(i) = Vector4(0);
-            } else {
-                std::swap(factor_matrix[0], factor_matrix[3]);
-                factor_matrix *= Vector4(1, -1, -1, 1);
-                factor_matrix *= (denominator / 255.0f) / det;
-                factors->at(i) = factor_matrix;
+                float det = factor_matrix.Determinant2x2();
+                if (fabs(det) < 1e-8f) {
+                    factors->at(i) = Vector4(0);
+                } else {
+                    std::swap(factor_matrix[0], factor_matrix[3]);
+                    factor_matrix *= Vector4(1, -1, -1, 1);
+                    factor_matrix *= (denominator / 255.0f) / det;
+                    factors->at(i) = factor_matrix;
+                }
             }
-        }
 
-        generated = true;
+            generated = true;
+        }
         table_mutex.unlock();
 
         assert(generated);
@@ -145,4 +145,4 @@ template <> const OrderTable<4>::BestOrderArray OrderTable<4>::BestOrders;
 extern template class OrderTable<3>;
 extern template class OrderTable<4>;
 
-}  // namespace rgbcx
+}  // namespace rgbcx::BC1
