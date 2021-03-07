@@ -19,6 +19,7 @@
 
 #include <pybind11/pybind11.h>
 #include "../src/BlockEncoder.h"
+#include "../src/Interpolator.h"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -30,7 +31,16 @@ void InitBlockEncoder(py::module_ &m);
 void InitBC1(py::module_ &m);
 
 PYBIND11_MODULE(python_rgbcx, m) {
+
     m.doc() = "More Stuff";
+
+    using IType = Interpolator::Type;
+    py::enum_<IType>(m, "InterpolatorType")
+        .value("Ideal", IType::Ideal)
+        .value("IdealRound", IType::IdealRound)
+        .value("Nvidia", IType::Nvidia)
+        .value("AMD", IType::AMD);
+
     InitBlockEncoder(m);
     InitBC1(m);
 }

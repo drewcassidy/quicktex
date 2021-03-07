@@ -41,8 +41,6 @@
 namespace rgbcx {
 using namespace BC1;
 
-using ColorMode = BC1Encoder::ColorMode;
-
 // constructors
 
 BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
@@ -75,7 +73,8 @@ BC1Encoder::BC1Encoder(InterpolatorPtr interpolator, Flags flags, ErrorMode erro
     SetErrorMode(error_mode);
     SetEndpointMode(endpoint_mode);
     SetSearchRounds(search_rounds);
-    SetOrderings(orderings4, orderings3);
+    SetOrderings4(orderings4);
+    SetOrderings3(orderings3);
 }
 
 // Getters and Setters
@@ -213,10 +212,8 @@ void BC1Encoder::SetLevel(unsigned level, bool allow_3color, bool allow_3color_b
     _orderings3 = clamp(_orderings3, 1U, OrderTable<3>::BestOrderCount);
 }
 
-void BC1Encoder::SetOrderings(unsigned orderings4, unsigned orderings3) {
-    _orderings4 = clamp(orderings4, 1U, OrderTable<4>::BestOrderCount);
-    _orderings3 = clamp(orderings3, 1U, OrderTable<3>::BestOrderCount);
-}
+void BC1Encoder::SetOrderings4(unsigned orderings4) { _orderings4 = clamp(orderings4, 1U, OrderTable<4>::BestOrderCount); }
+void BC1Encoder::SetOrderings3(unsigned orderings3) { _orderings3 = clamp(orderings3, 1U, OrderTable<3>::BestOrderCount); }
 
 // Public methods
 void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
@@ -643,7 +640,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
     block.color_mode = ColorMode::Incomplete;
 }
 
-template <ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixels, EncodeResults &block, ErrorMode error_mode) const {
+template <BC1Encoder::ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixels, EncodeResults &block, ErrorMode error_mode) const {
     assert(!((error_mode != ErrorMode::Full) && (bool)(M & ColorMode::ThreeColor)));
     assert(!(bool)(M & ColorMode::Solid));
 
@@ -746,7 +743,7 @@ template <ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixels, EncodeRe
     block.color_mode = M;
 }
 
-template <ColorMode M> bool BC1Encoder::RefineEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics) const {
+template <BC1Encoder::ColorMode M> bool BC1Encoder::RefineEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics) const {
     const int color_count = (unsigned)M & 0x0F;
     static_assert(color_count == 3 || color_count == 4);
     static_assert(!(bool)(M & ColorMode::Solid));
@@ -793,7 +790,7 @@ template <ColorMode M> bool BC1Encoder::RefineEndpointsLS(Color4x4 pixels, Encod
     return true;
 }
 
-template <ColorMode M> void BC1Encoder::RefineEndpointsLS(std::array<Vector4, 17> &sums, EncodeResults &block, Vector4 &matrix, Hash hash) const {
+template <BC1Encoder::ColorMode M> void BC1Encoder::RefineEndpointsLS(std::array<Vector4, 17> &sums, EncodeResults &block, Vector4 &matrix, Hash hash) const {
     const int color_count = (unsigned)M & 0x0F;
     static_assert(color_count == 3 || color_count == 4);
     static_assert(!(bool)(M & ColorMode::Solid));
@@ -819,7 +816,7 @@ template <ColorMode M> void BC1Encoder::RefineEndpointsLS(std::array<Vector4, 17
     block.high = Color::PreciseRound565(high);
 }
 
-template <ColorMode M>
+template <BC1Encoder::ColorMode M>
 void BC1Encoder::RefineBlockLS(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned passes) const {
     assert(error_mode != ErrorMode::None || passes == 1);
 
@@ -844,7 +841,7 @@ void BC1Encoder::RefineBlockLS(Color4x4 &pixels, EncodeResults &block, BlockMetr
     }
 }
 
-template <ColorMode M>
+template <BC1Encoder::ColorMode M>
 void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const {
     const int color_count = (unsigned)M & 0x0F;
     static_assert(color_count == 3 || color_count == 4);

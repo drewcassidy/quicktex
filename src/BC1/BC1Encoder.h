@@ -76,17 +76,6 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
         TryAllInitialEndpoints = 128,
     };
 
-    enum class ColorMode {
-        Incomplete = 0x00,
-        ThreeColor = 0x03,
-        FourColor = 0x04,
-        UseBlack = 0x10,
-        Solid = 0x20,
-        ThreeColorBlack = ThreeColor | UseBlack,
-        ThreeColorSolid = ThreeColor | Solid,
-        FourColorSolid = FourColor | Solid,
-    };
-
     enum class ErrorMode {
         // Perform no error checking at all.
         None,
@@ -144,13 +133,25 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
 
     unsigned int GetOrderings4() const { return _orderings4; }
     unsigned int GetOrderings3() const { return _orderings3; }
-    void SetOrderings(unsigned orderings4, unsigned orderings3);
+    void SetOrderings4(unsigned orderings4);
+    void SetOrderings3(unsigned orderings3);
 
     void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
 
    private:
     using Hash = uint16_t;
     using BlockMetrics = Color4x4::BlockMetrics;
+
+    enum class ColorMode {
+        Incomplete = 0x00,
+        ThreeColor = 0x03,
+        FourColor = 0x04,
+        UseBlack = 0x10,
+        Solid = 0x20,
+        ThreeColorBlack = ThreeColor | UseBlack,
+        ThreeColorSolid = ThreeColor | Solid,
+        FourColorSolid = FourColor | Solid,
+    };
 
     // Unpacked BC1 block with metadata
     struct EncodeResults {

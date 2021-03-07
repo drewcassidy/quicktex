@@ -29,11 +29,24 @@
 namespace py = pybind11;
 namespace rgbcx::bindings {
 
+std::unique_ptr<BC1Encoder> MakeBC1Encoder(Interpolator::Type interpolator, unsigned level, bool use_3color, bool use_3color_black) {
+    auto interpolator_ptr = (std::shared_ptr<Interpolator>)Interpolator::MakeInterpolator(interpolator);
+    return std::make_unique<BC1Encoder>(interpolator_ptr, level, use_3color, use_3color_black);
+}
+
 void InitBC1(py::module_ &m) {
     auto block_encoder = py::type::of<BlockEncoder>();
     py::class_<BC1Encoder> bc1_encoder(m, "BC1Encoder", block_encoder);
 
-    bc1_encoder.def(py::init<>());
+    bc1_encoder.def(py::init(&MakeBC1Encoder), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("level") = 5, py::arg("use_3color") = true,
+                    py::arg("use_3color_black") = true);
+    bc1_encoder.def("set_level", &BC1Encoder::SetLevel);
+    bc1_encoder.def_property("flags", &BC1Encoder::GetFlags, &BC1Encoder::SetFlags);
+    bc1_encoder.def_property("error_mode", &BC1Encoder::GetErrorMode, &BC1Encoder::SetErrorMode);
+    bc1_encoder.def_property("endpoint_mode", &BC1Encoder::GetEndpointMode, &BC1Encoder::SetEndpointMode);
+    bc1_encoder.def_property("search_rounds", &BC1Encoder::GetSearchRounds, &BC1Encoder::SetSearchRounds);
+    bc1_encoder.def_property("orderings_4", &BC1Encoder::GetOrderings4, &BC1Encoder::SetOrderings4);
+    bc1_encoder.def_property("orderings_3", &BC1Encoder::GetOrderings3, &BC1Encoder::SetOrderings3);
 
     using Flags = BC1Encoder::Flags;
     py::enum_<Flags>(bc1_encoder, "Flags", py::arithmetic())
