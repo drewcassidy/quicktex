@@ -110,5 +110,6 @@ setup(
     long_description="",
     ext_modules=[CMakeExtension("python_rgbcx")],
     cmdclass={"build_ext": CMakeBuild},
+    install_requires=["Pillow"],
     zip_safe=False,
 )
