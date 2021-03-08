@@ -3,7 +3,7 @@ import os
 import sys
 import subprocess
 
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
@@ -102,14 +102,16 @@ class CMakeBuild(build_ext):
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
-    name="python_rgbcx",
+    name="rgbcx",
     version="0.0.1",
     author="Andrew Cassidy",
     author_email="drewcassidy@me.com",
     description="",
     long_description="",
-    ext_modules=[CMakeExtension("python_rgbcx")],
+    ext_modules=[CMakeExtension("_rgbcx")],
     cmdclass={"build_ext": CMakeBuild},
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
     install_requires=["Pillow"],
     zip_safe=False,
 )

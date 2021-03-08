@@ -18,8 +18,9 @@
  */
 
 #include <pybind11/pybind11.h>
-#include "../src/BlockEncoder.h"
-#include "../src/Interpolator.h"
+
+#include "../BlockEncoder.h"
+#include "../Interpolator.h"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -30,8 +31,7 @@ namespace rgbcx::bindings {
 void InitBlockEncoder(py::module_ &m);
 void InitBC1(py::module_ &m);
 
-PYBIND11_MODULE(python_rgbcx, m) {
-
+PYBIND11_MODULE(_rgbcx, m) {
     m.doc() = "More Stuff";
 
     using IType = Interpolator::Type;

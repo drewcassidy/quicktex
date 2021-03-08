@@ -667,7 +667,7 @@ template <BC1Encoder::ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixe
         axis *= 2;
 
         for (unsigned i = 0; i < 16; i++) {
-            Vector4Int pixel_vector = (Vector4Int)pixels.Get(i);
+            Vector4Int pixel_vector = Vector4Int::FromColorRGB(pixels.Get(i));
             int dot = axis.Dot(pixel_vector);
             uint8_t level = (dot <= t0) + (dot < t1) + (dot < t2);
             uint8_t selector = 3 - level;
@@ -688,7 +688,7 @@ template <BC1Encoder::ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixe
         const float f = 4.0f / ((float)axis.SqrMag() + .00000125f);
 
         for (unsigned i = 0; i < 16; i++) {
-            Vector4Int pixel_vector = (Vector4Int)pixels.Get(i);
+            Vector4Int pixel_vector = Vector4Int::FromColorRGB(pixels.Get(i));
             auto diff = pixel_vector - color_vectors[0];
             float sel_f = (float)diff.Dot(axis) * f + 0.5f;
             uint8_t sel = (uint8_t)clampi((int)sel_f, 1, 3);

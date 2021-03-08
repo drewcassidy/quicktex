@@ -19,9 +19,9 @@
 
 #include <pybind11/pybind11.h>
 
-#include "../src/BC1/BC1Encoder.h"
-#include "../src/BlockEncoder.h"
-#include "../src/bitwiseEnums.h"
+#include "../BlockEncoder.h"
+#include "../bitwiseEnums.h"
+#include "../BC1/BC1Encoder.h"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)

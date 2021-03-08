@@ -40,7 +40,7 @@ class BC1Block:
         return f'color0: {str(self.color0)} color1: {str(self.color1)}, indices:{self.selectors}'
 
     @staticmethod
-    def from_bytes(data):
+    def frombytes(data):
         block = struct.unpack_from('<2H4B', data)
         result = BC1Block()
 
@@ -49,7 +49,7 @@ class BC1Block:
         result.selectors = [bit_slice(row, 2, 4) for row in block[2:6]]
         return result
 
-    def to_bytes(self):
+    def tobytes(self):
         return struct.pack('<2H4B',
                            self.color0.to_565(), self.color1.to_565(),
                            *(bit_merge(row, 2) for row in self.selectors))
@@ -70,7 +70,7 @@ class BC4Block:
         return repr(self.__dict__)
 
     @staticmethod
-    def from_bytes(data):
+    def frombytes(data):
         block = struct.unpack_from('<2B6B', data)
         result = BC4Block()
 
@@ -79,7 +79,7 @@ class BC4Block:
         result.selectors = triple_slice(block[2:5]) + triple_slice(block[5:8])
         return result
 
-    def to_bytes(self):
+    def tobytes(self):
         return struct.pack('<2B6B',
                            int(self.alpha0 * 0xFF), int(self.alpha1 * 0xFF),
                            *triple_merge(self.selectors[0:2]),

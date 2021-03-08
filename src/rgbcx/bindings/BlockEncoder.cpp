@@ -17,13 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../src/BlockEncoder.h"
+#include "../BlockEncoder.h"
 
 #include <pybind11/pybind11.h>
 
 #include <stdexcept>
 
-#include "../src/bitwiseEnums.h"
+#include "../bitwiseEnums.h"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
