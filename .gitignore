@@ -3,6 +3,7 @@ env/
 dist/
 build/
 *.egg-info
+*.pyc
 
 # IDEs
 **/.idea

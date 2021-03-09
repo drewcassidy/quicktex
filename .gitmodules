@@ -5,3 +5,4 @@
 [submodule "tests/images"]
 	path = tests/images
 	url = https://git.pileof.rocks/drewcassidy/python-rgbcx-images.git
+	commit = 0ade526dd1070e6f5b43e0bd58b26828abff86b7
