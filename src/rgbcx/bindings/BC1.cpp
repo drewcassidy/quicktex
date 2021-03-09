@@ -19,9 +19,9 @@
 
 #include <pybind11/pybind11.h>
 
+#include "../BC1/BC1Encoder.h"
 #include "../BlockEncoder.h"
 #include "../bitwiseEnums.h"
-#include "../BC1/BC1Encoder.h"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -71,6 +71,12 @@ void InitBC1(py::module_ &m) {
         .value("BoundingBox", BC1Encoder::EndpointMode::BoundingBox)
         .value("BoundingBoxInt", BC1Encoder::EndpointMode::BoundingBoxInt)
         .value("PCA", BC1Encoder::EndpointMode::PCA);
+
+    py::enum_<BC1Encoder::ErrorMode>(bc1_encoder, "ErrorMode")
+        .value("None", BC1Encoder::ErrorMode::None)
+        .value("Faster", BC1Encoder::ErrorMode::Faster)
+        .value("Check2", BC1Encoder::ErrorMode::Check2)
+        .value("Full", BC1Encoder::ErrorMode::Full);
 }
 
 }  // namespace rgbcx::bindings
