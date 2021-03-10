@@ -31,7 +31,7 @@
 #include "BC5Block.h"
 
 namespace rgbcx {
-class BC5Decoder : public BlockDecoder<BC5Block, 4, 4> {
+class BC5Decoder : public BlockDecoderTemplate<BC5Block, 4, 4> {
    public:
     using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
 

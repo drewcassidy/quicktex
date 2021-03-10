@@ -106,16 +106,9 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
         PCA
     };
 
-    BC1Encoder(InterpolatorPtr interpolator);
+    BC1Encoder(Interpolator::Type type = Interpolator::Type::Ideal, unsigned level = 5, bool allow_3color = true, bool allow_3color_black = true);
 
-    BC1Encoder(unsigned level = 5, bool allow_3color = true, bool allow_3color_black = true);
-
-    BC1Encoder(InterpolatorPtr interpolator, unsigned level, bool allow_3color = true, bool allow_3color_black = true);
-
-    BC1Encoder(InterpolatorPtr interpolator, Flags flags, ErrorMode error_mode = ErrorMode::Full, EndpointMode endpoint_mode = EndpointMode::PCA,
-               unsigned search_rounds = 16, unsigned orderings4 = 32, unsigned orderings3 = 32);
-
-    const InterpolatorPtr &GetInterpolator() const;
+    Interpolator::Type GetInterpolatorType() const { return _interpolator->GetType(); }
 
     void SetLevel(unsigned level, bool allow_3color = true, bool allow_3color_black = true);
 
@@ -137,6 +130,8 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
     void SetOrderings3(unsigned orderings3);
 
     void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
+
+    virtual size_t MTThreshold() const override { return 16; }
 
    private:
     using Hash = uint16_t;

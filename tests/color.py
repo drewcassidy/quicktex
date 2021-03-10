@@ -1,5 +1,5 @@
 class Color:
-    def __init__(self, r=0, g=0, b=0, a=1):
+    def __init__(self, r=0, g=0, b=0, a=0xFF):
         self.r = r
         self.g = g
         self.b = b
@@ -22,6 +22,10 @@ class Color:
 
     def __str__(self):
         return self.to_hex()
+
+    def error(self, other):
+        assert isinstance(other, Color)
+        return ((self.r - other.r) ** 2) + ((self.g - other.g) ** 2) + ((self.b - other.b) ** 2)
 
     @classmethod
     def from_565(cls, int_value):

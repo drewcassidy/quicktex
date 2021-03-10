@@ -19,7 +19,9 @@
 
 #include <pybind11/pybind11.h>
 
+#include "../BC1/BC1Decoder.h"
 #include "../BC1/BC1Encoder.h"
+#include "../BlockDecoder.h"
 #include "../BlockEncoder.h"
 #include "../bitwiseEnums.h"
 
@@ -29,18 +31,17 @@
 namespace py = pybind11;
 namespace rgbcx::bindings {
 
-std::unique_ptr<BC1Encoder> MakeBC1Encoder(Interpolator::Type interpolator, unsigned level, bool use_3color, bool use_3color_black) {
-    auto interpolator_ptr = (std::shared_ptr<Interpolator>)Interpolator::MakeInterpolator(interpolator);
-    return std::make_unique<BC1Encoder>(interpolator_ptr, level, use_3color, use_3color_black);
-}
-
 void InitBC1(py::module_ &m) {
     auto block_encoder = py::type::of<BlockEncoder>();
+    auto block_decoder = py::type::of<BlockDecoder>();
+
+    // BC1Encoder
     py::class_<BC1Encoder> bc1_encoder(m, "BC1Encoder", block_encoder);
 
-    bc1_encoder.def(py::init(&MakeBC1Encoder), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("level") = 5, py::arg("use_3color") = true,
-                    py::arg("use_3color_black") = true);
+    bc1_encoder.def(py::init<Interpolator::Type, unsigned, bool, bool>(), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("level") = 5,
+                    py::arg("use_3color") = true, py::arg("use_3color_black") = true);
     bc1_encoder.def("set_level", &BC1Encoder::SetLevel);
+    bc1_encoder.def_property_readonly("interpolator_type", &BC1Encoder::GetInterpolatorType);
     bc1_encoder.def_property("flags", &BC1Encoder::GetFlags, &BC1Encoder::SetFlags);
     bc1_encoder.def_property("error_mode", &BC1Encoder::GetErrorMode, &BC1Encoder::SetErrorMode);
     bc1_encoder.def_property("endpoint_mode", &BC1Encoder::GetEndpointMode, &BC1Encoder::SetEndpointMode);
@@ -77,6 +78,13 @@ void InitBC1(py::module_ &m) {
         .value("Faster", BC1Encoder::ErrorMode::Faster)
         .value("Check2", BC1Encoder::ErrorMode::Check2)
         .value("Full", BC1Encoder::ErrorMode::Full);
+
+    // BC1Decoder
+    py::class_<BC1Decoder> bc1_decoder(m, "BC1Decoder", block_decoder);
+
+    bc1_decoder.def(py::init<Interpolator::Type, bool>(), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("write_alpha") = false);
+    bc1_decoder.def_property_readonly("interpolator_type", &BC1Decoder::GetInterpolatorType);
+    bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha);
 }
 
 }  // namespace rgbcx::bindings

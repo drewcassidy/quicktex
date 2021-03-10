@@ -37,8 +37,6 @@ class BlockEncoder {
     virtual size_t BlockSize() const = 0;
     virtual size_t BlockWidth() const = 0;
     virtual size_t BlockHeight() const = 0;
-
-    static EncoderPtr MakeEncoder(std::string fourcc);
 };
 
 template <class B, size_t M, size_t N> class BlockEncoderTemplate : public BlockEncoder {
@@ -57,12 +55,16 @@ template <class B, size_t M, size_t N> class BlockEncoderTemplate : public Block
 
         unsigned block_width = image_width / N;
         unsigned block_height = image_height / M;
+        unsigned block_count = block_width * block_height;
 
         auto blocks = reinterpret_cast<B *>(encoded);
 
-        // from experimentation, multithreading this using OpenMP actually makes decoding slower
+        // from experimentation, multithreading this using OpenMP sometimes actually makes decoding slower
         // due to thread creation/teardown taking longer than the decoding process itself.
-        // As a result, this is left as a serial operation despite being embarassingly parallelizable
+        // As a result, this is sometimes left as a serial operation despite being embarassingly parallelizable
+        // threshold for number of blocks before multithreading is set by overriding MTThreshold()
+
+#pragma omp parallel for if (block_count >= MTThreshold())
         for (unsigned y = 0; y < block_height; y++) {
             for (unsigned x = 0; x < block_width; x++) {
                 unsigned pixel_x = x * N;
@@ -84,5 +86,7 @@ template <class B, size_t M, size_t N> class BlockEncoderTemplate : public Block
     virtual size_t BlockSize() const override { return sizeof(B); }
     virtual size_t BlockWidth() const override { return N; }
     virtual size_t BlockHeight() const override { return M; }
+
+    virtual size_t MTThreshold() const { return SIZE_MAX; };
 };
 }  // namespace rgbcx

@@ -4,8 +4,9 @@ include(tools/CompilerWarnings.cmake)
 
 project(rgbcx)
 
-# Link to Pybind
+# Find dependencies
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
+find_package(OpenMP)
 add_subdirectory(extern/pybind11)
 
 # Collect source files
@@ -32,6 +33,11 @@ target_link_libraries(test_rgbcx PRIVATE pybind11::embed)
 
 target_compile_definitions(test_rgbcx PRIVATE -DCUSTOM_SYS_PATH="${CMAKE_HOME_DIRECTORY}/env/lib/python3.8/site-packages")
 message("\"${CMAKE_HOME_DIRECTORY}/env/lib/python3.8/site-packages\"")
+
+# enable openMP if available
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(_rgbcx PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 # Set module features, like C/C++ standards
 target_compile_features(_rgbcx PUBLIC cxx_std_20 c_std_11)

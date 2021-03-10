@@ -43,38 +43,16 @@ using namespace BC1;
 
 // constructors
 
-BC1Encoder::BC1Encoder(InterpolatorPtr interpolator) : _interpolator(interpolator) {
-    _flags = Flags::None;
-    _error_mode = ErrorMode::Check2;
-    _endpoint_mode = EndpointMode::PCA;
-    _search_rounds = 0;
-    _orderings3 = 1;
-    _orderings4 = 1;
+BC1Encoder::BC1Encoder(Interpolator::Type type, unsigned int level, bool allow_3color, bool allow_3color_black)
+    : _interpolator(Interpolator::MakeInterpolator(type)) {
 
     OrderTable<3>::Generate();
     OrderTable<4>::Generate();
 
     assert(OrderTable<3>::generated);
     assert(OrderTable<4>::generated);
-}
 
-BC1Encoder::BC1Encoder(unsigned int level, bool allow_3color, bool allow_3color_black) : BC1Encoder(Interpolator::MakeInterpolator()) {
     SetLevel(level, allow_3color, allow_3color_black);
-}
-
-BC1Encoder::BC1Encoder(InterpolatorPtr interpolator, unsigned level, bool allow_3color, bool allow_3color_black) : BC1Encoder(interpolator) {
-    SetLevel(level, allow_3color, allow_3color_black);
-}
-
-BC1Encoder::BC1Encoder(InterpolatorPtr interpolator, Flags flags, ErrorMode error_mode, EndpointMode endpoint_mode, unsigned search_rounds, unsigned orderings4,
-                       unsigned orderings3)
-    : BC1Encoder(interpolator) {
-    SetFlags(flags);
-    SetErrorMode(error_mode);
-    SetEndpointMode(endpoint_mode);
-    SetSearchRounds(search_rounds);
-    SetOrderings4(orderings4);
-    SetOrderings3(orderings3);
 }
 
 // Getters and Setters

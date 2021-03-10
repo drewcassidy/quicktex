@@ -30,17 +30,29 @@
 
 namespace rgbcx {
 
-template <class B, size_t M, size_t N> class BlockDecoder {
+class BlockDecoder {
+   public:
+    using DecoderPtr = std::shared_ptr<BlockDecoder>;
+
+    virtual ~BlockDecoder() = default;
+    virtual void DecodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) const = 0;
+    virtual size_t BlockSize() const = 0;
+    virtual size_t BlockWidth() const = 0;
+    virtual size_t BlockHeight() const = 0;
+};
+
+template <class B, size_t M, size_t N>
+class BlockDecoderTemplate : public BlockDecoder {
    public:
     using DecodedBlock = ColorBlockView<M, N>;
     using EncodedBlock = B;
 
-    BlockDecoder() noexcept = default;
-    virtual ~BlockDecoder() noexcept = default;
+    BlockDecoderTemplate() noexcept = default;
+    virtual ~BlockDecoderTemplate() noexcept = default;
 
     virtual void DecodeBlock(DecodedBlock dest, EncodedBlock *const block) const noexcept(ndebug) = 0;
 
-    void DecodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) {
+    virtual void DecodeImage(uint8_t *encoded, Color *decoded, unsigned image_width, unsigned image_height) const override {
         assert(image_width % N == 0);
         assert(image_width % M == 0);
 
@@ -69,5 +81,9 @@ template <class B, size_t M, size_t N> class BlockDecoder {
             }
         }
     }
+
+    virtual size_t BlockSize() const override { return sizeof(B); }
+    virtual size_t BlockWidth() const override { return N; }
+    virtual size_t BlockHeight() const override { return M; }
 };
 }  // namespace rgbcx

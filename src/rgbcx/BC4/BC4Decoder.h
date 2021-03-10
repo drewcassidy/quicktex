@@ -28,7 +28,7 @@
 #include "BC4Block.h"
 
 namespace rgbcx {
-class BC4Decoder : public BlockDecoder<BC4Block, 4, 4> {
+class BC4Decoder : public BlockDecoderTemplate<BC4Block, 4, 4> {
    public:
     BC4Decoder(uint8_t channel = 3) : _channel(channel) { assert(channel < 4U); }
 

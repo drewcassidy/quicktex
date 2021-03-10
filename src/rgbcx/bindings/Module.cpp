@@ -19,16 +19,13 @@
 
 #include <pybind11/pybind11.h>
 
-#include "../BlockEncoder.h"
 #include "../Interpolator.h"
-
-#define STRINGIFY(x) #x
-#define MACRO_STRINGIFY(x) STRINGIFY(x)
 
 namespace py = pybind11;
 namespace rgbcx::bindings {
 
 void InitBlockEncoder(py::module_ &m);
+void InitBlockDecoder(py::module_ &m);
 void InitBC1(py::module_ &m);
 
 PYBIND11_MODULE(_rgbcx, m) {
@@ -42,7 +39,8 @@ PYBIND11_MODULE(_rgbcx, m) {
         .value("AMD", IType::AMD);
 
     InitBlockEncoder(m);
+    InitBlockDecoder(m);
     InitBC1(m);
 }
 
-}  // namespace python_rgbcx::py
+}  // namespace rgbcx::bindings

@@ -28,16 +28,16 @@ def triple_merge(rows):
 class BC1Block:
     size = 8
 
-    def __init__(self):
-        self.color0 = Color()
-        self.color1 = Color()
-        self.selectors = [[0] * 4] * 4
+    def __init__(self, color0=Color(), color1=Color(), selectors=[[0] * 4] * 4):
+        self.color0 = color0
+        self.color1 = color1
+        self.selectors = selectors
 
     def __repr__(self):
         return repr(self.__dict__)
 
     def __str__(self):
-        return f'color0: {str(self.color0)} color1: {str(self.color1)}, indices:{self.selectors}'
+        return f'color0: {str(self.color0)} color1: {str(self.color1)}, selectors:{self.selectors}'
 
     @staticmethod
     def frombytes(data):
