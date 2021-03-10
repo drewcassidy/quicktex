@@ -22,6 +22,9 @@
 #include <stdexcept>
 
 #include "../BC1/BC1Decoder.h"
+#include "../BC3/BC3Decoder.h"
+#include "../BC4/BC4Decoder.h"
+#include "../BC5/BC5Decoder.h"
 #include "../BlockDecoder.h"
 #include "../bitwiseEnums.h"
 
@@ -67,6 +70,23 @@ void InitDecoders(py::module_ &m) {
     bc1_decoder.def(py::init<Interpolator::Type, bool>(), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("write_alpha") = false);
     bc1_decoder.def_property_readonly("interpolator_type", &BC1Decoder::GetInterpolatorType);
     bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha);
+
+    // BC3Decoder
+    py::class_<BC3Decoder> bc3_decoder(m, "BC3Decoder", block_decoder);
+
+    bc3_decoder.def(py::init<Interpolator::Type>(), py::arg("interpolator") = Interpolator::Type::Ideal);
+
+    // BC4Decoder
+    py::class_<BC4Decoder> bc4_decoder(m, "BC4Decoder", block_decoder);
+
+    bc4_decoder.def(py::init<uint8_t>(), py::arg("channel") = 3);
+    bc4_decoder.def_property("channel", &BC4Decoder::GetChannel, &BC4Decoder::SetChannel);
+
+    // BC5Decoder
+    py::class_<BC5Decoder> bc5_decoder(m, "BC5Decoder", block_decoder);
+
+    bc5_decoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1);
+    bc5_decoder.def_property("channels", &BC5Decoder::GetChannels, &BC5Decoder::SetChannels);
 }
 
 }  // namespace rgbcx::bindings

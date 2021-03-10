@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <tuple>
 #include <memory>
 
 #include "../BC4/BC4Decoder.h"
@@ -33,6 +34,7 @@
 namespace rgbcx {
 class BC5Decoder : public BlockDecoderTemplate<BC5Block, 4, 4> {
    public:
+    using ChannelPair = std::tuple<uint8_t, uint8_t>;
     using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
 
     BC5Decoder(uint8_t chan0 = 0, uint8_t chan1 = 1) : BC5Decoder(std::make_shared<BC4Decoder>(), chan0, chan1) {}
@@ -47,9 +49,18 @@ class BC5Decoder : public BlockDecoderTemplate<BC5Block, 4, 4> {
     constexpr size_t GetChannel0() const { return _chan0; }
     constexpr size_t GetChannel1() const { return _chan1; }
 
+    ChannelPair GetChannels() const { return ChannelPair(_chan0, _chan1); }
+    void SetChannels(ChannelPair channels) {
+        if (std::get<0>(channels) >= 4) throw std::invalid_argument("Channel 0 out of range");
+        if (std::get<1>(channels) >= 4) throw std::invalid_argument("Channel 1 out of range");
+        _chan0 = std::get<0>(channels);
+        _chan1 = std::get<1>(channels);
+    }
+
+
    private:
     const BC4DecoderPtr _bc4_decoder;
-    const uint8_t _chan0;
-    const uint8_t _chan1;
+    uint8_t _chan0;
+    uint8_t _chan1;
 };
 }  // namespace rgbcx

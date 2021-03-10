@@ -21,6 +21,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <stdexcept>
 
 #include "../BlockDecoder.h"
 #include "../BlockView.h"
@@ -36,9 +37,13 @@ class BC4Decoder : public BlockDecoderTemplate<BC4Block, 4, 4> {
     void DecodeBlock(Color4x4 dest, BC4Block *const block, uint8_t channel) const noexcept(ndebug) { DecodeBlock(dest.GetChannel(channel), block); }
     void DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug);
 
-    constexpr uint8_t GetChannel() const { return _channel; }
+    uint8_t GetChannel() const { return _channel; }
+    void SetChannel(uint8_t channel) {
+        if (channel >= 4) throw std::invalid_argument("Channel out of range");
+        _channel = channel;
+    }
 
    private:
-    const uint8_t _channel;
+    uint8_t _channel;
 };
 }  // namespace rgbcx
