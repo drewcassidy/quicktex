@@ -29,10 +29,10 @@ int main() {
     py::scoped_interpreter guard{};
 
     py::module_ site = py::module_::import("site");
-    py::module_ unittest = py::module_::import("unittest");
 
     site.attr("addsitedir")(CUSTOM_SYS_PATH);
 
-    py::module_ tests = py::module_::import("test_rgbcx");
-    unittest.attr("main")("test_rgbcx");
+    py::module_ nose = py::module_::import("nose");
+    py::module_ tests = py::module_::import("test_BC1");
+    nose.attr("main")("test_BC1");
 }

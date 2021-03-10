@@ -113,5 +113,6 @@ setup(
     packages=find_packages('src'),
     package_dir={'': 'src'},
     install_requires=["Pillow"],
+    extras_require={"tests": ["nose", "parameterized"]},
     zip_safe=False,
 )

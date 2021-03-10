@@ -57,6 +57,9 @@ class BC1Block:
     def is_3color(self):
         return self.color0.to_565() <= self.color1.to_565()
 
+    def is_3color_black(self):
+        return self.is_3color() and any(3 in row for row in self.selectors)
+
 
 class BC4Block:
     size = 8

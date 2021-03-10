@@ -1,14 +1,32 @@
 import unittest
+
+import nose
+import parameterized
 import s3tc
 import rgbcx
 from images import Blocks
 
 
-class TestBC1Encoder(unittest.TestCase):
+def get_class_name_bc1encoder(cls, num, params_dict):
+    # By default the generated class named includes either the "name"
+    # parameter (if present), or the first string value. This example shows
+    # multiple parameters being included in the generated class name:
+    return "%s%s" % (
+        cls.__name__,
+        params_dict['suffix'],
+    )
+
+
+@parameterized.parameterized_class([
+    {"use_3color": False, "use_3color_black": False, "suffix": "4Color"},
+    {"use_3color": True, "use_3color_black": False, "suffix": "3Color"},
+    {"use_3color": True, "use_3color_black": True, "suffix": "3ColorBlack"},
+], class_name_func=get_class_name_bc1encoder)
+class TestBC1EncoderBlocks(unittest.TestCase):
     """Test BC1 encoder with a variety of inputs with 3 color blocks disabled."""
 
     def setUp(self):
-        self.bc1_encoder = rgbcx.BC1Encoder(rgbcx.InterpolatorType.Ideal, 5, False, False)
+        self.bc1_encoder = rgbcx.BC1Encoder(rgbcx.InterpolatorType.Ideal, 5, self.use_3color, self.use_3color_black)
 
     def test_block_size(self):
         """Ensure encoded block size is 8 bytes."""
@@ -20,92 +38,31 @@ class TestBC1Encoder(unittest.TestCase):
         self.assertEqual(len(out), 8, 'incorrect returned block size')
 
     def test_block_4color(self):
-        """Ensure encoding the greyscale test block results in a 4 color block."""
+        """Test encoder output with 4 color greyscale testblock."""
         out = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.greyscale, 4, 4))
+        selectors = [[0, 2, 3, 1]] * 4
 
-        self.assertFalse(out.is_3color(), "returned 3 color block for greyscale test block")
-
-    def test_block_greyscale_selectors(self):
-        """Ensure encoding the greyscale test block results in the correct selectors."""
-        out = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.greyscale, 4, 4))
-        first_row = out.selectors[0]
-        expected_row = [0, 2, 3, 1]
-
-        self.assertTrue(all(row == first_row for row in out.selectors), "block has different selectors in each row")
-        self.assertTrue(all(row == expected_row for row in out.selectors), "block has incorrect selectors for greyscale test block")
+        self.assertFalse(out.is_3color(), "returned block color mode for greyscale test block")
+        self.assertEqual(selectors, out.selectors, "block has incorrect selectors for greyscale test block")
 
     def test_block_3color(self):
-        """Ensure encoder doesn't output a 3 color block."""
-        out1 = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.three_color, 4, 4))
-        out2 = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.three_color_black, 4, 4))
-
-        self.assertFalse(out1.is_3color(), "returned 3 color block with use_3color disabled")
-        self.assertFalse(out2.is_3color(), "returned 3 color block with use_3color disabled")
-
-
-class TestBC1Encoder3Color(unittest.TestCase):
-    """Test BC1 encoder with a variety of inputs with 3 color blocks enabled."""
-
-    def setUp(self):
-        self.bc1_encoder = rgbcx.BC1Encoder(rgbcx.InterpolatorType.Ideal, 5, True, False)
-
-    def test_block_4color(self):
-        """Ensure encoding the greyscale test block results in a 4 color block."""
-        out = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.greyscale, 4, 4))
-
-        self.assertFalse(out.is_3color(), "returned 3 color block for greyscale test block")
-
-    def test_block_3color(self):
-        """Ensure encoding the 3 color test block results in a 3 color block."""
+        """Test encoder output with 3 color test block."""
         out = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.three_color, 4, 4))
+        selectors = [[1, 2, 2, 0]] * 4
 
-        self.assertTrue(out.is_3color(), "returned 4 color block with use_3color enabled")
+        self.assertEqual(out.is_3color(), self.use_3color, "returned incorrect block color mode for 3 color test block")
+        if self.use_3color:  # we only care about the selectors if we are in 3 color mode
+            self.assertEqual(selectors, out.selectors, "block has incorrect selectors for 3 color test block")
 
     def test_block_3color_black(self):
-        """Ensure encoder doesn't output a 3 color block with black pixels."""
+        """Test encoder output with 3 color test block with black pixels."""
         out = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.three_color_black, 4, 4))
+        selectors = [[3, 1, 2, 0]] * 4
 
-        self.assertFalse(out.is_3color() and any(3 in row for row in out.selectors),
-                         "returned 3 color block with black pixels with use_3color_black disabled")
-
-    def test_block_selectors(self):
-        """Ensure encoding the 3 color test block results in the correct selectors."""
-        out = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.three_color, 4, 4))
-        first_row = out.selectors[0]
-        expected_row = [1, 2, 2, 0]
-
-        self.assertTrue(all(row == first_row for row in out.selectors), "block has different selectors in each row")
-        self.assertTrue(all(row == expected_row for row in out.selectors), "block has incorrect selectors for 3 color test block")
-
-
-class TestBC1Encoder3ColorBlack(unittest.TestCase):
-    """ Test BC1 encoder with a variety of inputs with 3 color blocks with black pixels enabled"""
-
-    def setUp(self):
-        self.bc1_encoder = rgbcx.BC1Encoder(rgbcx.InterpolatorType.Ideal, 5, True, True)
-
-    def test_block_3color(self):
-        """Ensure encoding the 3 color test block results in a 3 color block."""
-        out = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.three_color, 4, 4))
-
-        self.assertTrue(out.is_3color(), "returned 4 color block with use_3color enabled")
-
-    def test_block_3color_black(self):
-        """Ensure encoder outputs a 3 color block with black pixels."""
-        out = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.three_color_black, 4, 4))
-
-        self.assertTrue(out.is_3color(), "returned 4 color block with use_3color enabled")
-        self.assertTrue(any(3 in row for row in out.selectors), "returned block without black pixels with use_3color_black enabled")
-
-    def test_block_selectors(self):
-        """Ensure encoding the 3 color with black test block results in the correct selectors."""
-        out = s3tc.BC1Block.frombytes(self.bc1_encoder.encode_image(Blocks.three_color_black, 4, 4))
-        first_row = out.selectors[0]
-        expected_row = [3, 1, 2, 0]
-
-        self.assertTrue(all(row == first_row for row in out.selectors), "block has different selectors in each row")
-        self.assertTrue(all(row == expected_row for row in out.selectors), "block has incorrect selectors for 3 color black test block")
+        self.assertEqual(out.is_3color_black(), self.use_3color_black, "returned incorrect block color mode for 3 color with black test block")
+        if self.use_3color_black:  # we only care about the selectors if we are in 3 color black mode
+            self.assertEqual(selectors, out.selectors, "block has incorrect selectors for 3 color with black test block")
 
 
 if __name__ == '__main__':
-    unittest.main()
+    nose.main()
