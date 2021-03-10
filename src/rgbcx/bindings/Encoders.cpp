@@ -19,9 +19,9 @@
 
 #include <pybind11/pybind11.h>
 
-#include "../BC1/BC1Decoder.h"
+#include <stdexcept>
+
 #include "../BC1/BC1Encoder.h"
-#include "../BlockDecoder.h"
 #include "../BlockEncoder.h"
 #include "../bitwiseEnums.h"
 
@@ -31,9 +31,35 @@
 namespace py = pybind11;
 namespace rgbcx::bindings {
 
-void InitBC1(py::module_ &m) {
-    auto block_encoder = py::type::of<BlockEncoder>();
-    auto block_decoder = py::type::of<BlockDecoder>();
+py::bytes EncodeImage(const BlockEncoder &self, py::bytes decoded, unsigned image_width, unsigned image_height) {
+    if (image_width % self.BlockWidth() != 0) throw std::invalid_argument("Width is not an even multiple of block_width");
+    if (image_height % self.BlockHeight() != 0) throw std::invalid_argument("Height is not an even multiple of block_height");
+    if (image_width == 0 || image_height == 0) throw std::invalid_argument("Image has zero size");
+
+    size_t size = image_width * image_height;
+    size_t block_size = (size / (self.BlockHeight() * self.BlockWidth())) * self.BlockSize();
+    size_t color_size = size * sizeof(Color);
+
+    std::string encoded_str = std::string(block_size, 0);
+    std::string decoded_str = (std::string)decoded;  // decoded data is copied here, unfortunately
+
+    if (decoded_str.size() != color_size) throw std::invalid_argument("Incompatible data: image width and height do not match the size of the decoded image");
+
+    self.EncodeImage(reinterpret_cast<uint8_t *>(encoded_str.data()), reinterpret_cast<Color *>(decoded_str.data()), image_width, image_height);
+
+    auto bytes = py::bytes(encoded_str);  // encoded data is copied here, unfortunately
+
+    return bytes;
+}
+
+void InitEncoders(py::module_ &m) {
+    // BlockEncoder
+    py::class_<BlockEncoder> block_encoder(m, "BlockEncoder");
+
+    block_encoder.def("encode_image", &EncodeImage);
+    block_encoder.def_property_readonly("block_size", &BlockEncoder::BlockSize);
+    block_encoder.def_property_readonly("block_width", &BlockEncoder::BlockWidth);
+    block_encoder.def_property_readonly("block_height", &BlockEncoder::BlockHeight);
 
     // BC1Encoder
     py::class_<BC1Encoder> bc1_encoder(m, "BC1Encoder", block_encoder);
@@ -78,13 +104,6 @@ void InitBC1(py::module_ &m) {
         .value("Faster", BC1Encoder::ErrorMode::Faster)
         .value("Check2", BC1Encoder::ErrorMode::Check2)
         .value("Full", BC1Encoder::ErrorMode::Full);
-
-    // BC1Decoder
-    py::class_<BC1Decoder> bc1_decoder(m, "BC1Decoder", block_decoder);
-
-    bc1_decoder.def(py::init<Interpolator::Type, bool>(), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("write_alpha") = false);
-    bc1_decoder.def_property_readonly("interpolator_type", &BC1Decoder::GetInterpolatorType);
-    bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha);
 }
 
 }  // namespace rgbcx::bindings

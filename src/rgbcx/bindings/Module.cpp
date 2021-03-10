@@ -24,9 +24,8 @@
 namespace py = pybind11;
 namespace rgbcx::bindings {
 
-void InitBlockEncoder(py::module_ &m);
-void InitBlockDecoder(py::module_ &m);
-void InitBC1(py::module_ &m);
+void InitEncoders(py::module_ &m);
+void InitDecoders(py::module_ &m);
 
 PYBIND11_MODULE(_rgbcx, m) {
     m.doc() = "More Stuff";
@@ -38,9 +37,8 @@ PYBIND11_MODULE(_rgbcx, m) {
         .value("Nvidia", IType::Nvidia)
         .value("AMD", IType::AMD);
 
-    InitBlockEncoder(m);
-    InitBlockDecoder(m);
-    InitBC1(m);
+    InitEncoders(m);
+    InitDecoders(m);
 }
 
 }  // namespace rgbcx::bindings

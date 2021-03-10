@@ -17,12 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../BlockDecoder.h"
-
 #include <pybind11/pybind11.h>
 
 #include <stdexcept>
 
+#include "../BC1/BC1Decoder.h"
+#include "../BlockDecoder.h"
 #include "../bitwiseEnums.h"
 
 #define STRINGIFY(x) #x
@@ -52,13 +52,21 @@ py::bytes DecodeImage(const BlockDecoder &self, py::bytes encoded, unsigned imag
     return bytes;
 }
 
-void InitBlockDecoder(py::module_ &m) {
+void InitDecoders(py::module_ &m) {
+    // BlockDecoder
     py::class_<BlockDecoder> block_decoder(m, "BlockDecoder");
 
     block_decoder.def("decode_image", &DecodeImage);
     block_decoder.def_property_readonly("block_size", &BlockDecoder::BlockSize);
     block_decoder.def_property_readonly("block_width", &BlockDecoder::BlockWidth);
     block_decoder.def_property_readonly("block_height", &BlockDecoder::BlockHeight);
+
+    // BC1Decoder
+    py::class_<BC1Decoder> bc1_decoder(m, "BC1Decoder", block_decoder);
+
+    bc1_decoder.def(py::init<Interpolator::Type, bool>(), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("write_alpha") = false);
+    bc1_decoder.def_property_readonly("interpolator_type", &BC1Decoder::GetInterpolatorType);
+    bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha);
 }
 
 }  // namespace rgbcx::bindings
