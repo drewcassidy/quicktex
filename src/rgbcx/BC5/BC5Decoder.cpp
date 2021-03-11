@@ -26,7 +26,7 @@
 namespace rgbcx {
 
 void BC5Decoder::DecodeBlock(Color4x4 dest, BC5Block *const block) const noexcept(ndebug) {
-    _bc4_decoder->DecodeBlock(dest, &block->chan0_block, _chan0);
-    _bc4_decoder->DecodeBlock(dest, &block->chan1_block, _chan1);
+    _chan0_decoder->DecodeBlock(dest, &block->chan0_block);
+    _chan1_decoder->DecodeBlock(dest, &block->chan1_block);
 }
 }  // namespace rgbcx

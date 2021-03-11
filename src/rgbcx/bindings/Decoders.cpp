@@ -28,9 +28,6 @@
 #include "../BlockDecoder.h"
 #include "../bitwiseEnums.h"
 
-#define STRINGIFY(x) #x
-#define MACRO_STRINGIFY(x) STRINGIFY(x)
-
 namespace py = pybind11;
 namespace rgbcx::bindings {
 
@@ -46,7 +43,7 @@ py::bytes DecodeImage(const BlockDecoder &self, py::bytes encoded, unsigned imag
     std::string encoded_str = (std::string)encoded;  // encoded data is copied here, unfortunately
     std::string decoded_str = std::string(color_size, 0);
 
-    if (decoded_str.size() != color_size) throw std::invalid_argument("Incompatible data: image width and height do not match the size of the decoded image");
+    if (encoded_str.size() != block_size) throw std::invalid_argument("Incompatible data: image width and height do not match the size of the encoded image");
 
     self.DecodeImage(reinterpret_cast<uint8_t *>(encoded_str.data()), reinterpret_cast<Color *>(decoded_str.data()), image_width, image_height);
 
@@ -74,7 +71,9 @@ void InitDecoders(py::module_ &m) {
     // BC3Decoder
     py::class_<BC3Decoder> bc3_decoder(m, "BC3Decoder", block_decoder);
 
-    bc3_decoder.def(py::init<Interpolator::Type>(), py::arg("interpolator") = Interpolator::Type::Ideal);
+    bc3_decoder.def(py::init<Interpolator::Type>(), py::arg("type") = Interpolator::Type::Ideal);
+    bc3_decoder.def_property_readonly("bc1_decoder", &BC3Decoder::GetBC1Decoder);
+    bc3_decoder.def_property_readonly("bc4_decoder", &BC3Decoder::GetBC4Decoder);
 
     // BC4Decoder
     py::class_<BC4Decoder> bc4_decoder(m, "BC4Decoder", block_decoder);
@@ -87,6 +86,7 @@ void InitDecoders(py::module_ &m) {
 
     bc5_decoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1);
     bc5_decoder.def_property("channels", &BC5Decoder::GetChannels, &BC5Decoder::SetChannels);
+    bc5_decoder.def_property_readonly("bc4_decoders", &BC5Decoder::GetBC4Decoders);
 }
 
 }  // namespace rgbcx::bindings
