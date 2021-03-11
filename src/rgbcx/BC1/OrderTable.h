@@ -24,7 +24,9 @@
 #include <atomic>
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <mutex>
 
 #include "../Vector4.h"
 #include "Histogram.h"

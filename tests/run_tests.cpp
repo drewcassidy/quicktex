@@ -20,6 +20,10 @@
 // This file allows for easy debugging in CLion or other IDEs that dont natively support cross-debugging between Python and C++
 
 #include <pybind11/embed.h>
+
+#include <array>
+#include <string>
+
 namespace py = pybind11;
 
 #define STRINGIFY(x) #x

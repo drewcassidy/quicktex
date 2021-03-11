@@ -19,14 +19,17 @@
 
 #include <pybind11/pybind11.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <stdexcept>
+#include <string>
+#include <array>
 
 #include "../BC1/BC1Decoder.h"
 #include "../BC3/BC3Decoder.h"
 #include "../BC4/BC4Decoder.h"
 #include "../BC5/BC5Decoder.h"
 #include "../BlockDecoder.h"
-#include "../bitwiseEnums.h"
 
 namespace py = pybind11;
 namespace rgbcx::bindings {

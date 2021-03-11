@@ -19,8 +19,8 @@
 
 #include "BC3Decoder.h"
 
-#include "../BC1/BC1Decoder.h"
-#include "../BC4/BC4Decoder.h"
+#include <type_traits>
+
 #include "../BlockView.h"
 #include "../ndebug.h"
 #include "BC3Block.h"

@@ -20,6 +20,8 @@
 #pragma once
 
 #include <array>
+#include <cassert>
+#include <cstddef>
 #include <functional>
 
 #include "Vector4.h"

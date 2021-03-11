@@ -20,6 +20,7 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 
 #include "../BlockDecoder.h"
 #include "../BlockView.h"
@@ -32,7 +33,7 @@ class BC1Decoder final : public BlockDecoderTemplate<BC1Block, 4, 4> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
     BC1Decoder(Interpolator::Type type = Interpolator::Type::Ideal, bool write_alpha = false)
-        : _interpolator(Interpolator::MakeInterpolator(type)), write_alpha(write_alpha) {}
+        : write_alpha(write_alpha), _interpolator(Interpolator::MakeInterpolator(type)) {}
 
     void DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) override;
 
@@ -40,6 +41,7 @@ class BC1Decoder final : public BlockDecoderTemplate<BC1Block, 4, 4> {
     constexpr bool WritesAlpha() const { return write_alpha; }
 
     bool write_alpha;
+
    private:
     const InterpolatorPtr _interpolator;
 };

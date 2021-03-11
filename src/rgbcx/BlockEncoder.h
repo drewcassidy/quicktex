@@ -55,7 +55,6 @@ template <class B, size_t M, size_t N> class BlockEncoderTemplate : public Block
 
         unsigned block_width = image_width / N;
         unsigned block_height = image_height / M;
-        unsigned block_count = block_width * block_height;
 
         auto blocks = reinterpret_cast<B *>(encoded);
 
@@ -64,7 +63,7 @@ template <class B, size_t M, size_t N> class BlockEncoderTemplate : public Block
         // As a result, this is sometimes left as a serial operation despite being embarassingly parallelizable
         // threshold for number of blocks before multithreading is set by overriding MTThreshold()
 
-#pragma omp parallel for if (block_count >= MTThreshold())
+#pragma omp parallel for if (block_width * block_height >= MTThreshold())
         for (unsigned y = 0; y < block_height; y++) {
             for (unsigned x = 0; x < block_width; x++) {
                 unsigned pixel_x = x * N;

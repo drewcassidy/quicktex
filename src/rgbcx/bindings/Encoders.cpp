@@ -19,11 +19,15 @@
 
 #include <pybind11/pybind11.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <stdexcept>
+#include <string>
 
 #include "../BC1/BC1Encoder.h"
 #include "../BlockEncoder.h"
-#include "../bitwiseEnums.h"
+#include "../Color.h"
+#include "../Interpolator.h"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)

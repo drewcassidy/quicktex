@@ -29,6 +29,7 @@
 
 #include "../BlockView.h"
 #include "../Color.h"
+#include "../Interpolator.h"
 #include "../Matrix4x4.h"
 #include "../Vector4.h"
 #include "../Vector4Int.h"
@@ -45,7 +46,6 @@ using namespace BC1;
 
 BC1Encoder::BC1Encoder(Interpolator::Type type, unsigned int level, bool allow_3color, bool allow_3color_black)
     : _interpolator(Interpolator::MakeInterpolator(type)) {
-
     OrderTable<3>::Generate();
     OrderTable<4>::Generate();
 

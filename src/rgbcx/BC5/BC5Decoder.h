@@ -19,11 +19,10 @@
 
 #pragma once
 
-#include <cassert>
-#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <tuple>
+#include <type_traits>
 
 #include "../BC4/BC4Decoder.h"
 #include "../BlockDecoder.h"

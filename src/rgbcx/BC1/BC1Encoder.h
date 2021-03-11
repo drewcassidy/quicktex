@@ -21,17 +21,19 @@
 
 #include <array>
 #include <climits>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <type_traits>
 
 #include "../BlockEncoder.h"
 #include "../BlockView.h"
 #include "../Color.h"
+#include "../Interpolator.h"
 #include "BC1Block.h"
 #include "SingleColorTable.h"
 
 namespace rgbcx {
-class Interpolator;
 class Vector4;
 
 class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {

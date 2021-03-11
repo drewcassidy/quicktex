@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <span>
 #include <vector>
+#include <memory>
 
 #include "BlockView.h"
 #include "ndebug.h"
@@ -75,7 +76,7 @@ class BlockDecoderTemplate : public BlockDecoder {
                 assert(pixel_x + N <= image_width);
 
                 unsigned top_left = pixel_x + (pixel_y * image_width);
-                auto dest = DecodedBlock(&decoded[top_left], image_width);
+                auto dest = DecodedBlock(&decoded[top_left], (int)image_width);
 
                 DecodeBlock(dest, &blocks[x + block_width * y]);
             }

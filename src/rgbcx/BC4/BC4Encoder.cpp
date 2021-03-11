@@ -19,12 +19,14 @@
 
 #include "BC4Encoder.h"
 
-#include <algorithm>  // for minmax_element
-#include <array>      // for array
-#include <cstdint>    // for uint8_t
-#include <utility>    // for pair
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <utility>
 
-#include "BC4Block.h"  // for BC4Block
+#include "../BlockView.h"
+#include "../ndebug.h"
+#include "BC4Block.h"
 
 namespace rgbcx {
 void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug) {
