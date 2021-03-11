@@ -64,10 +64,10 @@ template <class B, size_t M, size_t N> class BlockEncoderTemplate : public Block
         // threshold for number of blocks before multithreading is set by overriding MTThreshold()
 
 #pragma omp parallel for if (block_width * block_height >= MTThreshold())
-        for (unsigned y = 0; y < block_height; y++) {
-            for (unsigned x = 0; x < block_width; x++) {
-                unsigned pixel_x = x * N;
-                unsigned pixel_y = y * M;
+        for (int y = 0; y < (int)block_height; y++) {
+            for (int x = 0; x < (int)block_width; x++) {
+                unsigned pixel_x = (unsigned)x * N;
+                unsigned pixel_y = (unsigned)y * M;
 
                 assert(pixel_x >= 0);
                 assert(pixel_y >= 0);
@@ -75,9 +75,10 @@ template <class B, size_t M, size_t N> class BlockEncoderTemplate : public Block
                 assert(pixel_x + N <= image_width);
 
                 unsigned top_left = pixel_x + (pixel_y * image_width);
+                unsigned block_index = (unsigned)x + (block_width * (unsigned)y);
                 auto src = DecodedBlock(&decoded[top_left], (int)image_width);
 
-                EncodeBlock(src, &blocks[x + block_width * y]);
+                EncodeBlock(src, &blocks[block_index]);
             }
         }
     }
