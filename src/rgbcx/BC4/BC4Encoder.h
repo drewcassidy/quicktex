@@ -21,6 +21,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <stdexcept>
 
 #include "../BlockEncoder.h"
 #include "../BlockView.h"
