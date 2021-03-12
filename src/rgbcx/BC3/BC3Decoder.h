@@ -32,7 +32,6 @@
 namespace rgbcx {
 class BC3Decoder : public BlockDecoderTemplate<BC3Block, 4, 4> {
    public:
-    using InterpolatorPtr = std::shared_ptr<Interpolator>;
     using BC1DecoderPtr = std::shared_ptr<BC1Decoder>;
     using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
 

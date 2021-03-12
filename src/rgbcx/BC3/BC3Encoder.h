@@ -19,31 +19,32 @@
 
 #pragma once
 
-#include <cassert>
-#include <cstdint>
-#include <stdexcept>
+#include <memory>
 
-#include "../BlockDecoder.h"
+#include "../BC1/BC1Encoder.h"
+#include "../BC4/BC4Encoder.h"
+#include "../BlockEncoder.h"
 #include "../BlockView.h"
-#include "../ndebug.h"
-#include "BC4Block.h"
+#include "../Interpolator.h"
+#include "BC3Block.h"
 
 namespace rgbcx {
-class BC4Decoder : public BlockDecoderTemplate<BC4Block, 4, 4> {
+
+class BC3Encoder : public BlockEncoderTemplate<BC3Block, 4, 4> {
    public:
-    BC4Decoder(uint8_t channel = 3) { SetChannel(channel); }
+    using BC1EncoderPtr = std::shared_ptr<BC1Encoder>;
+    using BC4EncoderPtr = std::shared_ptr<BC4Encoder>;
 
-    void DecodeBlock(Color4x4 dest, BC4Block *const block) const noexcept(ndebug) override { DecodeBlock(dest.GetChannel(_channel), block); }
-    void DecodeBlock(Color4x4 dest, BC4Block *const block, uint8_t channel) const noexcept(ndebug) { DecodeBlock(dest.GetChannel(channel), block); }
-    void DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug);
+    BC3Encoder(Interpolator::Type type = Interpolator::Type::Ideal, unsigned level = 5, bool allow_3color = true, bool allow_3color_black = true)
+        : _bc1_encoder(std::make_shared<BC1Encoder>(type, level, allow_3color, allow_3color_black)), _bc4_encoder(std::make_shared<BC4Encoder>(3)) {}
 
-    uint8_t GetChannel() const { return _channel; }
-    void SetChannel(uint8_t channel) {
-        if (channel >= 4U) throw std::invalid_argument("Channel out of range");
-        _channel = channel;
-    }
+    void EncodeBlock(Color4x4 pixels, BC3Block *dest) const override;
+
+    BC1EncoderPtr GetBC1Encoder() const { return _bc1_encoder; }
+    BC4EncoderPtr GetBC4Encoder() const { return _bc4_encoder; }
 
    private:
-    uint8_t _channel;
+    const BC1EncoderPtr _bc1_encoder;
+    const BC4EncoderPtr _bc4_encoder;
 };
 }  // namespace rgbcx

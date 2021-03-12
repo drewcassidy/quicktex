@@ -17,33 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <cassert>
-#include <cstdint>
-
-#include "../BlockEncoder.h"
-#include "../BlockView.h"
-#include "../ndebug.h"
-#include "BC4Block.h"
+#include "BC5Encoder.h"
 
 namespace rgbcx {
-
-class BC4Encoder : public BlockEncoderTemplate<BC4Block, 4, 4> {
-   public:
-    BC4Encoder(const uint8_t channel) { SetChannel(channel); }
-
-    void EncodeBlock(Color4x4 pixels, BC4Block *const dest) const override { EncodeBlock(pixels.GetChannel(_channel), dest); }
-    void EncodeBlock(Color4x4 pixels, BC4Block *const dest, uint8_t channel) const noexcept(ndebug) { EncodeBlock(pixels.GetChannel(channel), dest); }
-    void EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug);
-
-    uint8_t GetChannel() const { return _channel; }
-    void SetChannel(uint8_t channel) {
-        if (channel >= 4) throw std::invalid_argument("Channel out of range");
-        _channel = channel;
-    }
-
-   private:
-    uint8_t _channel;
-};
+void BC5Encoder::EncodeBlock(Color4x4 pixels, BC5Block *dest) const {
+    _chan0_encoder->EncodeBlock(pixels, &(dest->chan0_block));
+    _chan1_encoder->EncodeBlock(pixels, &(dest->chan1_block));
+}
 }  // namespace rgbcx

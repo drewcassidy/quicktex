@@ -25,6 +25,8 @@
 #include <string>
 
 #include "../BC1/BC1Encoder.h"
+#include "../BC3/BC3Encoder.h"
+#include "../BC5/BC5Encoder.h"
 #include "../BlockEncoder.h"
 #include "../Color.h"
 #include "../Interpolator.h"
@@ -108,6 +110,26 @@ void InitEncoders(py::module_ &m) {
         .value("Faster", BC1Encoder::ErrorMode::Faster)
         .value("Check2", BC1Encoder::ErrorMode::Check2)
         .value("Full", BC1Encoder::ErrorMode::Full);
-}
 
+    // BC3Encoder
+    py::class_<BC3Encoder> bc3_encoder(m, "BC3Encoder", block_encoder);
+
+    bc3_encoder.def(py::init<Interpolator::Type, unsigned, bool, bool>(), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("level") = 5,
+                    py::arg("use_3color") = true, py::arg("use_3color_black") = true);
+    bc3_encoder.def_property_readonly("bc1_encoder", &BC3Encoder::GetBC1Encoder);
+    bc3_encoder.def_property_readonly("bc4_encoder", &BC3Encoder::GetBC4Encoder);
+
+    // BC4Encoder
+    py::class_<BC4Encoder> bc4_encoder(m, "BC4Encoder", block_encoder);
+
+    bc4_encoder.def(py::init<uint8_t>(), py::arg("channel") = 3);
+    bc4_encoder.def_property("channel", &BC4Encoder::GetChannel, &BC4Encoder::SetChannel);
+
+    // BC5Encoder
+    py::class_<BC5Encoder> bc5_encoder(m, "BC5Encoder", block_encoder);
+
+    bc5_encoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1);
+    bc5_encoder.def_property("channels", &BC5Encoder::GetChannels, &BC5Encoder::SetChannels);
+    bc5_encoder.def_property_readonly("bc4_decoders", &BC5Encoder::GetBC4Encoders);
+}
 }  // namespace rgbcx::bindings
