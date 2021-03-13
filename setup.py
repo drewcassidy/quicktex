@@ -102,20 +102,21 @@ class CMakeBuild(build_ext):
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
-    name="rgbcx",
+    name="quicktex",
     version="0.0.1",
     author="Andrew Cassidy",
     author_email="drewcassidy@me.com",
-    description="",
+    description="A fast block compression library for python",
     long_description="",
-    ext_modules=[CMakeExtension("_rgbcx")],
+    python_requires=">=3.6",
+    ext_modules=[CMakeExtension("_quicktex")],
     cmdclass={"build_ext": CMakeBuild},
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
+    packages=find_packages('.'),
+    package_dir={'': '.'},
     install_requires=["Pillow"],
     extras_require={
         "tests": ["nose", "parameterized"],
-        "docs": ["sphinx"],
+        "docs": ["sphinx", "myst-parser", "sphinx-rtd-theme"],
     },
     zip_safe=False,
 )

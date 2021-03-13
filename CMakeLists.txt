@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 include(CheckIPOSupported)
 include(tools/CompilerWarnings.cmake)
 
-project(rgbcx)
+project(quicktex)
 
 # Find dependencies
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
@@ -10,41 +10,61 @@ find_package(OpenMP)
 add_subdirectory(extern/pybind11)
 
 # Collect source files
-file(GLOB SOURCE_FILES "src/rgbcx/*.cpp" "src/rgbcx/BC*/*.cpp")
-file(GLOB HEADER_FILES "src/rgbcx/*.h" "src/rgbcx/BC*/*.h")
-file(GLOB PYTHON_FILES "src/rgbcx/bindings/*.cpp" "src/rgbcx/bindings/*.h")
+file(GLOB SOURCE_FILES
+        "quicktex/*.cpp"
+        "quicktex/compression/*.cpp"
+        "quicktex/compression/bc1/*.cpp"
+        "quicktex/compression/bc3/*.cpp"
+        "quicktex/compression/bc4/*.cpp"
+        "quicktex/compression/bc5/*.cpp"
+        )
+
+file(GLOB HEADER_FILES
+        "quicktex/*.h"
+        "quicktex/compression/*.h"
+        "quicktex/compression/bc1/*.h"
+        "quicktex/compression/bc3/*.h"
+        "quicktex/compression/bc4/*.h"
+        "quicktex/compression/bc5/*.h"
+        "quicktex/formats/blocks/*.h"
+        )
+
 file(GLOB TEST_FILES "tests/*.cpp")
+
+set(PYTHON_FILES
+        "quicktex/bindings/Module.cpp"
+        "quicktex/compression/bindings/Decoders.cpp"
+        "quicktex/compression/bindings/Encoders.cpp")
 
 # Organize source files together for some IDEs
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES})
 
 # Add python module
-pybind11_add_module(_rgbcx
+pybind11_add_module(_quicktex
         ${SOURCE_FILES}
         ${HEADER_FILES}
         ${PYTHON_FILES})
 
-add_executable(test_rgbcx
+add_executable(test_quicktex
         ${SOURCE_FILES}
         ${HEADER_FILES}
         ${TEST_FILES})
 
-target_link_libraries(test_rgbcx PRIVATE pybind11::embed)
+target_link_libraries(test_quicktex PRIVATE pybind11::embed)
 
-target_compile_definitions(test_rgbcx PRIVATE -DCUSTOM_SYS_PATH="${CMAKE_HOME_DIRECTORY}/env/lib/python3.8/site-packages")
-message("\"${CMAKE_HOME_DIRECTORY}/env/lib/python3.8/site-packages\"")
+target_compile_definitions(test_quicktex PRIVATE -DCUSTOM_SYS_PATH="${CMAKE_HOME_DIRECTORY}/env/lib/python3.8/site-packages")
 
 # enable openMP if available
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(_rgbcx PUBLIC OpenMP::OpenMP_CXX)
-endif()
+if (OpenMP_CXX_FOUND)
+    target_link_libraries(_quicktex PUBLIC OpenMP::OpenMP_CXX)
+endif ()
 
 # Set module features, like C/C++ standards
-target_compile_features(_rgbcx PUBLIC cxx_std_20 c_std_11)
-target_compile_features(test_rgbcx PUBLIC cxx_std_20 c_std_11)
+target_compile_features(_quicktex PUBLIC cxx_std_20 c_std_11)
+target_compile_features(test_quicktex PUBLIC cxx_std_20 c_std_11)
 
-set_project_warnings(_rgbcx)
-set_project_warnings(test_rgbcx)
+set_project_warnings(_quicktex)
+set_project_warnings(test_quicktex)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
