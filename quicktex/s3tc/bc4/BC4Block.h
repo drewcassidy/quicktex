@@ -26,7 +26,7 @@
 
 #include "../../Color.h"
 #include "../../util.h"
-#include "BC1Block.h"
+#include "../bc1/BC1Block.h"
 
 namespace quicktex {
 

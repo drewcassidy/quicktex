@@ -17,32 +17,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <memory>
-#include <type_traits>
+#include "BC3Encoder.h"
 
 #include "../../BlockView.h"
-#include "../../Interpolator.h"
-#include "../../formats/blocks/BC1Block.h"
-#include "../../ndebug.h"
-#include "../BlockDecoder.h"
+#include "BC3Block.h"
 
 namespace quicktex {
-class BC1Decoder final : public BlockDecoderTemplate<BC1Block, 4, 4> {
-   public:
-    using InterpolatorPtr = std::shared_ptr<Interpolator>;
-    BC1Decoder(Interpolator::Type type = Interpolator::Type::Ideal, bool write_alpha = false)
-        : write_alpha(write_alpha), _interpolator(Interpolator::MakeInterpolator(type)) {}
-
-    void DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) override;
-
-    Interpolator::Type GetInterpolatorType() const { return _interpolator->GetType(); }
-    constexpr bool WritesAlpha() const { return write_alpha; }
-
-    bool write_alpha;
-
-   private:
-    const InterpolatorPtr _interpolator;
-};
+void BC3Encoder::EncodeBlock(Color4x4 pixels, BC3Block *dest) const {
+    _bc1_encoder->EncodeBlock(pixels, &(dest->color_block));
+    _bc4_encoder->EncodeBlock(pixels, &(dest->alpha_block), 3);
+}
 }  // namespace quicktex

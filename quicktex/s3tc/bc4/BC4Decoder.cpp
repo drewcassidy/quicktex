@@ -17,18 +17,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "BC3Decoder.h"
+#include "BC4Decoder.h"
 
-#include <type_traits>
+#include <array>    // for array
+#include <cassert>  // for assert
 
-#include "../../BlockView.h"
-#include "../../formats/blocks/BC3Block.h"
-#include "../../ndebug.h"
+#include "../../BlockView.h"  // for ColorBlock
+#include "../../ndebug.h"     // for ndebug
+#include "BC4Block.h"
 
-namespace quicktex {
+void quicktex::BC4Decoder::DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug) {
+    auto l = block->GetLowAlpha();
+    auto h = block->GetHighAlpha();
 
-void BC3Decoder::DecodeBlock(Color4x4 dest, BC3Block *const block) const noexcept(ndebug) {
-    _bc1_decoder->DecodeBlock(dest, &(block->color_block));
-    _bc4_decoder->DecodeBlock(dest, &(block->alpha_block), 3);
+    auto values = BC4Block::GetValues(l, h);
+    auto selectors = block->UnpackSelectors();
+
+    for (unsigned y = 0; y < 4; y++) {
+        for (unsigned x = 0; x < 4; x++) {
+            const auto selector = selectors[y][x];
+            assert(selector < 8);
+            dest.Set(x, y, values[selector]);
+        }
+    }
 }
-}  // namespace quicktex

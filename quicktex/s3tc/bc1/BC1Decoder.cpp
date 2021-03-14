@@ -17,27 +17,36 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "BC4Decoder.h"
+#include "BC1Decoder.h"
 
-#include <array>    // for array
-#include <cassert>  // for assert
+#include <array>
+#include <cassert>
+#include <cstdint>
 
-#include "../../BlockView.h"  // for ColorBlock
-#include "../../formats/blocks/BC4Block.h"
-#include "../../ndebug.h"  // for ndebug
+#include "../../BlockView.h"
+#include "../../Color.h"
+#include "../../ndebug.h"
+#include "BC1Block.h"
 
-void quicktex::BC4Decoder::DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug) {
-    auto l = block->GetLowAlpha();
-    auto h = block->GetHighAlpha();
-
-    auto values = BC4Block::GetValues(l, h);
-    auto selectors = block->UnpackSelectors();
+namespace quicktex {
+void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) {
+    const auto l = block->GetLowColor();
+    const auto h = block->GetHighColor();
+    const auto selectors = block->UnpackSelectors();
+    const auto colors = _interpolator->InterpolateBC1(l, h);
 
     for (unsigned y = 0; y < 4; y++) {
         for (unsigned x = 0; x < 4; x++) {
             const auto selector = selectors[y][x];
-            assert(selector < 8);
-            dest.Set(x, y, values[selector]);
+            const auto color = colors[selector];
+            assert(selector < 4);
+            assert((color.a == 0 && selector == 3 && l <= h) || color.a == UINT8_MAX);
+            if (write_alpha) {
+                dest.Get(x, y).SetRGBA(color);
+            } else {
+                dest.Get(x, y).SetRGB(color);
+            }
         }
     }
 }
+}  // namespace quicktex

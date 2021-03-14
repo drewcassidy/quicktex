@@ -12,29 +12,28 @@ add_subdirectory(extern/pybind11)
 # Collect source files
 file(GLOB SOURCE_FILES
         "quicktex/*.cpp"
-        "quicktex/compression/*.cpp"
-        "quicktex/compression/bc1/*.cpp"
-        "quicktex/compression/bc3/*.cpp"
-        "quicktex/compression/bc4/*.cpp"
-        "quicktex/compression/bc5/*.cpp"
+        "quicktex/s3tc/*.cpp"
+        "quicktex/s3tc/bc1/*.cpp"
+        "quicktex/s3tc/bc3/*.cpp"
+        "quicktex/s3tc/bc4/*.cpp"
+        "quicktex/s3tc/bc5/*.cpp"
         )
 
 file(GLOB HEADER_FILES
         "quicktex/*.h"
-        "quicktex/compression/*.h"
-        "quicktex/compression/bc1/*.h"
-        "quicktex/compression/bc3/*.h"
-        "quicktex/compression/bc4/*.h"
-        "quicktex/compression/bc5/*.h"
-        "quicktex/formats/blocks/*.h"
+        "quicktex/s3tc/*.h"
+        "quicktex/s3tc/bc1/*.h"
+        "quicktex/s3tc/bc3/*.h"
+        "quicktex/s3tc/bc4/*.h"
+        "quicktex/s3tc/bc5/*.h"
         )
 
 file(GLOB TEST_FILES "tests/*.cpp")
 
 set(PYTHON_FILES
         "quicktex/bindings/Module.cpp"
-        "quicktex/compression/bindings/Decoders.cpp"
-        "quicktex/compression/bindings/Encoders.cpp")
+        "quicktex/s3tc/bindings/Decoders.cpp"
+        "quicktex/s3tc/bindings/Encoders.cpp")
 
 # Organize source files together for some IDEs
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES})

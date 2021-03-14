@@ -21,13 +21,13 @@
 
 #include <memory>
 
+#include "../../BlockDecoder.h"
 #include "../../BlockView.h"
-#include "../../Interpolator.h"
-#include "../../formats/blocks/BC3Block.h"
 #include "../../ndebug.h"
-#include "../BlockDecoder.h"
+#include "../Interpolator.h"
 #include "../bc1/BC1Decoder.h"
 #include "../bc4/BC4Decoder.h"
+#include "BC3Block.h"
 
 namespace quicktex {
 class BC3Decoder : public BlockDecoderTemplate<BC3Block, 4, 4> {

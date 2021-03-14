@@ -17,28 +17,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <pybind11/pybind11.h>
+#pragma once
 
-#include "../s3tc/Interpolator.h"
+#include "../../s3tc/bc1/BC1Block.h"
+#include "BC4Block.h"
 
-namespace py = pybind11;
-namespace quicktex::bindings {
+namespace quicktex {
 
-void InitEncoders(py::module_ &m);
-void InitDecoders(py::module_ &m);
-
-PYBIND11_MODULE(_quicktex, m) {
-    m.doc() = "More Stuff";
-
-    using IType = Interpolator::Type;
-    py::enum_<IType>(m, "InterpolatorType")
-        .value("Ideal", IType::Ideal)
-        .value("IdealRound", IType::IdealRound)
-        .value("Nvidia", IType::Nvidia)
-        .value("AMD", IType::AMD);
-
-    InitEncoders(m);
-    InitDecoders(m);
-}
-
-}  // namespace quicktex::bindings
+#pragma pack(push, 1)
+class BC3Block {
+   public:
+    BC4Block alpha_block;
+    BC1Block color_block;
+};
+#pragma pack(pop)
+}  // namespace quicktex

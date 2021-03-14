@@ -24,34 +24,34 @@
 #include <tuple>
 #include <type_traits>
 
+#include "../../BlockDecoder.h"
 #include "../../BlockView.h"
 #include "../../ndebug.h"
-#include "../bc4/BC4Encoder.h"
-#include "../BlockEncoder.h"
-#include "../../formats/blocks/BC5Block.h"
+#include "../bc4/BC4Decoder.h"
+#include "BC5Block.h"
 
 namespace quicktex {
-class BC5Encoder : public BlockEncoderTemplate<BC5Block, 4, 4> {
+class BC5Decoder : public BlockDecoderTemplate<BC5Block, 4, 4> {
    public:
     using ChannelPair = std::tuple<uint8_t, uint8_t>;
-    using BC4EncoderPtr = std::shared_ptr<BC4Encoder>;
-    using BC4EncoderPair = std::tuple<BC4EncoderPtr, BC4EncoderPtr>;
+    using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
+    using BC4DecoderPair = std::tuple<BC4DecoderPtr, BC4DecoderPtr>;
 
-    BC5Encoder(uint8_t chan0 = 0, uint8_t chan1 = 1) : BC5Encoder(std::make_shared<BC4Encoder>(chan0), std::make_shared<BC4Encoder>(chan1)) {}
-    BC5Encoder(BC4EncoderPtr chan0_encoder, BC4EncoderPtr chan1_encoder) : _chan0_encoder(chan0_encoder), _chan1_encoder(chan1_encoder) {}
+    BC5Decoder(uint8_t chan0 = 0, uint8_t chan1 = 1) : BC5Decoder(std::make_shared<BC4Decoder>(chan0), std::make_shared<BC4Decoder>(chan1)) {}
+    BC5Decoder(BC4DecoderPtr chan0_decoder, BC4DecoderPtr chan1_decoder) : _chan0_decoder(chan0_decoder), _chan1_decoder(chan1_decoder) {}
 
-    void EncodeBlock(Color4x4 pixels, BC5Block *dest) const override;
+    void DecodeBlock(Color4x4 dest, BC5Block *const block) const noexcept(ndebug) override;
 
-    ChannelPair GetChannels() const { return ChannelPair(_chan0_encoder->GetChannel(), _chan1_encoder->GetChannel()); }
+    ChannelPair GetChannels() const { return ChannelPair(_chan0_decoder->GetChannel(), _chan1_decoder->GetChannel()); }
     void SetChannels(ChannelPair channels) {
-        _chan0_encoder->SetChannel(std::get<0>(channels));
-        _chan1_encoder->SetChannel(std::get<1>(channels));
+        _chan0_decoder->SetChannel(std::get<0>(channels));
+        _chan1_decoder->SetChannel(std::get<1>(channels));
     }
 
-    BC4EncoderPair GetBC4Encoders() const { return BC4EncoderPair(_chan0_encoder, _chan1_encoder); }
+    BC4DecoderPair GetBC4Decoders() const { return BC4DecoderPair(_chan0_decoder, _chan1_decoder); }
 
    private:
-    const BC4EncoderPtr _chan0_encoder;
-    const BC4EncoderPtr _chan1_encoder;
+    const BC4DecoderPtr _chan0_decoder;
+    const BC4DecoderPtr _chan1_decoder;
 };
 }  // namespace quicktex

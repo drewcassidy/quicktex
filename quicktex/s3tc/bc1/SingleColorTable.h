@@ -23,8 +23,8 @@
 #include <cstdint>
 #include <memory>
 
-#include "../../Interpolator.h"
 #include "../../util.h"
+#include "../Interpolator.h"
 
 namespace quicktex::BC1 {
 

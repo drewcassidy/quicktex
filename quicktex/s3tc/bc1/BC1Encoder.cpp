@@ -29,12 +29,12 @@
 
 #include "../../BlockView.h"
 #include "../../Color.h"
-#include "../../Interpolator.h"
 #include "../../Matrix4x4.h"
 #include "../../Vector4.h"
 #include "../../Vector4Int.h"
 #include "../../bitwiseEnums.h"
 #include "../../util.h"
+#include "../Interpolator.h"
 #include "Histogram.h"
 #include "OrderTable.h"
 #include "SingleColorTable.h"

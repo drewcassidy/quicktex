@@ -25,7 +25,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "../BlockDecoder.h"
+#include "../../BlockDecoder.h"
 #include "../bc1/BC1Decoder.h"
 #include "../bc3/BC3Decoder.h"
 #include "../bc4/BC4Decoder.h"

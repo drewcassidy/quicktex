@@ -25,8 +25,8 @@
 #include <utility>
 
 #include "../../BlockView.h"
-#include "../../formats/blocks/BC4Block.h"
 #include "../../ndebug.h"
+#include "BC4Block.h"
 
 namespace quicktex {
 void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug) {

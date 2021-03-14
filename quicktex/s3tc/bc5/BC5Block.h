@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "BC4Block.h"
+#include "../bc4/BC4Block.h"
 
 namespace quicktex {
 

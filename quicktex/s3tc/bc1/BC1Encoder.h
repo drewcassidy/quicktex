@@ -26,11 +26,11 @@
 #include <memory>
 #include <type_traits>
 
+#include "../../BlockEncoder.h"
 #include "../../BlockView.h"
 #include "../../Color.h"
-#include "../../Interpolator.h"
-#include "../../formats/blocks/BC1Block.h"
-#include "../BlockEncoder.h"
+#include "../Interpolator.h"
+#include "BC1Block.h"
 #include "SingleColorTable.h"
 
 namespace quicktex {

@@ -24,7 +24,7 @@
 #include <cstdint>
 #include <stdexcept>
 
-#include "util.h"
+#include "../util.h"
 
 namespace quicktex {
 

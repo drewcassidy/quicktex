@@ -24,9 +24,9 @@
 #include <stdexcept>
 #include <string>
 
+#include "../../BlockEncoder.h"
 #include "../../Color.h"
-#include "../../Interpolator.h"
-#include "../BlockEncoder.h"
+#include "../Interpolator.h"
 #include "../bc1/BC1Encoder.h"
 #include "../bc3/BC3Encoder.h"
 #include "../bc4/BC4Encoder.h"
