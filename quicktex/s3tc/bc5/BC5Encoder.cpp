@@ -19,9 +19,9 @@
 
 #include "BC5Encoder.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 void BC5Encoder::EncodeBlock(Color4x4 pixels, BC5Block *dest) const {
     _chan0_encoder->EncodeBlock(pixels, &(dest->chan0_block));
     _chan1_encoder->EncodeBlock(pixels, &(dest->chan1_block));
 }
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

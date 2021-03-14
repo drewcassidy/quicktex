@@ -26,67 +26,7 @@
 
 #include "../util.h"
 
-namespace quicktex {
-
-/*
-Interpolator::Interpolator() {
-    PrepSingleColorTables(_single_match5, _single_match5_half, 5);
-    PrepSingleColorTables(_single_match5, _single_match5_half, 6);
-}
-
-void Interpolator::PrepSingleColorTables(const MatchListPtr &matchTable, const MatchListPtr &matchTableHalf, int len) {
-    int size = 1 << len;
-
-    assert((len == 5 && size == Size5) || (len == 6 && size == size6));
-
-    const uint8_t *expand = (len == 5) ? &Expand5[0] : &Expand6[0];
-
-    bool ideal = IsIdeal();
-    bool use_e = useExpandedInMatch();
-
-    for (int i = 0; i < match_count; i++) {
-        int lowest_error = 256;
-        int lowest_half_error = 256;
-
-        for (int low = 0; low < size; low++) {
-            const int low_e = expand[low];
-            const int low_val = use_e ? low_e : low;
-
-            for (int high = 0; high < size; high++) {
-                const int high_e = expand[high];
-                const int high_val = use_e ? high_e : high;
-
-                int v = (len == 5) ? Interpolate5(high_val, low_val) : Interpolate6(high_val, low_val);
-                int v_half = (len == 5) ? InterpolateHalf5(low_val, high_val) : InterpolateHalf6(low_val, high_val);
-
-                int error = PrepSingleColorTableEntry(matchTable, v, i, low, high, low_e, high_e, lowest_error, false, ideal);
-                int half_error = PrepSingleColorTableEntry(matchTableHalf, v, i, low, high, low_e, high_e, lowest_error, true, ideal);
-
-                if (error < lowest_error) lowest_error = error;
-                if (half_error < lowest_half_error) lowest_half_error = half_error;
-            }
-        }
-    }
-}
-int Interpolator::PrepSingleColorTableEntry(const MatchListPtr &matchTable, int v, int i, int low, int high, int low_e, int high_e, int lowest_error, bool half,
-                                            bool ideal) {
-    int e = iabs(v - i);
-
-    // We only need to factor in 3% error in BC1 ideal mode.
-    if (ideal) e += (iabs(high_e - low_e) * 3) / 100;
-
-    // Favor equal endpoints, for lower error on actual GPU's which approximate the interpolation.
-    if ((e < lowest_error) || (e == lowest_error && low == high)) {
-        assert(e <= UINT8_MAX);
-
-        auto &entry = (*matchTable)[i];
-        entry.low = low;
-        entry.high = high;
-        entry.error = e;
-    }
-
-    return e;
-}*/
+namespace quicktex::s3tc {
 
 // region Interpolator implementation
 std::unique_ptr<Interpolator> Interpolator::MakeInterpolator(Interpolator::Type type) {
@@ -196,4 +136,4 @@ uint8_t InterpolatorAMD::Interpolate8(uint8_t v0, uint8_t v1) const { return (v0
 
 uint8_t InterpolatorAMD::InterpolateHalf8(uint8_t v0, uint8_t v1) const { return (v0 + v1 + 1) >> 1; }
 // endregion
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

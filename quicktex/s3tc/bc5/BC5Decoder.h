@@ -30,7 +30,8 @@
 #include "../bc4/BC4Decoder.h"
 #include "BC5Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
+
 class BC5Decoder : public BlockDecoderTemplate<BC5Block, 4, 4> {
    public:
     using ChannelPair = std::tuple<uint8_t, uint8_t>;
@@ -54,4 +55,4 @@ class BC5Decoder : public BlockDecoderTemplate<BC5Block, 4, 4> {
     const BC4DecoderPtr _chan0_decoder;
     const BC4DecoderPtr _chan1_decoder;
 };
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

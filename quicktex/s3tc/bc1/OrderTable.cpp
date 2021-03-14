@@ -23,7 +23,7 @@
 
 #include "../../Vector4.h"
 
-namespace quicktex::BC1 {
+namespace quicktex::s3tc  {
 using Hash = uint16_t;
 
 template <> std::atomic<bool> OrderTable<3>::generated = false;
@@ -324,4 +324,4 @@ const OrderTable<3>::BestOrderArray OrderTable<3>::BestOrders = {
 template class OrderTable<3>;
 template class OrderTable<4>;
 
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

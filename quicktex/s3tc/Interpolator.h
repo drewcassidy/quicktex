@@ -24,7 +24,7 @@
 
 #include "../Color.h"  // for Color
 
-namespace quicktex {
+namespace quicktex::s3tc {
 
 class Interpolator {
    public:
@@ -171,4 +171,4 @@ class InterpolatorAMD : public Interpolator {
 
     Type GetType() const noexcept override { return Type::AMD; }
 };
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

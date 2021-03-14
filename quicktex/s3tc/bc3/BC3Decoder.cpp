@@ -25,10 +25,10 @@
 #include "../../ndebug.h"
 #include "BC3Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 
 void BC3Decoder::DecodeBlock(Color4x4 dest, BC3Block *const block) const noexcept(ndebug) {
     _bc1_decoder->DecodeBlock(dest, &(block->color_block));
     _bc4_decoder->DecodeBlock(dest, &(block->alpha_block), 3);
 }
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

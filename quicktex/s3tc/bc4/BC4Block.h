@@ -28,7 +28,7 @@
 #include "../../util.h"
 #include "../bc1/BC1Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 
 #pragma pack(push, 1)
 class BC4Block {
@@ -119,4 +119,4 @@ class BC4Block {
     std::array<uint8_t, SelectorSize> selectors;
 };
 #pragma pack(pop)
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

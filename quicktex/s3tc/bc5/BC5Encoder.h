@@ -30,7 +30,8 @@
 #include "../bc4/BC4Encoder.h"
 #include "BC5Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
+
 class BC5Encoder : public BlockEncoderTemplate<BC5Block, 4, 4> {
    public:
     using ChannelPair = std::tuple<uint8_t, uint8_t>;
@@ -54,4 +55,4 @@ class BC5Encoder : public BlockEncoderTemplate<BC5Block, 4, 4> {
     const BC4EncoderPtr _chan0_encoder;
     const BC4EncoderPtr _chan1_encoder;
 };
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

@@ -28,7 +28,7 @@
 #include "../../ndebug.h"
 #include "BC4Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 class BC4Decoder : public BlockDecoderTemplate<BC4Block, 4, 4> {
    public:
     BC4Decoder(uint8_t channel = 3) { SetChannel(channel); }
@@ -46,4 +46,4 @@ class BC4Decoder : public BlockDecoderTemplate<BC4Block, 4, 4> {
    private:
     uint8_t _channel;
 };
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

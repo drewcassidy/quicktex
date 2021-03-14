@@ -1,0 +1,1 @@
+from _quicktex._s3tc import *

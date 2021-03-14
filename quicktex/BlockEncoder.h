@@ -24,7 +24,7 @@
 #include <memory>
 #include <string>
 
-#include "../BlockView.h"
+#include "BlockView.h"
 
 namespace quicktex {
 

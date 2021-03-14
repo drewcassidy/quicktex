@@ -27,7 +27,7 @@
 #include "../../Color.h"
 #include "../../util.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 
 #pragma pack(push, 1)
 class BC1Block {
@@ -82,4 +82,4 @@ class BC1Block {
     std::array<uint8_t, 4> selectors;
 };
 #pragma pack(pop)
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

@@ -28,7 +28,7 @@
 #include "../bc4/BC4Encoder.h"
 #include "BC3Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 
 class BC3Encoder : public BlockEncoderTemplate<BC3Block, 4, 4> {
    public:
@@ -47,4 +47,4 @@ class BC3Encoder : public BlockEncoderTemplate<BC3Block, 4, 4> {
     const BC1EncoderPtr _bc1_encoder;
     const BC4EncoderPtr _bc4_encoder;
 };
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

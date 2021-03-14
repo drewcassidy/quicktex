@@ -26,7 +26,7 @@
 #include "../../util.h"
 #include "../Interpolator.h"
 
-namespace quicktex::BC1 {
+namespace quicktex::s3tc  {
 
 struct BC1MatchEntry {
     uint8_t high;
@@ -90,4 +90,4 @@ template <size_t B, size_t N> MatchListPtr SingleColorTable(InterpolatorPtr inte
     }
     return matches;
 }
-}  // namespace quicktex::BC1
+}  // namespace quicktex::s3tc

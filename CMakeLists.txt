@@ -30,10 +30,7 @@ file(GLOB HEADER_FILES
 
 file(GLOB TEST_FILES "tests/*.cpp")
 
-set(PYTHON_FILES
-        "quicktex/bindings/Module.cpp"
-        "quicktex/s3tc/bindings/Decoders.cpp"
-        "quicktex/s3tc/bindings/Encoders.cpp")
+file(GLOB_RECURSE PYTHON_FILES "src/**/*.py")
 
 # Organize source files together for some IDEs
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES})
@@ -41,8 +38,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FIL
 # Add python module
 pybind11_add_module(_quicktex
         ${SOURCE_FILES}
-        ${HEADER_FILES}
-        ${PYTHON_FILES})
+        ${HEADER_FILES})
 
 add_executable(test_quicktex
         ${SOURCE_FILES}

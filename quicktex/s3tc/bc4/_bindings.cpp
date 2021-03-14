@@ -19,26 +19,39 @@
 
 #include <pybind11/pybind11.h>
 
-#include "../s3tc/Interpolator.h"
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+
+#include "../../BlockDecoder.h"
+#include "../../BlockEncoder.h"
+#include "BC4Decoder.h"
+#include "BC4Encoder.h"
 
 namespace py = pybind11;
 namespace quicktex::bindings {
 
-void InitEncoders(py::module_ &m);
-void InitDecoders(py::module_ &m);
+using namespace quicktex::s3tc;
+using namespace quicktex::s3tc ;
 
-PYBIND11_MODULE(_quicktex, m) {
-    m.doc() = "More Stuff";
+void InitBC4(py::module_ &s3tc) {
+    auto bc4 = s3tc.def_submodule("_bc4", "BC4 encoding/decoding module");
+    auto block_encoder = py::type::of<BlockEncoder>();
+    auto block_decoder = py::type::of<BlockDecoder>();
 
-    using IType = Interpolator::Type;
-    py::enum_<IType>(m, "InterpolatorType")
-        .value("Ideal", IType::Ideal)
-        .value("IdealRound", IType::IdealRound)
-        .value("Nvidia", IType::Nvidia)
-        .value("AMD", IType::AMD);
+    // BC4Encoder
+    py::class_<BC4Encoder> bc4_encoder(bc4, "BC4Encoder", block_encoder);
 
-    InitEncoders(m);
-    InitDecoders(m);
+    bc4_encoder.def(py::init<uint8_t>(), py::arg("channel") = 3);
+    bc4_encoder.def_property("channel", &BC4Encoder::GetChannel, &BC4Encoder::SetChannel);
+
+    // BC4Decoder
+    py::class_<BC4Decoder> bc4_decoder(bc4, "BC4Decoder", block_decoder);
+
+    bc4_decoder.def(py::init<uint8_t>(), py::arg("channel") = 3);
+    bc4_decoder.def_property("channel", &BC4Decoder::GetChannel, &BC4Decoder::SetChannel);
 }
 
 }  // namespace quicktex::bindings

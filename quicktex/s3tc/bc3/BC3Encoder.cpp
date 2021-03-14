@@ -22,9 +22,9 @@
 #include "../../BlockView.h"
 #include "BC3Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 void BC3Encoder::EncodeBlock(Color4x4 pixels, BC3Block *dest) const {
     _bc1_encoder->EncodeBlock(pixels, &(dest->color_block));
     _bc4_encoder->EncodeBlock(pixels, &(dest->alpha_block), 3);
 }
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

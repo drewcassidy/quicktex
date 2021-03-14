@@ -28,7 +28,7 @@
 #include "../../ndebug.h"
 #include "BC4Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug) {
     auto flattened = pixels.Flatten();
     auto minmax = std::minmax_element(flattened.begin(), flattened.end());
@@ -70,4 +70,4 @@ void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcep
 
     dest->PackSelectors(selectors);
 }
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

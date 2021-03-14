@@ -28,7 +28,7 @@
 #include "../Interpolator.h"
 #include "BC1Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 class BC1Decoder final : public BlockDecoderTemplate<BC1Block, 4, 4> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
@@ -45,4 +45,4 @@ class BC1Decoder final : public BlockDecoderTemplate<BC1Block, 4, 4> {
    private:
     const InterpolatorPtr _interpolator;
 };
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

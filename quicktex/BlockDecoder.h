@@ -25,9 +25,9 @@
 #include <span>
 #include <vector>
 
-#include "../BlockView.h"
-#include "../ndebug.h"
-#include "../util.h"
+#include "BlockView.h"
+#include "ndebug.h"
+#include "util.h"
 
 namespace quicktex {
 

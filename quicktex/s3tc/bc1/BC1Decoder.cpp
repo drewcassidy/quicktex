@@ -28,7 +28,7 @@
 #include "../../ndebug.h"
 #include "BC1Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) {
     const auto l = block->GetLowColor();
     const auto h = block->GetHighColor();
@@ -49,4 +49,4 @@ void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcep
         }
     }
 }
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

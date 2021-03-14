@@ -39,8 +39,7 @@
 #include "OrderTable.h"
 #include "SingleColorTable.h"
 
-namespace quicktex {
-using namespace BC1;
+namespace quicktex::s3tc  {
 
 // constructors
 
@@ -941,4 +940,4 @@ void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block) const {
     }
 }
 
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

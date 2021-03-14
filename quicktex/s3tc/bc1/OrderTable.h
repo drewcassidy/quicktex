@@ -31,7 +31,7 @@
 #include "../../Vector4.h"
 #include "Histogram.h"
 
-namespace quicktex::BC1 {
+namespace quicktex::s3tc  {
 template <size_t N> class OrderTable {
    public:
     static constexpr unsigned HashCount = 1 << ((N - 1) * 4);     // 16**(N-1)
@@ -147,4 +147,4 @@ template <> const OrderTable<4>::BestOrderArray OrderTable<4>::BestOrders;
 extern template class OrderTable<3>;
 extern template class OrderTable<4>;
 
-}  // namespace quicktex::BC1
+}  // namespace quicktex::s3tc

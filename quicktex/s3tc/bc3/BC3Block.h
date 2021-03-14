@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "../../s3tc/bc1/BC1Block.h"
-#include "BC4Block.h"
+#include "../bc1/BC1Block.h"
+#include "../bc4/BC4Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 
 #pragma pack(push, 1)
 class BC3Block {
@@ -31,4 +31,4 @@ class BC3Block {
     BC1Block color_block;
 };
 #pragma pack(pop)
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

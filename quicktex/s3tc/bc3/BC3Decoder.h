@@ -29,7 +29,8 @@
 #include "../bc4/BC4Decoder.h"
 #include "BC3Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
+
 class BC3Decoder : public BlockDecoderTemplate<BC3Block, 4, 4> {
    public:
     using BC1DecoderPtr = std::shared_ptr<BC1Decoder>;
@@ -47,4 +48,4 @@ class BC3Decoder : public BlockDecoderTemplate<BC3Block, 4, 4> {
     const BC1DecoderPtr _bc1_decoder;
     const BC4DecoderPtr _bc4_decoder;
 };
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

@@ -21,7 +21,7 @@
 
 #include "../bc4/BC4Block.h"
 
-namespace quicktex {
+namespace quicktex::s3tc  {
 
 #pragma pack(push, 1)
 class BC5Block {
@@ -30,4 +30,4 @@ class BC5Block {
     BC4Block chan1_block;
 };
 #pragma pack(pop)
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

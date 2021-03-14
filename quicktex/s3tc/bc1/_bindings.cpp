@@ -19,57 +19,31 @@
 
 #include <pybind11/pybind11.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
 
+#include "../../BlockDecoder.h"
 #include "../../BlockEncoder.h"
-#include "../../Color.h"
 #include "../Interpolator.h"
-#include "../bc1/BC1Encoder.h"
-#include "../bc3/BC3Encoder.h"
-#include "../bc4/BC4Encoder.h"
-#include "../bc5/BC5Encoder.h"
-
-#define STRINGIFY(x) #x
-#define MACRO_STRINGIFY(x) STRINGIFY(x)
+#include "BC1Decoder.h"
+#include "BC1Encoder.h"
 
 namespace py = pybind11;
 namespace quicktex::bindings {
 
-py::bytes EncodeImage(const BlockEncoder &self, py::bytes decoded, unsigned image_width, unsigned image_height) {
-    if (image_width % self.BlockWidth() != 0) throw std::invalid_argument("Width is not an even multiple of block_width");
-    if (image_height % self.BlockHeight() != 0) throw std::invalid_argument("Height is not an even multiple of block_height");
-    if (image_width == 0 || image_height == 0) throw std::invalid_argument("Image has zero size");
+using namespace quicktex::s3tc;
+using namespace quicktex::s3tc ;
 
-    size_t size = image_width * image_height;
-    size_t block_size = (size / (self.BlockHeight() * self.BlockWidth())) * self.BlockSize();
-    size_t color_size = size * sizeof(Color);
-
-    std::string encoded_str = std::string(block_size, 0);
-    std::string decoded_str = (std::string)decoded;  // decoded data is copied here, unfortunately
-
-    if (decoded_str.size() != color_size) throw std::invalid_argument("Incompatible data: image width and height do not match the size of the decoded image");
-
-    self.EncodeImage(reinterpret_cast<uint8_t *>(encoded_str.data()), reinterpret_cast<Color *>(decoded_str.data()), image_width, image_height);
-
-    auto bytes = py::bytes(encoded_str);  // encoded data is copied here, unfortunately
-
-    return bytes;
-}
-
-void InitEncoders(py::module_ &m) {
-    // BlockEncoder
-    py::class_<BlockEncoder> block_encoder(m, "BlockEncoder");
-
-    block_encoder.def("encode_image", &EncodeImage);
-    block_encoder.def_property_readonly("block_size", &BlockEncoder::BlockSize);
-    block_encoder.def_property_readonly("block_width", &BlockEncoder::BlockWidth);
-    block_encoder.def_property_readonly("block_height", &BlockEncoder::BlockHeight);
+void InitBC1(py::module_ &s3tc) {
+    auto bc1 = s3tc.def_submodule("_bc1", "BC1 encoding/decoding module");
+    auto block_encoder = py::type::of<BlockEncoder>();
+    auto block_decoder = py::type::of<BlockDecoder>();
 
     // BC1Encoder
-    py::class_<BC1Encoder> bc1_encoder(m, "BC1Encoder", block_encoder);
+    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", block_encoder);
 
     bc1_encoder.def(py::init<Interpolator::Type, unsigned, bool, bool>(), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("level") = 5,
                     py::arg("use_3color") = true, py::arg("use_3color_black") = true);
@@ -112,25 +86,11 @@ void InitEncoders(py::module_ &m) {
         .value("Check2", BC1Encoder::ErrorMode::Check2)
         .value("Full", BC1Encoder::ErrorMode::Full);
 
-    // BC3Encoder
-    py::class_<BC3Encoder> bc3_encoder(m, "BC3Encoder", block_encoder);
+    // BC1Decoder
+    py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", block_decoder);
 
-    bc3_encoder.def(py::init<Interpolator::Type, unsigned, bool, bool>(), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("level") = 5,
-                    py::arg("use_3color") = true, py::arg("use_3color_black") = true);
-    bc3_encoder.def_property_readonly("bc1_encoder", &BC3Encoder::GetBC1Encoder);
-    bc3_encoder.def_property_readonly("bc4_encoder", &BC3Encoder::GetBC4Encoder);
-
-    // BC4Encoder
-    py::class_<BC4Encoder> bc4_encoder(m, "BC4Encoder", block_encoder);
-
-    bc4_encoder.def(py::init<uint8_t>(), py::arg("channel") = 3);
-    bc4_encoder.def_property("channel", &BC4Encoder::GetChannel, &BC4Encoder::SetChannel);
-
-    // BC5Encoder
-    py::class_<BC5Encoder> bc5_encoder(m, "BC5Encoder", block_encoder);
-
-    bc5_encoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1);
-    bc5_encoder.def_property("channels", &BC5Encoder::GetChannels, &BC5Encoder::SetChannels);
-    bc5_encoder.def_property_readonly("bc4_decoders", &BC5Encoder::GetBC4Encoders);
+    bc1_decoder.def(py::init<Interpolator::Type, bool>(), py::arg("interpolator") = Interpolator::Type::Ideal, py::arg("write_alpha") = false);
+    bc1_decoder.def_property_readonly("interpolator_type", &BC1Decoder::GetInterpolatorType);
+    bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha);
 }
 }  // namespace quicktex::bindings

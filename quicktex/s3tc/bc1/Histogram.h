@@ -30,7 +30,7 @@
 #include "../../Vector4.h"
 #include "../../util.h"
 
-namespace quicktex::BC1 {
+namespace quicktex::s3tc  {
 template <size_t N> class Histogram {
    public:
     using Hash = uint16_t;
@@ -82,4 +82,4 @@ template <size_t N> class Histogram {
    private:
     std::array<uint8_t, N> _bins;
 };
-}  // namespace quicktex
+}  // namespace quicktex::s3tc

@@ -17,16 +17,34 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "BC5Decoder.h"
+#include <pybind11/pybind11.h>
 
-#include "../../BlockView.h"
-#include "../../ndebug.h"
-#include "BC5Block.h"
+#include "Interpolator.h"
 
-namespace quicktex::s3tc  {
+namespace py = pybind11;
+namespace quicktex::bindings {
 
-void BC5Decoder::DecodeBlock(Color4x4 dest, BC5Block *const block) const noexcept(ndebug) {
-    _chan0_decoder->DecodeBlock(dest, &block->chan0_block);
-    _chan1_decoder->DecodeBlock(dest, &block->chan1_block);
+using namespace quicktex;
+using namespace quicktex::s3tc;
+
+void InitBC1(py::module_ &s3tc);
+void InitBC3(py::module_ &s3tc);
+void InitBC4(py::module_ &s3tc);
+void InitBC5(py::module_ &s3tc);
+
+void InitS3TC(py::module_ &m) {
+    py::module_ s3tc = m.def_submodule("_s3tc", "s3tc compression library based on rgbcx.h written by Richard Goldreich");
+
+    using IType = Interpolator::Type;
+    py::enum_<IType>(s3tc, "InterpolatorType")
+        .value("Ideal", IType::Ideal)
+        .value("IdealRound", IType::IdealRound)
+        .value("Nvidia", IType::Nvidia)
+        .value("AMD", IType::AMD);
+
+    InitBC1(s3tc);
+    InitBC3(s3tc);
+    InitBC4(s3tc);
+    InitBC5(s3tc);
 }
-}  // namespace quicktex::s3tc
+}  // namespace quicktex::bindings

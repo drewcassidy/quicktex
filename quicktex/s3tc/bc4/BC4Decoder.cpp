@@ -26,7 +26,8 @@
 #include "../../ndebug.h"     // for ndebug
 #include "BC4Block.h"
 
-void quicktex::BC4Decoder::DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug) {
+namespace quicktex::s3tc  {
+void BC4Decoder::DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug) {
     auto l = block->GetLowAlpha();
     auto h = block->GetHighAlpha();
 
@@ -41,3 +42,4 @@ void quicktex::BC4Decoder::DecodeBlock(Byte4x4 dest, BC4Block *const block) cons
         }
     }
 }
+}  // namespace quicktex::s3tc
