@@ -5,6 +5,9 @@ build/
 *.egg-info
 *.pyc
 
+#sphinx
+docs/_build/
+
 # IDEs
 **/.idea
 

@@ -1,2 +1,7 @@
-index.rst
-============
+Reference
+=========
+
+.. toctree::
+   :maxdepth: 2
+
+   s3tc.rst
