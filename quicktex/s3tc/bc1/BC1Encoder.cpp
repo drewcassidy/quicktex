@@ -34,7 +34,7 @@
 #include "../../Vector4Int.h"
 #include "../../bitwiseEnums.h"
 #include "../../util.h"
-#include "../Interpolator.h"
+#include "../interpolator/Interpolator.h"
 #include "Histogram.h"
 #include "OrderTable.h"
 #include "SingleColorTable.h"
@@ -43,8 +43,8 @@ namespace quicktex::s3tc  {
 
 // constructors
 
-BC1Encoder::BC1Encoder(Interpolator::Type type, unsigned int level, bool allow_3color, bool allow_3color_black)
-    : _interpolator(Interpolator::MakeInterpolator(type)) {
+BC1Encoder::BC1Encoder(InterpolatorPtr interpolator, unsigned int level, bool allow_3color, bool allow_3color_black)
+    : _interpolator(interpolator) {
     OrderTable<3>::Generate();
     OrderTable<4>::Generate();
 

@@ -25,15 +25,15 @@
 #include "../../BlockDecoder.h"
 #include "../../BlockView.h"
 #include "../../ndebug.h"
-#include "../Interpolator.h"
+#include "../interpolator/Interpolator.h"
 #include "BC1Block.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 class BC1Decoder final : public BlockDecoderTemplate<BC1Block, 4, 4> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
-    BC1Decoder(Interpolator::Type type = Interpolator::Type::Ideal, bool write_alpha = false)
-        : write_alpha(write_alpha), _interpolator(Interpolator::MakeInterpolator(type)) {}
+    BC1Decoder(InterpolatorPtr interpolator = std::make_shared<Interpolator>(), bool write_alpha = false)
+        : write_alpha(write_alpha), _interpolator(interpolator) {}
 
     void DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) override;
 

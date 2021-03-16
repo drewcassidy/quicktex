@@ -19,7 +19,7 @@
 
 #include <pybind11/pybind11.h>
 
-#include "Interpolator.h"
+#include "interpolator/Interpolator.h"
 
 namespace py = pybind11;
 namespace quicktex::bindings {
@@ -27,6 +27,7 @@ namespace quicktex::bindings {
 using namespace quicktex;
 using namespace quicktex::s3tc;
 
+void InitInterpolator(py::module_ &s3tc);
 void InitBC1(py::module_ &s3tc);
 void InitBC3(py::module_ &s3tc);
 void InitBC4(py::module_ &s3tc);
@@ -35,7 +36,7 @@ void InitBC5(py::module_ &s3tc);
 void InitS3TC(py::module_ &m) {
     py::module_ s3tc = m.def_submodule("_s3tc", "s3tc compression library based on rgbcx.h written by Richard Goldreich");
 
-    using IType = Interpolator::Type;
+/*    using IType = Interpolator::Type;
     auto interpolator_type = py::enum_<IType>(s3tc, "InterpolatorType", R"pbdoc(
 An enum representing various methods for interpolating colors, used by the BC1 and BC3 encoders/decoders.
 Vendor-specific interpolation modes should only be used when the result will only be used on that type of GPU.
@@ -45,8 +46,9 @@ For most applications, :py:attr:`~quicktex.s3tc.InterpolatorType.Ideal` should b
     interpolator_type.value("Ideal", IType::Ideal, "The default mode, with no rounding for colors 2 and 3. This matches the D3D10 docs on BC1.");
     interpolator_type.value("IdealRound", IType::IdealRound, "Round colors 2 and 3. Matches the AMD Compressonator tool and the D3D9 docs on DXT1.");
     interpolator_type.value("Nvidia", IType::Nvidia, "Nvidia GPU mode.");
-    interpolator_type.value("AMD", IType::AMD, "AMD GPU mode.");
+    interpolator_type.value("AMD", IType::AMD, "AMD GPU mode.");*/
 
+    InitInterpolator(s3tc);
     InitBC1(s3tc);
     InitBC3(s3tc);
     InitBC4(s3tc);

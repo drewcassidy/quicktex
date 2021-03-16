@@ -17,6 +17,7 @@ file(GLOB SOURCE_FILES
         "quicktex/s3tc/bc3/*.cpp"
         "quicktex/s3tc/bc4/*.cpp"
         "quicktex/s3tc/bc5/*.cpp"
+        "quicktex/s3tc/interpolator/*.cpp"
         )
 
 file(GLOB HEADER_FILES
@@ -26,6 +27,7 @@ file(GLOB HEADER_FILES
         "quicktex/s3tc/bc3/*.h"
         "quicktex/s3tc/bc4/*.h"
         "quicktex/s3tc/bc5/*.h"
+        "quicktex/s3tc/interpolator/*.h"
         )
 
 file(GLOB TEST_FILES "tests/*.cpp")

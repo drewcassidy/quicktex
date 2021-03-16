@@ -24,7 +24,7 @@
 #include <memory>
 
 #include "../../util.h"
-#include "../Interpolator.h"
+#include "../interpolator/Interpolator.h"
 
 namespace quicktex::s3tc  {
 

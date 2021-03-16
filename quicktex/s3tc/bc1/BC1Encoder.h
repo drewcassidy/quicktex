@@ -29,7 +29,7 @@
 #include "../../BlockEncoder.h"
 #include "../../BlockView.h"
 #include "../../Color.h"
-#include "../Interpolator.h"
+#include "../interpolator/Interpolator.h"
 #include "BC1Block.h"
 #include "SingleColorTable.h"
 
@@ -111,7 +111,7 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
         PCA
     };
 
-    BC1Encoder(Interpolator::Type type = Interpolator::Type::Ideal, unsigned level = 5, bool allow_3color = true, bool allow_3color_black = true);
+    BC1Encoder(InterpolatorPtr interpolator = std::make_shared<Interpolator>(), unsigned level = 5, bool allow_3color = true, bool allow_3color_black = true);
 
     Interpolator::Type GetInterpolatorType() const { return _interpolator->GetType(); }
 

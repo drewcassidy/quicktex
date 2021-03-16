@@ -22,7 +22,7 @@
 #include <cstdint>  // for uint8_t, uint16_t
 #include <memory>   // for unique_ptr
 
-#include "../Color.h"  // for Color
+#include "../../Color.h"  // for Color
 
 namespace quicktex::s3tc {
 

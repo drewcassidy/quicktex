@@ -24,9 +24,9 @@
 #include "../../BlockDecoder.h"
 #include "../../BlockView.h"
 #include "../../ndebug.h"
-#include "../Interpolator.h"
 #include "../bc1/BC1Decoder.h"
 #include "../bc4/BC4Decoder.h"
+#include "../interpolator/Interpolator.h"
 #include "BC3Block.h"
 
 namespace quicktex::s3tc  {
@@ -35,8 +35,9 @@ class BC3Decoder : public BlockDecoderTemplate<BC3Block, 4, 4> {
    public:
     using BC1DecoderPtr = std::shared_ptr<BC1Decoder>;
     using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
+    using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
-    BC3Decoder(Interpolator::Type type = Interpolator::Type::Ideal) : BC3Decoder(std::make_shared<BC1Decoder>(type), std::make_shared<BC4Decoder>(3)) {}
+    BC3Decoder(InterpolatorPtr interpolator = std::make_shared<Interpolator>()) : BC3Decoder(std::make_shared<BC1Decoder>(interpolator), std::make_shared<BC4Decoder>(3)) {}
     BC3Decoder(BC1DecoderPtr bc1_decoder, BC4DecoderPtr bc4_decoder = std::make_shared<BC4Decoder>()) : _bc1_decoder(bc1_decoder), _bc4_decoder(bc4_decoder) {}
 
     void DecodeBlock(Color4x4 dest, BC3Block *const block) const noexcept(ndebug) override;
