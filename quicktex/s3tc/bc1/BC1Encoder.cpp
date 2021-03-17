@@ -43,8 +43,7 @@ namespace quicktex::s3tc  {
 
 // constructors
 
-BC1Encoder::BC1Encoder(InterpolatorPtr interpolator, unsigned int level, bool allow_3color, bool allow_3color_black)
-    : _interpolator(interpolator) {
+BC1Encoder::BC1Encoder(unsigned int level, bool allow_3color, bool allow_3color_black, InterpolatorPtr interpolator) : _interpolator(interpolator) {
     OrderTable<3>::Generate();
     OrderTable<4>::Generate();
 

@@ -29,7 +29,7 @@
 #include "../interpolator/Interpolator.h"
 #include "BC3Block.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
 class BC3Decoder : public BlockDecoderTemplate<BC3Block, 4, 4> {
    public:
@@ -37,8 +37,9 @@ class BC3Decoder : public BlockDecoderTemplate<BC3Block, 4, 4> {
     using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
-    BC3Decoder(InterpolatorPtr interpolator = std::make_shared<Interpolator>()) : BC3Decoder(std::make_shared<BC1Decoder>(interpolator), std::make_shared<BC4Decoder>(3)) {}
-    BC3Decoder(BC1DecoderPtr bc1_decoder, BC4DecoderPtr bc4_decoder = std::make_shared<BC4Decoder>()) : _bc1_decoder(bc1_decoder), _bc4_decoder(bc4_decoder) {}
+    BC3Decoder(BC1DecoderPtr bc1_decoder) : _bc1_decoder(bc1_decoder), _bc4_decoder(std::make_shared<BC4Decoder>(3)) {}
+
+    BC3Decoder(InterpolatorPtr interpolator = std::make_shared<Interpolator>()) : BC3Decoder(std::make_shared<BC1Decoder>(interpolator)) {}
 
     void DecodeBlock(Color4x4 dest, BC3Block *const block) const noexcept(ndebug) override;
 

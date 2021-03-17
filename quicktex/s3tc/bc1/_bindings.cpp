@@ -35,6 +35,8 @@ namespace py = pybind11;
 namespace quicktex::bindings {
 
 using namespace quicktex::s3tc;
+using namespace pybind11::literals;
+
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
 void InitBC1(py::module_ &s3tc) {
@@ -45,8 +47,9 @@ void InitBC1(py::module_ &s3tc) {
     // BC1Encoder
     py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", block_encoder);
 
-    bc1_encoder.def(py::init<InterpolatorPtr, unsigned, bool, bool>(), py::arg("interpolator") = std::make_shared<Interpolator>(), py::arg("level") = 5,
-                    py::arg("use_3color") = true, py::arg("use_3color_black") = true);
+    bc1_encoder.def(py::init<unsigned, bool, bool>(), "level"_a = 5, "use_3color"_a = true, "use_3color_black"_a = true);
+    bc1_encoder.def(py::init<unsigned, bool, bool, InterpolatorPtr>(), "level"_a, "use_3color"_a, "use_3color_black"_a, "interpolator"_a);
+
     bc1_encoder.def("set_level", &BC1Encoder::SetLevel);
     bc1_encoder.def_property_readonly("interpolator_type", &BC1Encoder::GetInterpolatorType);
     bc1_encoder.def_property("flags", &BC1Encoder::GetFlags, &BC1Encoder::SetFlags);
@@ -89,7 +92,9 @@ void InitBC1(py::module_ &s3tc) {
     // BC1Decoder
     py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", block_decoder);
 
-    bc1_decoder.def(py::init<InterpolatorPtr, bool>(), py::arg("interpolator") = std::make_shared<Interpolator>(), py::arg("write_alpha") = false);
+    bc1_decoder.def(py::init<bool>(), "write_alpha"_a = false);
+    bc1_decoder.def(py::init<bool, InterpolatorPtr>(), "write_alpha"_a, "interpolator"_a);
+
     bc1_decoder.def_property_readonly("interpolator_type", &BC1Decoder::GetInterpolatorType);
     bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha);
 }

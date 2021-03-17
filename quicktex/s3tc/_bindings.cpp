@@ -50,8 +50,8 @@ For most applications, :py:attr:`~quicktex.s3tc.InterpolatorType.Ideal` should b
 
     InitInterpolator(s3tc);
     InitBC1(s3tc);
-    InitBC3(s3tc);
-    InitBC4(s3tc);
-    InitBC5(s3tc);
+//    InitBC3(s3tc);
+//    InitBC4(s3tc);
+//    InitBC5(s3tc);
 }
 }  // namespace quicktex::bindings

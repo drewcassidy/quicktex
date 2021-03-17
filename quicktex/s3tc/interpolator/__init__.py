@@ -1,1 +1,1 @@
-# from _quicktex._s3tc._interpolator import *
+from _quicktex._s3tc._interpolator import *

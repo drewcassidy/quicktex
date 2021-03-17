@@ -32,8 +32,12 @@ namespace quicktex::s3tc {
 class BC1Decoder final : public BlockDecoderTemplate<BC1Block, 4, 4> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
-    BC1Decoder(InterpolatorPtr interpolator = std::make_shared<Interpolator>(), bool write_alpha = false)
-        : write_alpha(write_alpha), _interpolator(interpolator) {}
+
+    BC1Decoder(bool write_alpha, InterpolatorPtr interpolator) : write_alpha(write_alpha), _interpolator(interpolator) {}
+
+    BC1Decoder(bool write_alpha = false) : BC1Decoder(write_alpha, std::make_shared<Interpolator>()) {}
+
+    BC1Decoder(InterpolatorPtr interpolator) : BC1Decoder(false, interpolator) {}
 
     void DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) override;
 

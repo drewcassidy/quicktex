@@ -37,7 +37,7 @@ namespace quicktex {
 class Vector4;
 }
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
 class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
    public:
@@ -111,7 +111,10 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
         PCA
     };
 
-    BC1Encoder(InterpolatorPtr interpolator = std::make_shared<Interpolator>(), unsigned level = 5, bool allow_3color = true, bool allow_3color_black = true);
+    BC1Encoder(unsigned level, bool allow_3color, bool allow_3color_black, InterpolatorPtr interpolator);
+
+    BC1Encoder(unsigned int level = 5, bool allow_3color = true, bool allow_3color_black = true)
+        : BC1Encoder(level, allow_3color, allow_3color_black, std::make_shared<Interpolator>()) {}
 
     Interpolator::Type GetInterpolatorType() const { return _interpolator->GetType(); }
 

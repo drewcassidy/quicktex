@@ -28,7 +28,7 @@
 #include "../interpolator/Interpolator.h"
 #include "BC3Block.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
 class BC3Encoder : public BlockEncoderTemplate<BC3Block, 4, 4> {
    public:
@@ -36,8 +36,13 @@ class BC3Encoder : public BlockEncoderTemplate<BC3Block, 4, 4> {
     using BC4EncoderPtr = std::shared_ptr<BC4Encoder>;
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
-    BC3Encoder(InterpolatorPtr interpolator = std::make_shared<Interpolator>(), unsigned level = 5, bool allow_3color = true, bool allow_3color_black = true)
-        : _bc1_encoder(std::make_shared<BC1Encoder>(interpolator, level, allow_3color, allow_3color_black)), _bc4_encoder(std::make_shared<BC4Encoder>(3)) {}
+    BC3Encoder(BC1EncoderPtr bc1_encoder) : _bc1_encoder(bc1_encoder), _bc4_encoder(std::make_shared<BC4Encoder>(3)) {}
+
+    BC3Encoder(unsigned level, bool allow_3color, bool allow_3color_black, InterpolatorPtr interpolator)
+        : BC3Encoder(std::make_shared<BC1Encoder>(level, allow_3color, allow_3color_black, interpolator)) {}
+
+    BC3Encoder(unsigned level = 5, bool allow_3color = true, bool allow_3color_black = true)
+        : BC3Encoder(std::make_shared<BC1Encoder>(level, allow_3color, allow_3color_black, std::make_shared<Interpolator>())) {}
 
     void EncodeBlock(Color4x4 pixels, BC3Block *dest) const override;
 
