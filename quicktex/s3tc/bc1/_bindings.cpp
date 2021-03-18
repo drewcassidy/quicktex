@@ -47,13 +47,6 @@ void InitBC1(py::module_ &s3tc) {
     // BC1Encoder
     py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", block_encoder, "Encodes RGB textures to BC1");
 
-    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode>(), "level"_a = 5, "color_mode"_a = BC1Encoder::ColorMode::FourColor);
-    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode, InterpolatorPtr>(), "level"_a, "color_mode"_a, "interpolator"_a);
-
-    bc1_encoder.def("set_level", &BC1Encoder::SetLevel, "Use a preset quality level, between 0 and 18. For better control, see the advanced API below");
-
-    // Advanced API
-
     py::enum_<BC1Encoder::EndpointMode>(bc1_encoder, "EndpointMode")
         .value("LeastSquares", BC1Encoder::EndpointMode::LeastSquares)
         .value("BoundingBox", BC1Encoder::EndpointMode::BoundingBox)
@@ -70,6 +63,13 @@ void InitBC1(py::module_ &s3tc) {
         .value("FourColor", BC1Encoder::ColorMode::FourColor, "Default color mode. Only 4-color blocks will be output, where color0 > color1")
         .value("ThreeColor", BC1Encoder::ColorMode::ThreeColor)
         .value("ThreeColorBlack", BC1Encoder::ColorMode::ThreeColorBlack);
+
+    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode>(), "level"_a = 5, "color_mode"_a = BC1Encoder::ColorMode::FourColor);
+    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode, InterpolatorPtr>(), "level"_a, "color_mode"_a, "interpolator"_a);
+
+    bc1_encoder.def("set_level", &BC1Encoder::SetLevel, "Use a preset quality level, between 0 and 18. For better control, see the advanced API below");
+
+    // Advanced API
 
     bc1_encoder.def_readonly_static("max_power_iterations", &BC1Encoder::max_power_iterations, "Maximum value of :py:attr:`BC1Encoder.power_iterations`.");
     bc1_encoder.def_readonly_static("min_power_iterations", &BC1Encoder::min_power_iterations, "Minimum value of :py:attr:`BC1Encoder.power_iterations`.");
