@@ -45,37 +45,14 @@ void InitBC1(py::module_ &s3tc) {
     auto block_decoder = py::type::of<BlockDecoder>();
 
     // BC1Encoder
-    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", block_encoder);
+    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", block_encoder, "Encodes RGB textures to BC1");
 
-    bc1_encoder.def(py::init<unsigned, bool, bool>(), "level"_a = 5, "use_3color"_a = true, "use_3color_black"_a = true);
-    bc1_encoder.def(py::init<unsigned, bool, bool, InterpolatorPtr>(), "level"_a, "use_3color"_a, "use_3color_black"_a, "interpolator"_a);
+    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode>(), "level"_a = 5, "color_mode"_a = BC1Encoder::ColorMode::FourColor);
+    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode, InterpolatorPtr>(), "level"_a, "color_mode"_a, "interpolator"_a);
 
-    bc1_encoder.def("set_level", &BC1Encoder::SetLevel);
-    bc1_encoder.def_property_readonly("interpolator_type", &BC1Encoder::GetInterpolatorType);
-    bc1_encoder.def_property("flags", &BC1Encoder::GetFlags, &BC1Encoder::SetFlags);
-    bc1_encoder.def_property("error_mode", &BC1Encoder::GetErrorMode, &BC1Encoder::SetErrorMode);
-    bc1_encoder.def_property("endpoint_mode", &BC1Encoder::GetEndpointMode, &BC1Encoder::SetEndpointMode);
-    bc1_encoder.def_property("search_rounds", &BC1Encoder::GetSearchRounds, &BC1Encoder::SetSearchRounds);
-    bc1_encoder.def_property("orderings_4", &BC1Encoder::GetOrderings4, &BC1Encoder::SetOrderings4);
-    bc1_encoder.def_property("orderings_3", &BC1Encoder::GetOrderings3, &BC1Encoder::SetOrderings3);
+    bc1_encoder.def("set_level", &BC1Encoder::SetLevel, "Use a preset quality level, between 0 and 18. For better control, see the advanced API below");
 
-    using Flags = BC1Encoder::Flags;
-    py::enum_<Flags>(bc1_encoder, "Flags", py::arithmetic())
-        .value("UseLikelyTotalOrderings", Flags::UseLikelyTotalOrderings)
-        .value("TwoLeastSquaresPasses", Flags::TwoLeastSquaresPasses)
-        .value("Use3ColorBlocksForBlackPixels", Flags::Use3ColorBlocksForBlackPixels)
-        .value("Use3ColorBlocks", Flags::Use3ColorBlocks)
-        .value("Iterative", Flags::Iterative)
-        .value("Use6PowerIters", Flags::Use6PowerIters)
-        .value("Exhaustive", Flags::Exhaustive)
-        .value("TryAllInitialEndpoints", Flags::TryAllInitialEndpoints)
-        .def("__invert__", [](Flags f1) { return ~unsigned(f1); })
-        .def("__and__", [](Flags f1, Flags f2) { return unsigned(f1) & unsigned(f2); })
-        .def("__rand__", [](Flags f1, Flags f2) { return unsigned(f1) & unsigned(f2); })
-        .def("__or__", [](Flags f1, Flags f2) { return unsigned(f1) | unsigned(f2); })
-        .def("__ror__", [](Flags f1, Flags f2) { return unsigned(f1) | unsigned(f2); })
-        .def("__xor__", [](Flags f1, Flags f2) { return unsigned(f1) ^ unsigned(f2); })
-        .def("__rxor__", [](Flags f1, Flags f2) { return unsigned(f2) ^ unsigned(f1); });
+    // Advanced API
 
     py::enum_<BC1Encoder::EndpointMode>(bc1_encoder, "EndpointMode")
         .value("LeastSquares", BC1Encoder::EndpointMode::LeastSquares)
@@ -89,13 +66,53 @@ void InitBC1(py::module_ &s3tc) {
         .value("Check2", BC1Encoder::ErrorMode::Check2)
         .value("Full", BC1Encoder::ErrorMode::Full);
 
+    py::enum_<BC1Encoder::ColorMode>(bc1_encoder, "ColorMode")
+        .value("FourColor", BC1Encoder::ColorMode::FourColor, "Default color mode. Only 4-color blocks will be output, where color0 > color1")
+        .value("ThreeColor", BC1Encoder::ColorMode::ThreeColor)
+        .value("ThreeColorBlack", BC1Encoder::ColorMode::ThreeColorBlack);
+
+    bc1_encoder.def_readonly_static("max_power_iterations", &BC1Encoder::max_power_iterations, "Maximum value of :py:attr:`BC1Encoder.power_iterations`.");
+    bc1_encoder.def_readonly_static("min_power_iterations", &BC1Encoder::min_power_iterations, "Minimum value of :py:attr:`BC1Encoder.power_iterations`.");
+
+    bc1_encoder.def_property_readonly("interpolator", &BC1Encoder::GetInterpolator, "The interpolator used by this encoder. This is a readonly property.");
+    bc1_encoder.def_property_readonly("color_mode", &BC1Encoder::GetColorMode, "The color mode used by this encoder. This is a readonly property.");
+
+    bc1_encoder.def_property("error_mode", &BC1Encoder::GetErrorMode, &BC1Encoder::SetErrorMode, "The error mode used by this encoder for finding selectors.");
+    bc1_encoder.def_property("endpoint_mode", &BC1Encoder::GetEndpointMode, &BC1Encoder::SetEndpointMode, "The endpoint mode used by this encoder.");
+
+    bc1_encoder.def_readwrite("two_ls_passes", &BC1Encoder::two_ls_passes,
+                              "Use 2 least squares pass, instead of one (same as stb_dxt's HIGHQUAL option).\n"
+                              "Recommended if you're setting the orderings settings greater than 0.");
+
+    bc1_encoder.def_readwrite("two_ep_passes", &BC1Encoder::two_ep_passes, "Try 2 different ways of choosing the initial endpoints.");
+
+    bc1_encoder.def_readwrite("two_cf_passes", &BC1Encoder::two_cf_passes,
+                              "Greatly increase encode time, with very slightly higher quality.\n"
+                              "Same as squish's iterative cluster fit option. Not really worth the tiny boost in quality, "
+                              "unless you just don't care about performance at all.");
+
+    bc1_encoder.def_readwrite("exhaustive", &BC1Encoder::exhaustive,
+                              "Check all total orderings - *very* slow. The encoder is not designed to be used in this way");
+
+    bc1_encoder.def_property("search_rounds", &BC1Encoder::GetSearchRounds, &BC1Encoder::SetSearchRounds,
+                             "Setting search rounds > 0 enables refining the final endpoints by examining nearby colors. A higher value has a higher quality "
+                             "at the expense of performance.");
+
+    bc1_encoder.def_property("orderings", &BC1Encoder::GetOrderings, &BC1Encoder::SetOrderings,
+                             "setting the orderings > 0 enables ordered cluster fit using a lookup table of similar blocks. Value is a tuple of (4 color "
+                             "orders, 3 color orders), where higher values have a higher quality at the expense of performance.");
+
+    bc1_encoder.def_property("power_iterations", &BC1Encoder::GetPowerIterations, &BC1Encoder::SetPowerIterations,
+                             "Number of power iterations used with the PCA endpoint mode. Value should be around 4 to 6. "
+                             "Automatically clamped to between :py:const:`BC1Encoder.min_power_iterations` and :py:const:`BC1Encoder.max_power_iterations`");
+
     // BC1Decoder
-    py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", block_decoder);
+    py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", block_decoder, "Decodes BC1 textures to RGB");
 
     bc1_decoder.def(py::init<bool>(), "write_alpha"_a = false);
     bc1_decoder.def(py::init<bool, InterpolatorPtr>(), "write_alpha"_a, "interpolator"_a);
 
-    bc1_decoder.def_property_readonly("interpolator_type", &BC1Decoder::GetInterpolatorType);
+    bc1_decoder.def_property_readonly("interpolator", &BC1Decoder::GetInterpolator);
     bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha);
 }
 }  // namespace quicktex::bindings

@@ -40,7 +40,6 @@ using InterpolatorPtr = std::shared_ptr<Interpolator>;
 using BC1EncoderPtr = std::shared_ptr<BC1Encoder>;
 using BC1DecoderPtr = std::shared_ptr<BC1Decoder>;
 
-
 void InitBC3(py::module_ &s3tc) {
     auto bc3 = s3tc.def_submodule("_bc3", "BC3 encoding/decoding module");
     auto block_encoder = py::type::of<BlockEncoder>();
@@ -49,9 +48,8 @@ void InitBC3(py::module_ &s3tc) {
     // BC3Encoder
     py::class_<BC3Encoder> bc3_encoder(bc3, "BC3Encoder", block_encoder);
 
-    bc3_encoder.def(py::init<BC1EncoderPtr>(), "bc1_encoder"_a);
-    bc3_encoder.def(py::init<unsigned, bool, bool>(), "level"_a = 5, "use_3color"_a = true, "use_3color_black"_a = true);
-    bc3_encoder.def(py::init<unsigned, bool, bool, InterpolatorPtr>(), "level"_a, "use_3color"_a, "use_3color_black"_a, "interpolator"_a);
+    bc3_encoder.def(py::init<unsigned>(), "level"_a = 5);
+    bc3_encoder.def(py::init<unsigned, InterpolatorPtr>(), "level"_a, "interpolator"_a);
 
     bc3_encoder.def_property_readonly("bc1_encoder", &BC3Encoder::GetBC1Encoder);
     bc3_encoder.def_property_readonly("bc4_encoder", &BC3Encoder::GetBC4Encoder);
@@ -60,7 +58,6 @@ void InitBC3(py::module_ &s3tc) {
     py::class_<BC3Decoder> bc3_decoder(bc3, "BC3Decoder", block_decoder);
 
     bc3_decoder.def(py::init<>());
-    bc3_decoder.def(py::init<BC1DecoderPtr>(), "bc1_decoder"_a);
     bc3_decoder.def(py::init<InterpolatorPtr>(), "interpolator"_a);
 
     bc3_decoder.def_property_readonly("bc1_decoder", &BC3Decoder::GetBC1Decoder);

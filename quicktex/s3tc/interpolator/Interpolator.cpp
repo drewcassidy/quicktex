@@ -25,6 +25,7 @@
 #include <stdexcept>
 
 #include "../../util.h"
+#include "../../Color.h"
 
 namespace quicktex::s3tc {
 
@@ -49,8 +50,9 @@ uint8_t Interpolator::Interpolate6(uint8_t v0, uint8_t v1) const { return Interp
 uint8_t Interpolator::InterpolateHalf5(uint8_t v0, uint8_t v1) const { return InterpolateHalf8(scale5To8(v0), scale5To8(v1)); }
 uint8_t Interpolator::InterpolateHalf6(uint8_t v0, uint8_t v1) const { return InterpolateHalf8(scale6To8(v0), scale6To8(v1)); }
 
-std::array<Color, 4> Interpolator::InterpolateBC1(uint16_t low, uint16_t high) const {
-    return InterpolateBC1(Color::Unpack565Unscaled(low), Color::Unpack565Unscaled(high), (high >= low));
+std::array<Color, 4> Interpolator::InterpolateBC1(uint16_t low, uint16_t high, bool allow_3color) const {
+    bool use_3color = allow_3color && (high >= low);
+    return InterpolateBC1(Color::Unpack565Unscaled(low), Color::Unpack565Unscaled(high), use_3color);
 }
 
 std::array<Color, 4> Interpolator::InterpolateBC1(Color low, Color high, bool use_3color) const {

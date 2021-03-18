@@ -41,8 +41,9 @@ class BC1Decoder final : public BlockDecoderTemplate<BC1Block, 4, 4> {
 
     void DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) override;
 
-    Interpolator::Type GetInterpolatorType() const { return _interpolator->GetType(); }
-    constexpr bool WritesAlpha() const { return write_alpha; }
+    void DecodeBlock(Color4x4 dest, BC1Block *const block, bool allow_3color) const noexcept(ndebug);
+
+    InterpolatorPtr GetInterpolator() const { return _interpolator; }
 
     bool write_alpha;
 

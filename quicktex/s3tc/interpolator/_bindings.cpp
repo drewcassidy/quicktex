@@ -20,6 +20,7 @@
 #include <pybind11/pybind11.h>
 
 #include <array>
+#include <memory>
 
 #include "Interpolator.h"
 

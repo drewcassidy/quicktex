@@ -96,7 +96,7 @@ class Interpolator {
      * @param high second 5:6:5 color for the block
      * @return and array of 4 Color values, with indices matching BC1 selectors
      */
-    virtual std::array<Color, 4> InterpolateBC1(uint16_t low, uint16_t high) const;
+    virtual std::array<Color, 4> InterpolateBC1(uint16_t low, uint16_t high, bool allow_3color = true) const;
 
     virtual std::array<Color, 4> InterpolateBC1(Color low, Color high, bool use_3color) const;
 

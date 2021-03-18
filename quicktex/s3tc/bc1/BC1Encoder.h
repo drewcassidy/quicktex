@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <tuple>
 #include <type_traits>
 
 #include "../../BlockEncoder.h"
@@ -42,43 +43,24 @@ namespace quicktex::s3tc {
 class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
+    using OrderingPair = std::tuple<unsigned, unsigned>;
 
-    enum class Flags {
-        None = 0,
+    inline static constexpr unsigned min_power_iterations = 4;
+    inline static constexpr unsigned max_power_iterations = 10;
 
-        // Try to improve quality using the most likely total orderings.
-        // The total_orderings_to_try parameter will then control the number of total orderings to try for 4 color blocks, and the
-        // total_orderings_to_try3 parameter will control the number of total orderings to try for 3 color blocks (if they are enabled).
-        UseLikelyTotalOrderings = 1,
+    enum class ColorMode {
+        // An incomplete block with invalid selectors or endpoints
+        Incomplete = 0x00,
 
-        // Use 2 least squares pass, instead of one (same as stb_dxt's HIGHQUAL option).
-        // Recommended if you're enabling UseLikelyTotalOrderings.
-        TwoLeastSquaresPasses = 2,
+        // A block where color0 <= color1
+        ThreeColor = 0x03,
 
-        // Use3ColorBlocksForBlackPixels allows the BC1 encoder to use 3-color blocks for blocks containing black or very dark pixels.
-        // You shader/engine MUST ignore the alpha channel on textures encoded with this flag.
-        // Average quality goes up substantially for my 100 texture corpus (~.5 dB), so it's worth using if you can.
-        // Note the BC1 encoder does not actually support transparency in 3-color mode.
-        // Don't set when encoding to BC3.
-        Use3ColorBlocksForBlackPixels = 4,
+        // A block where color0 > color1
+        FourColor = 0x04,
 
-        // If Use3ColorBlocks is set, the encoder can use 3-color mode for a small but noticeable gain in average quality, but lower perf.
-        // If you also specify the UseLikelyTotalOrderings flag, set the total_orderings_to_try3 paramter to the number of total orderings to try.
-        // Don't set when encoding to BC3.
-        Use3ColorBlocks = 8,
-
-        // Iterative will greatly increase encode time, but is very slightly higher quality.
-        // Same as squish's iterative cluster fit option. Not really worth the tiny boost in quality, unless you just don't care about perf. at all.
-        Iterative = 16,
-
-        // Use 6 power iterations vs. 4 for PCA.
-        Use6PowerIters = 32,
-
-        // Check all total orderings - *very* slow. The encoder is not designed to be used in this way.
-        Exhaustive = 64,
-
-        // Try 2 different ways of choosing the initial endpoints.
-        TryAllInitialEndpoints = 128,
+        // A 3 color block with black pixels (selector 3)
+        UseBlack = 0x10,
+        ThreeColorBlack = ThreeColor | UseBlack,
     };
 
     enum class ErrorMode {
@@ -111,17 +93,17 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
         PCA
     };
 
-    BC1Encoder(unsigned level, bool allow_3color, bool allow_3color_black, InterpolatorPtr interpolator);
+    bool exhaustive;
+    bool two_ls_passes;
+    bool two_ep_passes;
+    bool two_cf_passes;
 
-    BC1Encoder(unsigned int level = 5, bool allow_3color = true, bool allow_3color_black = true)
-        : BC1Encoder(level, allow_3color, allow_3color_black, std::make_shared<Interpolator>()) {}
+    BC1Encoder(unsigned level, ColorMode color_mode, InterpolatorPtr interpolator);
 
-    Interpolator::Type GetInterpolatorType() const { return _interpolator->GetType(); }
+    BC1Encoder(unsigned int level = 5, ColorMode color_mode = ColorMode::FourColor) : BC1Encoder(level, color_mode, std::make_shared<Interpolator>()) {}
 
-    void SetLevel(unsigned level, bool allow_3color = true, bool allow_3color_black = true);
-
-    Flags GetFlags() const { return _flags; }
-    void SetFlags(Flags flags) { _flags = flags; };
+    // Getters and Setters
+    void SetLevel(unsigned level);
 
     ErrorMode GetErrorMode() const { return _error_mode; }
     void SetErrorMode(ErrorMode error_mode) { _error_mode = error_mode; };
@@ -129,14 +111,25 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
     EndpointMode GetEndpointMode() const { return _endpoint_mode; }
     void SetEndpointMode(EndpointMode endpoint_mode) { _endpoint_mode = endpoint_mode; }
 
+    InterpolatorPtr GetInterpolator() const { return _interpolator; }
+    ColorMode GetColorMode() const { return _color_mode; }
+
     unsigned int GetSearchRounds() const { return _search_rounds; }
     void SetSearchRounds(unsigned search_rounds) { _search_rounds = search_rounds; }
 
-    unsigned int GetOrderings4() const { return _orderings4; }
-    unsigned int GetOrderings3() const { return _orderings3; }
+    unsigned GetOrderings4() const { return _orderings4; }
+    unsigned GetOrderings3() const { return _orderings3; }
+
     void SetOrderings4(unsigned orderings4);
     void SetOrderings3(unsigned orderings3);
 
+    OrderingPair GetOrderings() const { return OrderingPair(_orderings4, _orderings3); }
+    void SetOrderings(OrderingPair orderings);
+
+    unsigned GetPowerIterations() const { return _power_iterations; }
+    void SetPowerIterations(unsigned power_iters);
+
+    // Public Methods
     void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
 
     virtual size_t MTThreshold() const override { return 16; }
@@ -145,40 +138,32 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
     using Hash = uint16_t;
     using BlockMetrics = Color4x4::BlockMetrics;
 
-    enum class ColorMode {
-        Incomplete = 0x00,
-        ThreeColor = 0x03,
-        FourColor = 0x04,
-        UseBlack = 0x10,
-        Solid = 0x20,
-        ThreeColorBlack = ThreeColor | UseBlack,
-        ThreeColorSolid = ThreeColor | Solid,
-        FourColorSolid = FourColor | Solid,
-    };
-
     // Unpacked BC1 block with metadata
     struct EncodeResults {
         Color low;
         Color high;
         std::array<uint8_t, 16> selectors;
         ColorMode color_mode;
+        bool solid;
         unsigned error = UINT_MAX;
     };
 
     const InterpolatorPtr _interpolator;
+    const ColorMode _color_mode;
 
     // match tables used for single-color blocks
     // Each entry includes a high and low pair that best reproduces the 8-bit index as well as possible,
     // with an included error value
     // these depend on the interpolator
-    const MatchListPtr _single_match5 = SingleColorTable<5, 4>(_interpolator);
-    const MatchListPtr _single_match6 = SingleColorTable<6, 4>(_interpolator);
-    const MatchListPtr _single_match5_half = SingleColorTable<5, 3>(_interpolator);
-    const MatchListPtr _single_match6_half = SingleColorTable<6, 3>(_interpolator);
+    MatchListPtr _single_match5 = SingleColorTable<5, 4>(_interpolator);
+    MatchListPtr _single_match6 = SingleColorTable<6, 4>(_interpolator);
+    MatchListPtr _single_match5_half = SingleColorTable<5, 3>(_interpolator);
+    MatchListPtr _single_match6_half = SingleColorTable<6, 3>(_interpolator);
 
-    Flags _flags;
     ErrorMode _error_mode;
     EndpointMode _endpoint_mode;
+
+    unsigned _power_iterations;
     unsigned _search_rounds;
     unsigned _orderings4;
     unsigned _orderings3;
