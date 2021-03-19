@@ -45,13 +45,13 @@ void InitBC4(py::module_ &s3tc) {
     py::class_<BC4Encoder> bc4_encoder(bc4, "BC4Encoder", block_encoder);
 
     bc4_encoder.def(py::init<uint8_t>(), py::arg("channel") = 3);
-    bc4_encoder.def_property("channel", &BC4Encoder::GetChannel, &BC4Encoder::SetChannel);
+    bc4_encoder.def_property_readonly("channel", &BC4Encoder::GetChannel, "The channel to read from. 0 to 3 inclusive. Readonly.");
 
     // BC4Decoder
     py::class_<BC4Decoder> bc4_decoder(bc4, "BC4Decoder", block_decoder);
 
     bc4_decoder.def(py::init<uint8_t>(), py::arg("channel") = 3);
-    bc4_decoder.def_property("channel", &BC4Decoder::GetChannel, &BC4Decoder::SetChannel);
+    bc4_decoder.def_property_readonly("channel", &BC4Decoder::GetChannel, "The channel to write to. 0 to 3 inclusive. Readonly.");
 }
 
 }  // namespace quicktex::bindings

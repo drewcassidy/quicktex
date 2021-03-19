@@ -28,21 +28,19 @@
 #include "../../ndebug.h"
 #include "BC4Block.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
 class BC4Encoder : public BlockEncoderTemplate<BC4Block, 4, 4> {
    public:
-    BC4Encoder(const uint8_t channel) { SetChannel(channel); }
-
-    void EncodeBlock(Color4x4 pixels, BC4Block *const dest) const override { EncodeBlock(pixels.GetChannel(_channel), dest); }
-    void EncodeBlock(Color4x4 pixels, BC4Block *const dest, uint8_t channel) const noexcept(ndebug) { EncodeBlock(pixels.GetChannel(channel), dest); }
-    void EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug);
-
-    uint8_t GetChannel() const { return _channel; }
-    void SetChannel(uint8_t channel) {
+    BC4Encoder(const uint8_t channel) {
         if (channel >= 4) throw std::invalid_argument("Channel out of range");
         _channel = channel;
     }
+
+    void EncodeBlock(Color4x4 pixels, BC4Block *const dest) const override { EncodeBlock(pixels.GetChannel(_channel), dest); }
+    void EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug);
+
+    uint8_t GetChannel() const { return _channel; }
 
    private:
     uint8_t _channel;
