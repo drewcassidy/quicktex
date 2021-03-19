@@ -18,9 +18,8 @@
  */
 
 #pragma once
-#include <assert.h>  // for assert
-#include <stddef.h>  // for size_t
-
+#include <cassert>  // for assert
+#include <cstddef>  // for size_t
 #include <cstdint>  // for uint8_t, uint16_t
 
 namespace quicktex {
