@@ -30,7 +30,7 @@
 #include "../bc4/BC4Encoder.h"
 #include "BC5Block.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
 class BC5Encoder : public BlockEncoderTemplate<BC5Block, 4, 4> {
    public:
@@ -44,10 +44,6 @@ class BC5Encoder : public BlockEncoderTemplate<BC5Block, 4, 4> {
     void EncodeBlock(Color4x4 pixels, BC5Block *dest) const override;
 
     ChannelPair GetChannels() const { return ChannelPair(_chan0_encoder->GetChannel(), _chan1_encoder->GetChannel()); }
-    void SetChannels(ChannelPair channels) {
-        _chan0_encoder->SetChannel(std::get<0>(channels));
-        _chan1_encoder->SetChannel(std::get<1>(channels));
-    }
 
     BC4EncoderPair GetBC4Encoders() const { return BC4EncoderPair(_chan0_encoder, _chan1_encoder); }
 

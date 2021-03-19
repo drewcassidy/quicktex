@@ -71,6 +71,9 @@ py::bytes DecodeImage(const BlockDecoder &self, py::bytes encoded, unsigned imag
 PYBIND11_MODULE(_quicktex, m) {
     m.doc() = "More Stuff";
 
+    py::options options;
+//    options.disable_function_signatures();
+
     // BlockDecoder
     py::class_<BlockDecoder> block_decoder(m, "BlockDecoder");
 

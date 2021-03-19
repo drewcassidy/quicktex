@@ -31,7 +31,7 @@ namespace py = pybind11;
 namespace quicktex::bindings {
 
 using namespace quicktex::s3tc;
-using namespace quicktex::s3tc ;
+using namespace quicktex::s3tc;
 
 void InitBC5(py::module_ &s3tc) {
     auto bc5 = s3tc.def_submodule("_bc5", "BC5 encoding/decoding module");
@@ -42,14 +42,14 @@ void InitBC5(py::module_ &s3tc) {
     py::class_<BC5Encoder> bc5_encoder(bc5, "BC5Encoder", block_encoder);
 
     bc5_encoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1);
-    bc5_encoder.def_property("channels", &BC5Encoder::GetChannels, &BC5Encoder::SetChannels);
+    bc5_encoder.def_property_readonly("channels", &BC5Encoder::GetChannels);
     bc5_encoder.def_property_readonly("bc4_decoders", &BC5Encoder::GetBC4Encoders);
 
     // BC5Decoder
     py::class_<BC5Decoder> bc5_decoder(bc5, "BC5Decoder", block_decoder);
 
     bc5_decoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1);
-    bc5_decoder.def_property("channels", &BC5Decoder::GetChannels, &BC5Decoder::SetChannels);
+    bc5_decoder.def_property_readonly("channels", &BC5Decoder::GetChannels);
     bc5_decoder.def_property_readonly("bc4_decoders", &BC5Decoder::GetBC4Decoders);
 }
 }  // namespace quicktex::bindings
