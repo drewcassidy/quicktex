@@ -2,6 +2,7 @@ Reference
 =========
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   s3tc.rst
+    conversion.rst
+    formats/index.rst
