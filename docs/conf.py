@@ -54,6 +54,7 @@ html_static_path = ['_static']
 
 # -- Options for Autodoc -----------------------------------------------------
 add_module_names = False
+autodoc_docstring_signature = True
 
 autodoc_default_options = {
     'member-order': 'groupwise',

@@ -31,7 +31,7 @@ using namespace quicktex::s3tc;
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
 void InitInterpolator(py::module_ &s3tc) {
-    auto interpolator = s3tc.def_submodule("_interpolator", "Classes defining various methods of interpolating colors in BC1 and BC3 textures");
+    auto interpolator = s3tc.def_submodule("_interpolator", "Internal interpolator module");
 
     // Interpolator
     py::class_<Interpolator> ideal(

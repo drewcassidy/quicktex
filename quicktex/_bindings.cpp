@@ -18,8 +18,9 @@
  */
 
 #include <pybind11/pybind11.h>
-#include "BlockEncoder.h"
+
 #include "BlockDecoder.h"
+#include "BlockEncoder.h"
 
 namespace py = pybind11;
 namespace quicktex::bindings {
@@ -72,7 +73,6 @@ PYBIND11_MODULE(_quicktex, m) {
     m.doc() = "More Stuff";
 
     py::options options;
-//    options.disable_function_signatures();
 
     // BlockDecoder
     py::class_<BlockDecoder> block_decoder(m, "BlockDecoder");
