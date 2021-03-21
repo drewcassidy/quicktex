@@ -30,6 +30,7 @@ extensions = [
     'myst_parser',
     'sphinx_rtd_theme',
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -53,6 +54,7 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 # -- Options for Autodoc -----------------------------------------------------
+
 add_module_names = False
 autodoc_docstring_signature = True
 
@@ -60,3 +62,9 @@ autodoc_default_options = {
     'member-order': 'groupwise',
     'exclude-members': '__weakref__'
 }
+
+# -- Options for Intersphinx ------------------------------------------------
+
+# This config value contains the locations and names of other projects that
+# should be linked to in this documentation.
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
