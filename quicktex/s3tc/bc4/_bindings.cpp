@@ -44,7 +44,11 @@ void InitBC4(py::module_ &s3tc) {
     options.disable_function_signatures();
 
     // BC4Encoder
-    py::class_<BC4Encoder> bc4_encoder(bc4, "BC4Encoder", block_encoder, "Encodes single-channel textures to BC4.");
+    py::class_<BC4Encoder> bc4_encoder(bc4, "BC4Encoder", block_encoder, R"doc(
+        Base: :py:class:`~quicktex.BlockEncoder`
+
+        Encodes single-channel textures to BC4.
+    )doc");
 
     bc4_encoder.def(py::init<uint8_t>(), py::arg("channel") = 3, R"doc(
         __init__(channel : int = 3) -> None
@@ -56,7 +60,11 @@ void InitBC4(py::module_ &s3tc) {
     bc4_encoder.def_property_readonly("channel", &BC4Encoder::GetChannel, "The channel that will be read from. 0 to 3 inclusive. Readonly.");
 
     // BC4Decoder
-    py::class_<BC4Decoder> bc4_decoder(bc4, "BC4Decoder", block_decoder, "Encodes BC4 textures to a single-channel texture.");
+    py::class_<BC4Decoder> bc4_decoder(bc4, "BC4Decoder", block_decoder, R"doc(
+        Base: :py:class:`~quicktex.BlockDecoder`
+
+        Decodes BC4 textures to a single-channel.
+    )doc");
 
     bc4_decoder.def(py::init<uint8_t>(), py::arg("channel") = 3, R"doc(
         __init__(channel : int = 3) -> None

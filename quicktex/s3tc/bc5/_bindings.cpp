@@ -41,7 +41,11 @@ void InitBC5(py::module_ &s3tc) {
     options.disable_function_signatures();
 
     // BC5Encoder
-    py::class_<BC5Encoder> bc5_encoder(bc5, "BC5Encoder", block_encoder, "Encodes dual-channel textures to BC5.");
+    py::class_<BC5Encoder> bc5_encoder(bc5, "BC5Encoder", block_encoder, R"doc(
+        Base: :py:class:`~quicktex.BlockEncoder`
+
+        Encodes dual-channel textures to BC5.
+    )doc");
 
     bc5_encoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1, R"doc(
         __init__(chan0 : int = 0, chan1 : int = 1) -> None
@@ -57,7 +61,11 @@ void InitBC5(py::module_ &s3tc) {
                                       "2-tuple of internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` s used for each channel. Readonly.");
 
     // BC5Decoder
-    py::class_<BC5Decoder> bc5_decoder(bc5, "BC5Decoder", block_decoder, "Decodes BC5 textures to a dual-channel texture.");
+    py::class_<BC5Decoder> bc5_decoder(bc5, "BC5Decoder", block_decoder, R"doc(
+        Base: :py:class:`~quicktex.BlockDecoder`
+
+        Decodes BC4 textures to two channels.
+    )doc");
 
     bc5_decoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1, R"doc(
         __init__(chan0 : int = 0, chan1 : int = 1) -> None

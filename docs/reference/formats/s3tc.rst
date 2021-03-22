@@ -7,7 +7,7 @@ bc1 module
 ----------
 .. automodule:: quicktex.s3tc.bc1
 
-    .. autoclass:: BC1Encoder(BlockEncoder)
+    .. autoclass:: BC1Encoder
 
         .. automethod:: __init__
         .. automethod:: set_level
@@ -38,7 +38,7 @@ bc1 module
         .. autoclass:: quicktex.s3tc.bc1::BC1Encoder.EndpointMode
         .. autoclass:: quicktex.s3tc.bc1::BC1Encoder.ErrorMode
 
-    .. autoclass:: BC1Decoder(BlockDecoder)
+    .. autoclass:: BC1Decoder
 
         .. automethod:: __init__
         .. autoproperty:: interpolator(self) -> quicktex.s3tc.interpolator.Interpolator
@@ -48,13 +48,13 @@ bc3 module
 ----------
 .. automodule:: quicktex.s3tc.bc3
 
-    .. autoclass:: BC3Encoder(BlockEncoder)
+    .. autoclass:: BC3Encoder
 
         .. automethod:: __init__
         .. autoproperty:: bc1_encoder(self) -> quicktex.s3tc.bc1.BC1Encoder
         .. autoproperty:: bc4_encoder(self) -> quicktex.s3tc.bc4.BC4Encoder
 
-    .. autoclass:: BC3Decoder(BlockDecoder)
+    .. autoclass:: BC3Decoder
 
         .. automethod:: __init__
         .. autoproperty:: bc1_decoder(self) -> quicktex.s3tc.bc1.BC1Decoder
@@ -64,12 +64,12 @@ bc4 module
 ----------
 .. automodule:: quicktex.s3tc.bc4
 
-    .. autoclass:: BC4Encoder(BlockEncoder)
+    .. autoclass:: BC4Encoder
 
         .. automethod:: __init__
         .. autoproperty:: channel(self) -> int
 
-    .. autoclass:: BC4Decoder(BlockDecoder)
+    .. autoclass:: BC4Decoder
 
         .. automethod:: __init__
         .. autoproperty:: channel(self) -> int
@@ -78,13 +78,13 @@ bc5 module
 ----------
 .. automodule:: quicktex.s3tc.bc5
 
-    .. autoclass:: BC5Encoder(BlockEncoder)
+    .. autoclass:: BC5Encoder
 
         .. automethod:: __init__
         .. autoproperty:: bc4_encoders(self) -> tuple[quicktex.s3tc.bc4.BC4Encoder]
         .. autoproperty:: channels(self) -> tuple[int, int]
 
-    .. autoclass:: BC5Decoder(BlockDecoder)
+    .. autoclass:: BC5Decoder
 
         .. automethod:: __init__
         .. autoproperty:: bc4_decoders(self) -> tuple[quicktex.s3tc.bc4.BC4Decoder]
@@ -95,8 +95,3 @@ interpolator module
 
 .. automodule:: quicktex.s3tc.interpolator
     :members:
-
-    .. autoclass:: Interpolator
-    .. autoclass:: InterpolatorRound(Interpolator)
-    .. autoclass:: InterpolatorNvidia(Interpolator)
-    .. autoclass:: InterpolatorAMD(Interpolator)

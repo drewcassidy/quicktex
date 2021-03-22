@@ -1,7 +1,6 @@
 /*  Python-rgbcx Texture Compression Library
     Copyright (C) 2021 Andrew Cassidy <drewcassidy@me.com>
-    Partially derived from rgbcx.h written by Richard Geldreich <richgel99@gmail.com>
-    and licenced under the public domain
+    Partially derived from rgbcx.h written by Richard Geldreich <richgel99@gmail.com> and licenced under the public domain
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -31,21 +30,39 @@ using namespace quicktex::s3tc;
 using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
 void InitInterpolator(py::module_ &s3tc) {
-    auto interpolator = s3tc.def_submodule("_interpolator", "Internal interpolator module");
+    auto interpolator = s3tc.def_submodule("_interpolator", "internal interpolator module");
 
     // Interpolator
     py::class_<Interpolator> ideal(
-        interpolator, "Interpolator",
-        "Interpolator base class representing the default mode, with no rounding for colors 2 and 3. This matches the D3D10 docs on BC1.");
+        interpolator, "Interpolator", R"doc(
+        Interpolator base class representing the ideal interpolation mode, with no rounding for colors 2 and 3.
+        This matches the `D3D10 docs`_ on BC1.
+
+        .. _D3D10 docs: https://docs.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-block-compression
+    )doc");
 
     // InterpolatorRound
-    py::class_<InterpolatorRound> round(interpolator, "InterpolatorRound", ideal,
-                                        "Round colors 2 and 3. Matches the AMD Compressonator tool and the D3D9 docs on DXT1.");
+    py::class_<InterpolatorRound> round(interpolator, "InterpolatorRound", ideal, R"doc(
+        Base: :py:class:`~quicktex.s3tc.interpolator.Interpolator`
+
+        Interpolator class representing the ideal rounding interpolation mode.
+        Round colors 2 and 3. Matches the AMD Compressonator tool and the `D3D9 docs`_ on DXT1.
+
+        .. _D3D9 docs: https://docs.microsoft.com/en-us/windows/win32/direct3d9/opaque-and-1-bit-alpha-textures
+    )doc");
 
     // InterpolatorNvidia
-    py::class_<InterpolatorNvidia> nvidia(interpolator, "InterpolatorNvidia", ideal, "Nvidia GPU mode.");
+    py::class_<InterpolatorNvidia> nvidia(interpolator, "InterpolatorNvidia", ideal, R"doc(
+        Base: :py:class:`~quicktex.s3tc.interpolator.Interpolator`
+
+        Interpolator class representing the Nvidia GPU interpolation mode.
+    )doc");
 
     // InterpolatorAMD
-    py::class_<InterpolatorAMD> amd(interpolator, "InterpolatorAMD", ideal, "AMD GPU mode.");
+    py::class_<InterpolatorAMD> amd(interpolator, "InterpolatorAMD", ideal, R"doc(
+        Base: :py:class:`~quicktex.s3tc.interpolator.Interpolator`
+
+        Interpolator class representing the AMD GPU interpolation mode.
+    )doc");
 }
 }  // namespace quicktex::bindings

@@ -48,7 +48,11 @@ void InitBC1(py::module_ &s3tc) {
     options.disable_function_signatures();
 
     // BC1Encoder
-    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", block_encoder, "Encodes RGB textures to BC1");
+    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", block_encoder, R"doc(
+        Base: :py:class:`~quicktex.BlockEncoder`
+
+        Encodes RGB textures to BC1.
+    )doc");
 
     py::enum_<BC1Encoder::EndpointMode>(bc1_encoder, "EndpointMode", "Enum representing various methods of finding endpoints in a block.")
         .value("LeastSquares", BC1Encoder::EndpointMode::LeastSquares, "Find endpoints using a 2D least squares approach.")
@@ -129,7 +133,11 @@ void InitBC1(py::module_ &s3tc) {
                              "Automatically clamped to between :py:const:`BC1Encoder.min_power_iterations` and :py:const:`BC1Encoder.max_power_iterations`");
 
     // BC1Decoder
-    py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", block_decoder, "Decodes BC1 textures to RGB");
+    py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", block_decoder, R"doc(
+        Base: :py:class:`~quicktex.BlockDecoder`
+
+        Decodes BC1 textures to RGB
+    )doc");
 
     bc1_decoder.def(py::init<bool>(), "write_alpha"_a = false);
     bc1_decoder.def(py::init<bool, InterpolatorPtr>(), "write_alpha"_a, "interpolator"_a, R"pbdoc(

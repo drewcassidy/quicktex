@@ -59,8 +59,9 @@ add_module_names = False
 autodoc_docstring_signature = True
 
 autodoc_default_options = {
-    'member-order': 'groupwise',
-    'exclude-members': '__weakref__'
+    'member-order': 'bysource',
+    'exclude-members': '__weakref__',
+    'imported-members': True,
 }
 
 # -- Options for Intersphinx ------------------------------------------------

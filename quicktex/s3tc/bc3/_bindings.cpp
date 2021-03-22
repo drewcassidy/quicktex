@@ -48,7 +48,11 @@ void InitBC3(py::module_ &s3tc) {
     options.disable_function_signatures();
 
     // BC3Encoder
-    py::class_<BC3Encoder> bc3_encoder(bc3, "BC3Encoder", block_encoder, "Encodes RGBA textures to BC3");
+    py::class_<BC3Encoder> bc3_encoder(bc3, "BC3Encoder", block_encoder,R"doc(
+        Base: :py:class:`~quicktex.BlockEncoder`
+
+        Encodes RGBA textures to BC3
+    )doc");
 
     bc3_encoder.def(py::init<unsigned>(), "level"_a = 5);
     bc3_encoder.def(py::init<unsigned, InterpolatorPtr>(), "level"_a, "interpolator"_a, R"doc(
@@ -67,7 +71,11 @@ void InitBC3(py::module_ &s3tc) {
                                       "Internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` used for alpha data. Readonly.");
 
     // BC3Decoder
-    py::class_<BC3Decoder> bc3_decoder(bc3, "BC3Decoder", block_decoder, "Decodes BC3 textures to RGBA");
+    py::class_<BC3Decoder> bc3_decoder(bc3, "BC3Decoder", block_decoder, R"doc(
+        Base: :py:class:`~quicktex.BlockDecoder`
+
+        Decodes BC3 textures to RGBA
+    )doc");
 
     bc3_decoder.def(py::init<>());
     bc3_decoder.def(py::init<InterpolatorPtr>(), "interpolator"_a, R"doc(
