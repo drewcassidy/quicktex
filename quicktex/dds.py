@@ -173,7 +173,7 @@ class DDSHeader:
         assert unpacked[0] == DDSHeader.size, "Incorrect DDS header size."
 
         header = DDSHeader()
-        header.flags = DDSHeader.DDSFlags(unpacked[1])
+        header.flags = DDSHeader.Flags(unpacked[1])
         header.dimensions = unpacked[2:4:-1]
         header.pitch, header.depth, header.mipmapcount = unpacked[4:7]
 
