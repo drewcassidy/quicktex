@@ -14,6 +14,7 @@ class DDSFlags(enum.IntFlag):
     MIPMAPCOUNT = 0x20000
     LINEAR_SIZE = 0x80000
     DEPTH = 0x800000
+    REQUIRED = CAPS | HEIGHT | WIDTH | PIXEL_FORMAT
 
 
 class DDSPixelFlags(enum.IntFlag):
@@ -94,12 +95,12 @@ class DDSHeader:
     """The size of a DDS header in bytes."""
 
     def __init__(self):
-        self.flags: DDSFlags = DDSFlags(DDSFlags.CAPS | DDSFlags.HEIGHT | DDSFlags.WIDTH | DDSFlags.PIXEL_FORMAT)
-        self.image_size: typing.Tuple[int, int] = (0, 0)
+        self.flags: DDSFlags = DDSFlags.REQUIRED
+        self.dimensions: typing.Tuple[int, int] = (0, 0)
         self.linear_size: int = 0
-        self.depth = 0
-        self.mipmap_count = 0
-        self.pixel_format = PixelFormat()
+        self.depth: int = 0
+        self.mipmap_count: int = 0
+        self.pixel_format: PixelFormat = PixelFormat()
         self.caps = (0, 0, 0, 0)
 
     @staticmethod
@@ -117,12 +118,15 @@ class DDSHeader:
 
         header = DDSHeader()
         header.flags = DDSFlags(unpacked[1])
-        header.image_size = unpacked[2:4:-1]
+        header.dimensions = unpacked[2:4:-1]
         header.linear_size, header.depth, header.mipmapcount = unpacked[4:7]
 
         header.pixel_format = PixelFormat.from_bytes(data[72:104])
 
         header.caps = struct.unpack('<4I4x', data[104:124])
+
+        assert all([val > 0 for val in header.dimensions]), "Image size is zero"
+
         return header
 
     @staticmethod
@@ -144,7 +148,7 @@ class DDSHeader:
         """
         data = b''
         # write header
-        data += struct.pack('<7I44x', DDSHeader.size, int(self.flags), self.image_size[1], self.image_size[0],
+        data += struct.pack('<7I44x', DDSHeader.size, int(self.flags), self.dimensions[1], self.dimensions[0],
                             self.linear_size, self.depth, self.mipmap_count)
         data += self.pixel_format.to_bytes()
         data += struct.pack('<4I4x', *self.caps)
@@ -162,6 +166,9 @@ class DDSFile:
 
     magic = b'DDS '
     """Magic bytes at the start of every DDS file."""
+
+    extension = 'dds'
+    """Extension for a DDS file."""
 
     def __init__(self):
         self.header: DDSHeader = DDSHeader()
@@ -184,7 +191,7 @@ class DDSFile:
         dds.header = DDSHeader.from_file(file)
 
         # TODO: read file contents
-        
+
         return dds
 
     def write(self, file: typing.BinaryIO):
