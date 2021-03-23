@@ -230,7 +230,8 @@ class DDSFile:
         self.header: DDSHeader = DDSHeader()
         """The DDS file's header object"""
 
-        self.textures = []
+        self.textures: typing.List[bytes] = []
+        """A list of bytes objects for each texture in the file"""
 
     @staticmethod
     def from_file(file: typing.BinaryIO) -> DDSFile:
@@ -246,7 +247,18 @@ class DDSFile:
         dds = DDSFile()
         dds.header = DDSHeader.from_file(file)
 
-        # TODO: read file contents
+        four_cc = dds.header.pixel_format.four_cc
+        assert four_cc == 'DXT1' or four_cc == 'DXT5'
+        block_size = 8 if four_cc == 'DXT1' else 16
+        mip_count = dds.header.mipmap_count if DDSHeader.Flags.MIPMAPCOUNT in dds.header.flags else 1
+
+        dds.textures = []
+        for mip in range(mip_count):
+            block_dimensions = dds.image_block_dimensions()
+            blocks = block_dimensions[0] * block_dimensions[1]
+            size = blocks * block_size
+
+            dds.textures.append(file.read(size))
 
         return dds
 
@@ -261,4 +273,40 @@ class DDSFile:
         file.write(DDSFile.magic)
         file.write(self.header.to_bytes())
 
-        # TODO: write file contents
+        for texture in self.textures:
+            file.write(texture)
+
+    def mipmap_count(self) -> int:
+        """
+        Get the number of mipmaps in the dds file.
+
+        :return: The number of mipmaps
+        """
+        if DDSHeader.Flags.MIPMAPCOUNT in self.header.flags:
+            mips = self.header.mipmap_count
+            assert mips > 0
+            return mips
+        else:
+            return 1
+
+    def image_dimensions(self, mip: int = 0) -> typing.Tuple[int, int]:
+        """
+        Calculate the dimensions of a mip level in pixels.
+
+        :param int mip: which mip level to calculate the dimensions of, between 0 and :py:attr:`~DDSHeader.mipmap_count` exclusive.
+        :return: the dimensions of the selected mipmap in pixels
+        """
+        assert self.mipmap_count() > mip >= 0, "Invalid mip level"
+        return tuple([max(size // (2 ** mip), 1) for size in self.header.dimensions])
+
+    def image_block_dimensions(self, mip: int = 0) -> typing.Tuple[int, int]:
+        """
+        Calculate the dimensions of a mip level in 4x4 blocks. Only relevent for compressed textures.
+
+        :param int mip: Whick mip level to calculate the dimensions of, between 0 and :py:attr:`~DDSHeader.mipmap_count` exclusive.
+        :return: the dimensions of the selected mipmap in blocks
+        """
+        dimensions = self.image_dimensions(mip)
+
+        assert all(size > 0 for size in dimensions)
+        return tuple([max((size + 3) // 4, 1) for size in dimensions])
