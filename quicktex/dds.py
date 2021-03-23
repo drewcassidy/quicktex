@@ -5,27 +5,6 @@ import struct
 import typing
 
 
-class DDSFlags(enum.IntFlag):
-    CAPS = 0x1
-    HEIGHT = 0x2
-    WIDTH = 0x4
-    PITCH = 0x8
-    PIXEL_FORMAT = 0x1000
-    MIPMAPCOUNT = 0x20000
-    LINEAR_SIZE = 0x80000
-    DEPTH = 0x800000
-    REQUIRED = CAPS | HEIGHT | WIDTH | PIXEL_FORMAT
-
-
-class DDSPixelFlags(enum.IntFlag):
-    ALPHAPIXELS = 0x1
-    ALPHA = 0x2
-    FOURCC = 0x4
-    RGB = 0x40
-    YUV = 0x200
-    LUMINANCE = 0x20000
-
-
 class PixelFormat:
     """
     DDS header surface format.
@@ -35,13 +14,46 @@ class PixelFormat:
     size = 32
     """The size of a PixelFormat block in bytes."""
 
+    class Flags(enum.IntFlag):
+        """Values which indicate what type of data is in the surface."""
+
+        ALPHAPIXELS = 0x1
+        """Texture contains alpha data (:py:attr:`~PixelFormat.pixel_bitmasks[3]` contains valid data)."""
+
+        ALPHA = 0x2
+        """Used in some older DDS files for alpha channel only uncompressed data 
+        (:py:attr:`~PixelFormat.pixel_size` contains the alpha channel bitcount; :py:attr:`~PixelFormat.pixel_bitmasks[3]` contains valid data)."""
+
+        FOURCC = 0x4
+        """Texture contains compressed RGB data; :py:attr:`~PixelFormat.four_cc` contains valid data."""
+
+        RGB = 0x40
+        """Texture contains uncompressed RGB data; :py:attr:`~PixelFormat.pixel_size` and the RGB masks 
+        (:py:attr:`~PixelFormat.pixel_bitmasks[0:3]`) contain valid data."""
+
+        YUV = 0x200
+        """Used in some older DDS files for YUV uncompressed data 
+        (:py:attr:`~PixelFormat.pixel_size` contains the YUV bit count; :py:attr:`~PixelFormat.pixel_bitmasks[0]` contains the Y mask, 
+        :py:attr:`~PixelFormat.pixel_bitmasks[1]` contains the U mask, :py:attr:`~PixelFormat.pixel_bitmasks[2]` contains the V mask)."""
+
+        LUMINANCE = 0x20000
+        """Used in some older DDS files for single channel color uncompressed data (:py:attr:`~PixelFormat.pixel_size` 
+        contains the luminance channel bit count; :py:attr:`~PixelFormat.pixel_bitmasks[0]` contains the channel mask). 
+        Can be combined with :py:attr:`ALPHAPIXELS` for a two channel uncompressed DDS file."""
+
     def __init__(self):
-        self.flags: DDSPixelFlags = DDSPixelFlags(0)
+        self.flags: PixelFormat.Flags = PixelFormat.Flags.FOURCC
+        """Flags representing which data is valid."""
+
         self.four_cc: str = "NONE"
-        """ FourCC code of the texture format. Valid texture format strings are ``DXT1``, ``DXT2``, ``DXT3``, ``DXT4``, or ``DXT5``. 
+        """FourCC code of the texture format. Valid texture format strings are ``DXT1``, ``DXT2``, ``DXT3``, ``DXT4``, or ``DXT5``. 
         If a DirectX 10 header is used, this is ``DX10``."""
-        self.rgb_bit_count: int = 0
-        self.color_bitmask: typing.Tuple[int, int, int, int] = (0, 0, 0, 0)
+
+        self.pixel_size: int = 0
+        """Number of bits in each pixel if the texture is uncompressed"""
+
+        self.pixel_bitmasks: typing.Tuple[int, int, int, int] = (0, 0, 0, 0)
+        """Tuple of bitmasks for each channel"""
 
     @staticmethod
     def from_bytes(data) -> PixelFormat:
@@ -57,9 +69,10 @@ class PixelFormat:
         assert unpacked[0] == PixelFormat.size, "Incorrect pixelformat size."
 
         pf = PixelFormat()
+        pf.flags = PixelFormat.Flags(unpacked[1])
         pf.four_cc = unpacked[2].decode()
-        pf.rgb_bit_count = unpacked[3]
-        pf.color_bitmask = unpacked[4:8]
+        pf.pixel_size = unpacked[3]
+        pf.pixel_bitmasks = unpacked[4:8]
         return pf
 
     @staticmethod
@@ -80,7 +93,7 @@ class PixelFormat:
 
         :return: The packed PixelFormat object
         """
-        data = struct.pack('<2I4s5I', 32, int(self.flags), bytes(self.four_cc, 'ascii'), self.rgb_bit_count, *self.color_bitmask)
+        data = struct.pack('<2I4s5I', 32, int(self.flags), bytes(self.four_cc, 'ascii'), self.pixel_size, *self.pixel_bitmasks)
         assert len(data) == PixelFormat.size
         return data
 
@@ -94,14 +107,57 @@ class DDSHeader:
     size = 124
     """The size of a DDS header in bytes."""
 
+    class Flags(enum.IntFlag):
+        """Flags to indicate which members contain valid data."""
+
+        CAPS = 0x1
+        """Required in every .dds file."""
+
+        HEIGHT = 0x2
+        """Required in every .dds file."""
+
+        WIDTH = 0x4
+        """Required in every .dds file."""
+
+        PITCH = 0x8
+        """Required when :py:attr:`~DDSHeader.pitch` is provided for an uncompressed texture."""
+
+        PIXEL_FORMAT = 0x1000
+        """Required in every .dds file."""
+
+        MIPMAPCOUNT = 0x20000
+        """Required when :py:attr:`~DDSHeader.mipmap_count` is provided for a mipmapped texture."""
+
+        LINEAR_SIZE = 0x80000
+        """Required when :py:attr:`~DDSHeader.pitch` is provided for a compressed texture."""
+
+        DEPTH = 0x800000
+        """Required when :py:attr:`~DDSHeader.depth` is provided for a depth texture."""
+
+        REQUIRED = CAPS | HEIGHT | WIDTH | PIXEL_FORMAT
+
     def __init__(self):
-        self.flags: DDSFlags = DDSFlags.REQUIRED
+        self.flags: DDSHeader.Flags = DDSHeader.Flags.REQUIRED
+        """Flags to indicate which members contain valid data."""
+
         self.dimensions: typing.Tuple[int, int] = (0, 0)
-        self.linear_size: int = 0
+        """Width and height of the texture or its first mipmap"""
+
+        self.pitch: int = 0
+        """The pitch or number of bytes per scan line in an uncompressed texture; 
+        the total number of bytes in the top level texture for a compressed texture."""
+
         self.depth: int = 0
+        """Depth of a volume texture (in pixels), otherwise unused."""
+
         self.mipmap_count: int = 0
+        """Number of mipmap levels, otherwise unused."""
+
         self.pixel_format: PixelFormat = PixelFormat()
-        self.caps = (0, 0, 0, 0)
+        """The pixel format"""
+
+        self.caps: typing.Tuple[int, int, int, int] = (0, 0, 0, 0)
+        """Specifies the complexity of the surfaces stored."""
 
     @staticmethod
     def from_bytes(data) -> DDSHeader:
@@ -117,9 +173,9 @@ class DDSHeader:
         assert unpacked[0] == DDSHeader.size, "Incorrect DDS header size."
 
         header = DDSHeader()
-        header.flags = DDSFlags(unpacked[1])
+        header.flags = DDSHeader.DDSFlags(unpacked[1])
         header.dimensions = unpacked[2:4:-1]
-        header.linear_size, header.depth, header.mipmapcount = unpacked[4:7]
+        header.pitch, header.depth, header.mipmapcount = unpacked[4:7]
 
         header.pixel_format = PixelFormat.from_bytes(data[72:104])
 
@@ -149,7 +205,7 @@ class DDSHeader:
         data = b''
         # write header
         data += struct.pack('<7I44x', DDSHeader.size, int(self.flags), self.dimensions[1], self.dimensions[0],
-                            self.linear_size, self.depth, self.mipmap_count)
+                            self.pitch, self.depth, self.mipmap_count)
         data += self.pixel_format.to_bytes()
         data += struct.pack('<4I4x', *self.caps)
 
