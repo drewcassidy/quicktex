@@ -11,8 +11,10 @@ docs/_build/
 # IDEs
 **/.idea
 
-# cmake
+# binaries
+*.so
 
+# cmake
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
