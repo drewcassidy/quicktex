@@ -113,7 +113,7 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     packages=find_packages('.'),
     package_dir={'': '.'},
-    install_requires=["Pillow"],
+    install_requires=["Pillow", "click"],
     extras_require={
         "tests": ["nose", "parameterized"],
         "docs": ["sphinx", "myst-parser", "sphinx-rtd-theme"],
