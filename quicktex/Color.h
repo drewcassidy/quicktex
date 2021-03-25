@@ -34,9 +34,9 @@ class Color {
     uint8_t b;
     uint8_t a;
 
-    Color();
+    constexpr Color();
 
-    Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xFF);
+    constexpr Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xFF);
 
     Color(Vector4Int v);
 
