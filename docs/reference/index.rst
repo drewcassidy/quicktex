@@ -6,4 +6,5 @@ Reference
 
     conversion.rst
     dds.rst
+    image_utils.rst
     formats/index.rst
