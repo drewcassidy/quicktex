@@ -118,5 +118,9 @@ setup(
         "tests": ["nose", "parameterized"],
         "docs": ["sphinx", "myst-parser", "sphinx-rtd-theme"],
     },
+    entry_points='''
+        [console_scripts]
+        quicktex=quicktex.cli:cli
+    ''',
     zip_safe=False,
 )

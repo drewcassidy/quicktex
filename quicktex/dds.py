@@ -5,6 +5,7 @@ import struct
 import typing
 
 
+@typing.final
 class PixelFormat:
     """
     DDS header surface format.
@@ -98,6 +99,7 @@ class PixelFormat:
         return data
 
 
+@typing.final
 class DDSHeader:
     """
     Header for a microsoft DDS file
@@ -213,6 +215,7 @@ class DDSHeader:
         return data
 
 
+@typing.final
 class DDSFile:
     """
     A microsoft DDS file, containing header information and one or more textures

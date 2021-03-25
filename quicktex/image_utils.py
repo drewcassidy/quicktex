@@ -46,7 +46,7 @@ def mip_sizes(dimensions: typing.Tuple[int, int], mip_count: typing.Optional[int
         Resulting mip chain will be smaller if a 1x1 mip level is reached before this value.
     :return: A list of 2-tuples representing the dimensions of each mip level, including ``dimensions`` at element 0.
     """
-    assert all([dim > 0 for dim in dimensions]), "Invalid source size"
+    assert all([dim > 0 for dim in dimensions]), "Invalid source dimensions"
     if not mip_count:
         mip_count = math.ceil(math.log2(max(dimensions)))  # maximum possible number of mips for a given source
 
