@@ -21,8 +21,8 @@
 
 #include <memory>
 
-#include "../../BlockEncoder.h"
-#include "../../BlockView.h"
+#include "../../Block.h"
+#include "../../Encoder.h"
 #include "../bc1/BC1Encoder.h"
 #include "../bc4/BC4Encoder.h"
 #include "../interpolator/Interpolator.h"
@@ -30,7 +30,7 @@
 
 namespace quicktex::s3tc {
 
-class BC3Encoder : public BlockEncoderTemplate<BC3Block, 4, 4> {
+class BC3Encoder : public BlockEncoder<BlockTexture<BC3Block>> {
    public:
     using BC1EncoderPtr = std::shared_ptr<BC1Encoder>;
     using BC4EncoderPtr = std::shared_ptr<BC4Encoder>;
@@ -41,7 +41,7 @@ class BC3Encoder : public BlockEncoderTemplate<BC3Block, 4, 4> {
 
     BC3Encoder(unsigned level = 5) : BC3Encoder(level, std::make_shared<Interpolator>()) {}
 
-    void EncodeBlock(Color4x4 pixels, BC3Block *dest) const override;
+    BC3Block EncodeBlock(const ColorBlock<4, 4>& pixels) const override;
 
     BC1EncoderPtr GetBC1Encoder() const { return _bc1_encoder; }
     BC4EncoderPtr GetBC4Encoder() const { return _bc4_encoder; }

@@ -25,8 +25,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "../../BlockDecoder.h"
-#include "../../BlockEncoder.h"
+#include "../../Decoder.h"
+#include "../../Encoder.h"
 #include "../interpolator/Interpolator.h"
 #include "BC1Decoder.h"
 #include "BC1Encoder.h"
@@ -41,16 +41,12 @@ using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
 void InitBC1(py::module_ &s3tc) {
     auto bc1 = s3tc.def_submodule("_bc1", "internal bc1 module");
-    auto block_encoder = py::type::of<BlockEncoder>();
-    auto block_decoder = py::type::of<BlockDecoder>();
 
     py::options options;
     options.disable_function_signatures();
 
     // BC1Encoder
-    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", block_encoder, R"doc(
-        Base: :py:class:`~quicktex.BlockEncoder`
-
+    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder" R"doc(
         Encodes RGB textures to BC1.
     )doc");
 
@@ -133,7 +129,7 @@ void InitBC1(py::module_ &s3tc) {
                              "Automatically clamped to between :py:const:`BC1Encoder.min_power_iterations` and :py:const:`BC1Encoder.max_power_iterations`");
 
     // BC1Decoder
-    py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", block_decoder, R"doc(
+    py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", R"doc(
         Base: :py:class:`~quicktex.BlockDecoder`
 
         Decodes BC1 textures to RGB

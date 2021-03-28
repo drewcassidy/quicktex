@@ -22,8 +22,8 @@
 #include <array>
 #include <cstdint>
 
-#include "../../BlockDecoder.h"
-#include "../../BlockEncoder.h"
+#include "../../Decoder.h"
+#include "../../Encoder.h"
 #include "BC5Decoder.h"
 #include "BC5Encoder.h"
 
@@ -35,13 +35,11 @@ using namespace quicktex::s3tc;
 
 void InitBC5(py::module_ &s3tc) {
     auto bc5 = s3tc.def_submodule("_bc5", "internal bc5 module");
-    auto block_encoder = py::type::of<BlockEncoder>();
-    auto block_decoder = py::type::of<BlockDecoder>();
     py::options options;
     options.disable_function_signatures();
 
     // BC5Encoder
-    py::class_<BC5Encoder> bc5_encoder(bc5, "BC5Encoder", block_encoder, R"doc(
+    py::class_<BC5Encoder> bc5_encoder(bc5, "BC5Encoder", R"doc(
         Base: :py:class:`~quicktex.BlockEncoder`
 
         Encodes dual-channel textures to BC5.
@@ -61,7 +59,7 @@ void InitBC5(py::module_ &s3tc) {
                                       "2-tuple of internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` s used for each channel. Readonly.");
 
     // BC5Decoder
-    py::class_<BC5Decoder> bc5_decoder(bc5, "BC5Decoder", block_decoder, R"doc(
+    py::class_<BC5Decoder> bc5_decoder(bc5, "BC5Decoder", R"doc(
         Base: :py:class:`~quicktex.BlockDecoder`
 
         Decodes BC4 textures to two channels.

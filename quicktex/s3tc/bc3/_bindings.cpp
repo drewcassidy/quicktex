@@ -25,8 +25,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "../../BlockDecoder.h"
-#include "../../BlockEncoder.h"
+#include "../../Decoder.h"
+#include "../../Encoder.h"
 #include "../interpolator/Interpolator.h"
 #include "BC3Decoder.h"
 #include "BC3Encoder.h"
@@ -42,13 +42,11 @@ using BC1DecoderPtr = std::shared_ptr<BC1Decoder>;
 
 void InitBC3(py::module_ &s3tc) {
     auto bc3 = s3tc.def_submodule("_bc3", "internal bc3 module");
-    auto block_encoder = py::type::of<BlockEncoder>();
-    auto block_decoder = py::type::of<BlockDecoder>();
     py::options options;
     options.disable_function_signatures();
 
     // BC3Encoder
-    py::class_<BC3Encoder> bc3_encoder(bc3, "BC3Encoder", block_encoder,R"doc(
+    py::class_<BC3Encoder> bc3_encoder(bc3, "BC3Encoder", R"doc(
         Base: :py:class:`~quicktex.BlockEncoder`
 
         Encodes RGBA textures to BC3
@@ -71,7 +69,7 @@ void InitBC3(py::module_ &s3tc) {
                                       "Internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` used for alpha data. Readonly.");
 
     // BC3Decoder
-    py::class_<BC3Decoder> bc3_decoder(bc3, "BC3Decoder", block_decoder, R"doc(
+    py::class_<BC3Decoder> bc3_decoder(bc3, "BC3Decoder", R"doc(
         Base: :py:class:`~quicktex.BlockDecoder`
 
         Decodes BC3 textures to RGBA

@@ -23,22 +23,23 @@
 #include <cstdint>
 #include <stdexcept>
 
-#include "../../BlockDecoder.h"
-#include "../../BlockView.h"
+#include "../../Block.h"
+#include "../../Decoder.h"
 #include "../../ndebug.h"
 #include "BC4Block.h"
 
 namespace quicktex::s3tc {
 
-class BC4Decoder : public BlockDecoderTemplate<BC4Block, 4, 4> {
+class BC4Decoder : public BlockDecoder<BlockTexture<BC4Block>> {
    public:
     BC4Decoder(uint8_t channel = 3) {
         if (channel >= 4U) throw std::invalid_argument("Channel out of range");
         _channel = channel;
     }
 
-    void DecodeBlock(Color4x4 dest, BC4Block *const block) const noexcept(ndebug) override { DecodeBlock(dest.GetChannel(_channel), block); }
-    void DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug);
+    ColorBlock<4,4> DecodeBlock(const BC4Block &block) const override;
+
+    void DecodeInto(ColorBlock<4,4> &dest, const BC4Block &block) const;
 
     uint8_t GetChannel() const { return _channel; }
 

@@ -25,8 +25,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "../../BlockDecoder.h"
-#include "../../BlockEncoder.h"
+#include "../../Decoder.h"
+#include "../../Encoder.h"
 #include "BC4Decoder.h"
 #include "BC4Encoder.h"
 
@@ -38,13 +38,11 @@ using namespace quicktex::s3tc;
 
 void InitBC4(py::module_ &s3tc) {
     auto bc4 = s3tc.def_submodule("_bc4", "internal bc4 module");
-    auto block_encoder = py::type::of<BlockEncoder>();
-    auto block_decoder = py::type::of<BlockDecoder>();
     py::options options;
     options.disable_function_signatures();
 
     // BC4Encoder
-    py::class_<BC4Encoder> bc4_encoder(bc4, "BC4Encoder", block_encoder, R"doc(
+    py::class_<BC4Encoder> bc4_encoder(bc4, "BC4Encoder", R"doc(
         Base: :py:class:`~quicktex.BlockEncoder`
 
         Encodes single-channel textures to BC4.
@@ -60,7 +58,7 @@ void InitBC4(py::module_ &s3tc) {
     bc4_encoder.def_property_readonly("channel", &BC4Encoder::GetChannel, "The channel that will be read from. 0 to 3 inclusive. Readonly.");
 
     // BC4Decoder
-    py::class_<BC4Decoder> bc4_decoder(bc4, "BC4Decoder", block_decoder, R"doc(
+    py::class_<BC4Decoder> bc4_decoder(bc4, "BC4Decoder", R"doc(
         Base: :py:class:`~quicktex.BlockDecoder`
 
         Decodes BC4 textures to a single-channel.

@@ -19,6 +19,14 @@
 
 #pragma once
 
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <stdexcept>
+
+#include "Color.h"
+#include "Vector4Int.h"
+
 namespace quicktex {
 
 /**
@@ -37,6 +45,94 @@ template <int N, int M> class Block {
    public:
     static constexpr int Width = N;
     static constexpr int Height = M;
+};
+
+template <int N, int M> class ColorBlock : public Block<N, M> {
+   public:
+    using Base = Block<N, M>;
+    struct Metrics {
+        Color min;
+        Color max;
+        Color avg;
+        bool is_greyscale;
+        bool has_black;
+        Vector4Int sums;
+    };
+
+    constexpr Color Get(int x, int y) const {
+        if (x >= Base::Width || x < 0) throw std::invalid_argument("x value out of range");
+        if (y >= Base::Height || y < 0) throw std::invalid_argument("y value out of range");
+
+        return _pixels[x + (N * y)];
+    }
+
+    constexpr Color Get(int i) const {
+        if (i >= N * M || i < 0) throw std::invalid_argument("i value out of range");
+        return _pixels[i];
+    }
+
+    void Set(int x, int y, const Color &value) {
+        if (x >= Base::Width || x < 0) throw std::invalid_argument("x value out of range");
+        if (y >= Base::Height || y < 0) throw std::invalid_argument("y value out of range");
+        _pixels[x + (N * y)] = value;
+    }
+
+    void Set(int i, const Color &value) {
+        if (i >= N * M || i < 0) throw std::invalid_argument("i value out of range");
+        _pixels[i] = value;
+    }
+
+    void GetRow(int y, Color *dst) const {
+        if (y >= Base::Height || y < 0) throw std::invalid_argument("y value out of range");
+        std::memcpy(dst, &_pixels[N * y], N * sizeof(Color));
+    }
+
+    void SetRow(int y, const Color *src) {
+        if (y >= Base::Height || y < 0) throw std::invalid_argument("y value out of range");
+        std::memcpy(&_pixels[N * y], src, N * sizeof(Color));
+    }
+
+    bool IsSingleColor() const {
+        auto first = Get(0, 0);
+        for (unsigned j = 1; j < M * N; j++) {
+            if (Get(j) != first) return false;
+        }
+        return true;
+    }
+
+    Metrics GetMetrics(bool ignore_black = false) const {
+        Metrics metrics;
+        metrics.min = Color(UINT8_MAX, UINT8_MAX, UINT8_MAX);
+        metrics.max = Color(0, 0, 0);
+        metrics.has_black = false;
+        metrics.is_greyscale = true;
+        metrics.sums = {0, 0, 0};
+
+        unsigned total = 0;
+
+        for (unsigned i = 0; i < M * N; i++) {
+            Color val = Get(i);
+            bool is_black = val.IsBlack();
+
+            metrics.has_black |= is_black;
+
+            if (ignore_black && is_black) { continue; }
+
+            metrics.is_greyscale &= val.IsGrayscale();
+            for (unsigned c = 0; c < 3; c++) {
+                metrics.min[c] = std::min(metrics.min[c], val[c]);
+                metrics.max[c] = std::max(metrics.max[c], val[c]);
+                metrics.sums[c] += val[c];
+            }
+            total++;
+        }
+
+        if (total > 0) metrics.avg = (metrics.sums + Vector4Int(total / 2)) / (int)total;  // half-total added for better rounding
+        return metrics;
+    }
+
+   private:
+    std::array<Color, N * M> _pixels;
 };
 
 }  // namespace quicktex

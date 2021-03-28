@@ -24,15 +24,18 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include "../../Block.h"
 #include "../../Color.h"
 #include "../../util.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
 #pragma pack(push, 1)
-class BC1Block {
+class BC1Block : public Block<4, 4> {
    public:
-    using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
+    using UnpackedSelectors = std::array<std::array<uint8_t, Width>, Height>;
+
+    constexpr BC1Block() { static_assert(sizeof(BC1Block) == 8); }
 
     uint16_t GetLowColor() const { return static_cast<uint16_t>(_low_color[0] | (_low_color[1] << 8U)); }
     uint16_t GetHighColor() const { return static_cast<uint16_t>(_high_color[0] | (_high_color[1] << 8U)); }

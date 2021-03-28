@@ -19,12 +19,13 @@
 
 #pragma once
 
+#include "../../Block.h"
 #include "../bc4/BC4Block.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
 #pragma pack(push, 1)
-class BC5Block {
+class BC5Block : public Block<4, 4> {
    public:
     BC4Block chan0_block;
     BC4Block chan1_block;

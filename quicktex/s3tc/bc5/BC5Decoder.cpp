@@ -19,14 +19,15 @@
 
 #include "BC5Decoder.h"
 
-#include "../../BlockView.h"
+#include "../../Block.h"
 #include "../../ndebug.h"
 #include "BC5Block.h"
 
-namespace quicktex::s3tc  {
-
-void BC5Decoder::DecodeBlock(Color4x4 dest, BC5Block *const block) const noexcept(ndebug) {
-    _chan0_decoder->DecodeBlock(dest, &block->chan0_block);
-    _chan1_decoder->DecodeBlock(dest, &block->chan1_block);
+namespace quicktex::s3tc {
+ColorBlock<4, 4> BC5Decoder::DecodeBlock(const BC5Block &block) const {
+    auto output = ColorBlock<4, 4>();
+    _chan0_decoder->DecodeInto(output, block.chan0_block);
+    _chan1_decoder->DecodeInto(output, block.chan1_block);
+    return output;
 }
 }  // namespace quicktex::s3tc

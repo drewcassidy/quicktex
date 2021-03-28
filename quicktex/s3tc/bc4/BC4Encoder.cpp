@@ -22,26 +22,29 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <utility>
 
-#include "../../BlockView.h"
-#include "../../ndebug.h"
+#include "../../Block.h"
 #include "BC4Block.h"
 
-namespace quicktex::s3tc  {
-void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug) {
-    auto flattened = pixels.Flatten();
-    auto minmax = std::minmax_element(flattened.begin(), flattened.end());
+namespace quicktex::s3tc {
+BC4Block BC4Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
+    auto output = BC4Block();
 
-    uint8_t min = *minmax.first;
-    uint8_t max = *minmax.second;
+    uint8_t min = UINT8_MAX;
+    uint8_t max = 0;
 
-    dest->high_alpha = min;
-    dest->low_alpha = max;
+    for (int i = 0; i < 16; i++) {
+        auto value = pixels.Get(i)[_channel];
+        min = std::min(min, value);
+        max = std::max(max, value);
+    }
+
+    output.high_alpha = min;
+    output.low_alpha = max;
 
     if (max == min) {
-        dest->SetSelectorBits(0);
-        return;
+        output.SetSelectorBits(0);
+        return output;
     }
 
     std::array<uint8_t, 16> selectors = {};
@@ -58,16 +61,19 @@ void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcep
     for (unsigned i = 0; i < 7; i++) thresholds[i] = delta * (1 + (2 * (int)i)) - bias;
 
     // iterate over all values and calculate selectors
-    for (unsigned i = 0; i < 16; i++) {
-        int value = flattened[i] * 14;  // multiply by demonimator
+    for (int i = 0; i < 16; i++) {
+        int value = (int)pixels.Get(i)[_channel] * 14;  // multiply by demonimator
 
         // level = number of thresholds this value is greater than
         unsigned level = 0;
         for (unsigned c = 0; c < 7; c++) level += value >= thresholds[c];
 
-        selectors[i] = Levels[level];
+        selectors[(unsigned)i] = Levels[level];
     }
 
-    dest->PackSelectors(selectors);
+    output.PackSelectors(selectors);
+
+    return output;
 }
+
 }  // namespace quicktex::s3tc

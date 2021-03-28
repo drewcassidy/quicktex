@@ -17,17 +17,73 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "_bindings.h"
+
 #include <pybind11/pybind11.h>
 
-#include "BlockDecoder.h"
-#include "BlockEncoder.h"
+#include "Color.h"
+#include "Decoder.h"
+#include "Encoder.h"
+#include "Texture.h"
+#include "_bindings.h"
 
 namespace py = pybind11;
+
+namespace pybind11::detail {
+using namespace quicktex;
+/// Type caster for color class to allow it to be converted to and from a python tuple
+template <> struct type_caster<Color> {
+   public:
+    PYBIND11_TYPE_CASTER(Color, _("Color"));
+
+    bool load(handle src, bool) {
+        PyObject *source = src.ptr();
+
+        PyObject *tmp = PySequence_Tuple(source);
+
+        // if the object is not a tuple, return false
+        if (!tmp) { return false; }  // incorrect type
+
+        // check the size
+        Py_ssize_t size = PyTuple_Size(tmp);
+        if (size < 3 || size > 4) { return false; }  // incorrect size
+
+        value.a = 0xFF;
+        // now we get the contents
+        for (int i = 0; i < size; i++) {
+            PyObject *src_chan = PyTuple_GetItem(tmp, i);
+            PyObject *tmp_chan = PyNumber_Long(src_chan);
+
+            if (!tmp_chan) return false;  // incorrect channel type
+
+            auto chan = PyLong_AsLong(tmp_chan);
+            if (chan > 0xFF || chan < 0) return false;  // item out of range
+            value[static_cast<unsigned>(i)] = static_cast<uint8_t>(chan);
+            Py_DECREF(tmp_chan);
+        }
+        Py_DECREF(tmp);
+
+        return !PyErr_Occurred();
+    }
+
+    static handle cast(Color src, return_value_policy policy, handle parent) {
+        PyObject *val = PyTuple_New(4);
+
+        for (int i = 0; i < 4; i++) {
+            PyObject *chan = PyLong_FromLong(src[static_cast<unsigned>(i)]);
+            PyTuple_SetItem(val, i, chan);
+        }
+
+        return val;
+    }
+};
+}  // namespace pybind11::detail
+
 namespace quicktex::bindings {
 
 void InitS3TC(py::module_ &m);
 
-py::bytes EncodeImage(const BlockEncoder &self, py::bytes decoded, unsigned image_width, unsigned image_height) {
+/*py::bytes EncodeImage(const BlockEncoder &self, py::bytes decoded, unsigned image_width, unsigned image_height) {
     if (image_width % self.BlockWidth() != 0) throw std::invalid_argument("Width is not an even multiple of block_width");
     if (image_height % self.BlockHeight() != 0) throw std::invalid_argument("Height is not an even multiple of block_height");
     if (image_width == 0 || image_height == 0) throw std::invalid_argument("Image has zero size");
@@ -49,12 +105,12 @@ py::bytes EncodeImage(const BlockEncoder &self, py::bytes decoded, unsigned imag
 }
 
 py::bytes DecodeImage(const BlockDecoder &self, py::bytes encoded, unsigned image_width, unsigned image_height) {
-    if (image_width % self.BlockWidth() != 0) throw std::invalid_argument("Width is not an even multiple of block_width");
-    if (image_height % self.BlockHeight() != 0) throw std::invalid_argument("Height is not an even multiple of block_height");
+    if (image_width % self.WidthInBlocks() != 0) throw std::invalid_argument("Width is not an even multiple of block_width");
+    if (image_height % self.HeightInBlocks() != 0) throw std::invalid_argument("Height is not an even multiple of block_height");
     if (image_width == 0 || image_height == 0) throw std::invalid_argument("Image has zero size");
 
     size_t size = image_width * image_height;
-    size_t block_size = (size / (self.BlockHeight() * self.BlockWidth())) * self.BlockSize();
+    size_t block_size = (size / (self.HeightInBlocks() * self.WidthInBlocks())) * self.BlockSize();
     size_t color_size = size * sizeof(Color);
 
     std::string encoded_str = (std::string)encoded;  // encoded data is copied here, unfortunately
@@ -67,28 +123,25 @@ py::bytes DecodeImage(const BlockDecoder &self, py::bytes encoded, unsigned imag
     auto bytes = py::bytes(decoded_str);  // decoded data is copied here, unfortunately
 
     return bytes;
-}
+}*/
 
 PYBIND11_MODULE(_quicktex, m) {
     m.doc() = "More Stuff";
 
     py::options options;
 
-    // BlockDecoder
-    py::class_<BlockDecoder> block_decoder(m, "BlockDecoder");
+    py::class_<Texture> texture(m, "Texture");
 
-    block_decoder.def("decode_image", &DecodeImage);
-    block_decoder.def_property_readonly("block_size", &BlockDecoder::BlockSize);
-    block_decoder.def_property_readonly("block_width", &BlockDecoder::BlockWidth);
-    block_decoder.def_property_readonly("block_height", &BlockDecoder::BlockHeight);
+    texture.def_property_readonly("size", &Texture::Size);
+    texture.def_property_readonly("dimensions", &Texture::Dimensions);
+    texture.def_property_readonly("width", &Texture::Width);
+    texture.def_property_readonly("height", &Texture::Height);
 
-    // BlockEncoder
-    py::class_<BlockEncoder> block_encoder(m, "BlockEncoder");
+    py::class_<RawTexture> raw_texture(m, "RawTexture", texture);
 
-    block_encoder.def("encode_image", &EncodeImage);
-    block_encoder.def_property_readonly("block_size", &BlockEncoder::BlockSize);
-    block_encoder.def_property_readonly("block_width", &BlockEncoder::BlockWidth);
-    block_encoder.def_property_readonly("block_height", &BlockEncoder::BlockHeight);
+    raw_texture.def(py::init<int, int>(), "width"_a, "height"_a);
+    raw_texture.def("get_pixel", &RawTexture::GetPixel);
+    raw_texture.def("set_pixel", &RawTexture::SetPixel);
 
     InitS3TC(m);
 }

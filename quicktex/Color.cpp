@@ -26,10 +26,6 @@
 
 namespace quicktex {
 
-constexpr Color::Color() { SetRGBA(0, 0, 0, 0xFF); }
-
-constexpr Color::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { SetRGBA(r, g, b, a); }
-
 Color::Color(Vector4Int v) { SetRGBA((uint8_t)v[0], (uint8_t)v[1], (uint8_t)v[2], (uint8_t)v[3]); }
 
 uint16_t Color::Pack565Unscaled(uint8_t r, uint8_t g, uint8_t b) {

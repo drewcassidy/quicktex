@@ -27,9 +27,10 @@
 #include <tuple>
 #include <type_traits>
 
-#include "../../BlockEncoder.h"
-#include "../../BlockView.h"
+#include "../../Block.h"
 #include "../../Color.h"
+#include "../../Encoder.h"
+#include "../../Texture.h"
 #include "../interpolator/Interpolator.h"
 #include "BC1Block.h"
 #include "SingleColorTable.h"
@@ -40,10 +41,11 @@ class Vector4;
 
 namespace quicktex::s3tc {
 
-class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
+class BC1Encoder final : public BlockEncoder<BlockTexture<BC1Block>> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
     using OrderingPair = std::tuple<unsigned, unsigned>;
+    using CBlock = ColorBlock<4, 4>;
 
     inline static constexpr unsigned min_power_iterations = 4;
     inline static constexpr unsigned max_power_iterations = 10;
@@ -130,13 +132,13 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
     void SetPowerIterations(unsigned power_iters);
 
     // Public Methods
-    void EncodeBlock(Color4x4 pixels, BC1Block *dest) const override;
+    BC1Block EncodeBlock(const CBlock &pixels) const override;
 
     virtual size_t MTThreshold() const override { return 16; }
 
    private:
     using Hash = uint16_t;
-    using BlockMetrics = Color4x4::BlockMetrics;
+    using BlockMetrics = CBlock::Metrics;
 
     // Unpacked BC1 block with metadata
     struct EncodeResults {
@@ -168,23 +170,25 @@ class BC1Encoder final : public BlockEncoderTemplate<BC1Block, 4, 4> {
     unsigned _orderings4;
     unsigned _orderings3;
 
-    void WriteBlockSolid(Color color, BC1Block *dest) const;
-    void WriteBlock(EncodeResults &block, BC1Block *dest) const;
+    BC1Block WriteBlockSolid(Color color) const;
+    BC1Block WriteBlock(EncodeResults &result) const;
 
-    void FindEndpoints(Color4x4 pixels, EncodeResults &block, const BlockMetrics &metrics, EndpointMode endpoint_mode, bool ignore_black = false) const;
-    void FindEndpointsSingleColor(EncodeResults &block, Color color, bool is_3color = false) const;
-    void FindEndpointsSingleColor(EncodeResults &block, Color4x4 &pixels, Color color, bool is_3color) const;
+    void FindEndpoints(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, EndpointMode endpoint_mode, bool ignore_black = false) const;
+    void FindEndpointsSingleColor(EncodeResults &result, Color color, bool is_3color = false) const;
+    void FindEndpointsSingleColor(EncodeResults &result, const CBlock &pixels, Color color, bool is_3color) const;
 
-    template <ColorMode M> void FindSelectors(Color4x4 &pixels, EncodeResults &block, ErrorMode error_mode) const;
+    template <ColorMode M> void FindSelectors(EncodeResults &result, const CBlock &pixels, ErrorMode error_mode) const;
 
-    template <ColorMode M> bool RefineEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics) const;
+    template <ColorMode M> bool RefineEndpointsLS(EncodeResults &result, const CBlock &pixels, BlockMetrics metrics) const;
 
-    template <ColorMode M> void RefineEndpointsLS(std::array<Vector4, 17> &sums, EncodeResults &block, Vector4 &matrix, Hash hash) const;
+    template <ColorMode M> void RefineEndpointsLS(EncodeResults &result, std::array<Vector4, 17> &sums, Vector4 &matrix, Hash hash) const;
 
-    template <ColorMode M> void RefineBlockLS(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned passes) const;
+    template <ColorMode M>
+    void RefineBlockLS(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, ErrorMode error_mode, unsigned passes) const;
 
-    template <ColorMode M> void RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const;
+    template <ColorMode M>
+    void RefineBlockCF(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const;
 
-    void EndpointSearch(Color4x4 &pixels, EncodeResults &block) const;
+    void EndpointSearch(EncodeResults &result, const CBlock &pixels) const;
 };
 }  // namespace quicktex::s3tc

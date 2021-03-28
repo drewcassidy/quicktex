@@ -23,34 +23,32 @@
 #include <cassert>
 #include <cstdint>
 
-#include "../../BlockView.h"
 #include "../../Color.h"
 #include "../../ndebug.h"
 #include "BC1Block.h"
 
-namespace quicktex::s3tc  {
-void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) {
-    DecodeBlock(dest, block, true);
-}
+namespace quicktex::s3tc {
 
-void BC1Decoder::DecodeBlock(Color4x4 dest, BC1Block *const block, bool allow_3color) const noexcept(ndebug) {
-    const auto l = block->GetLowColor();
-    const auto h = block->GetHighColor();
-    const auto selectors = block->UnpackSelectors();
-    const auto colors = _interpolator->InterpolateBC1(l, h, allow_3color);
+ColorBlock<4, 4> BC1Decoder::DecodeBlock(const BC1Block &block) const { return DecodeBlock(block, false); }
+
+ColorBlock<4, 4> BC1Decoder::DecodeBlock(const BC1Block &block, bool use_3color) const {
+    auto output = ColorBlock<4, 4>();
+    const auto l = block.GetLowColor();
+    const auto h = block.GetHighColor();
+    const auto selectors = block.UnpackSelectors();
+    const auto colors = _interpolator->InterpolateBC1(l, h, use_3color);
 
     for (unsigned y = 0; y < 4; y++) {
         for (unsigned x = 0; x < 4; x++) {
             const auto selector = selectors[y][x];
-            const auto color = colors[selector];
+            auto color = colors[selector];
             assert(selector < 4);
             assert((color.a == 0 && selector == 3 && l <= h) || color.a == UINT8_MAX);
-            if (write_alpha) {
-                dest.Get(x, y).SetRGBA(color);
-            } else {
-                dest.Get(x, y).SetRGB(color);
-            }
+            if (!write_alpha) { color.a = output.Get(x, y).a; }
+            output.Set(x, y, color);
         }
     }
+
+    return output;
 }
 }  // namespace quicktex::s3tc

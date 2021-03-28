@@ -28,10 +28,10 @@
 #include "../../util.h"
 #include "../bc1/BC1Block.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
 #pragma pack(push, 1)
-class BC4Block {
+class BC4Block : public Block<4, 4> {
    public:
     using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
 
