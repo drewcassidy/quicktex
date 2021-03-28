@@ -20,11 +20,10 @@
 #pragma once
 
 #include <memory>
-#include <type_traits>
 
+#include "../../Block.h"
 #include "../../Decoder.h"
 #include "../../Texture.h"
-#include "../../ndebug.h"
 #include "../interpolator/Interpolator.h"
 #include "BC1Block.h"
 

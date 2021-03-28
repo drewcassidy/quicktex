@@ -25,9 +25,8 @@
 #include <type_traits>
 
 #include "../../Block.h"
-#include "../../Texture.h"
 #include "../../Decoder.h"
-#include "../../ndebug.h"
+#include "../../Texture.h"
 #include "../bc4/BC4Decoder.h"
 #include "BC5Block.h"
 
@@ -42,7 +41,7 @@ class BC5Decoder : public BlockDecoder<BlockTexture<BC5Block>> {
     BC5Decoder(uint8_t chan0 = 0, uint8_t chan1 = 1) : BC5Decoder(std::make_shared<BC4Decoder>(chan0), std::make_shared<BC4Decoder>(chan1)) {}
     BC5Decoder(BC4DecoderPtr chan0_decoder, BC4DecoderPtr chan1_decoder) : _chan0_decoder(chan0_decoder), _chan1_decoder(chan1_decoder) {}
 
-    ColorBlock<4,4> DecodeBlock(const BC5Block &block) const override;
+    ColorBlock<4, 4> DecodeBlock(const BC5Block &block) const override;
 
     ChannelPair GetChannels() const { return ChannelPair(_chan0_decoder->GetChannel(), _chan1_decoder->GetChannel()); }
 

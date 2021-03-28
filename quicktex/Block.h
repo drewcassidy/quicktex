@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <array>
 #include <climits>
+#include <cstring>
 #include <stdexcept>
 
 #include "Color.h"

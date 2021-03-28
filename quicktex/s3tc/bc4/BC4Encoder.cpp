@@ -23,6 +23,7 @@
 #include <array>
 #include <cstdint>
 
+#include "../../Color.h"
 #include "../../Block.h"
 #include "BC4Block.h"
 

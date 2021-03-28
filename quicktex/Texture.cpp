@@ -18,8 +18,8 @@
  */
 #include "Texture.h"
 
-#include <cstdint>
 #include <stdexcept>
+#include <type_traits>
 
 #include "Color.h"
 

@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -31,11 +32,11 @@
 #include "../../Block.h"
 #include "../../Color.h"
 #include "../../Matrix4x4.h"
+#include "../../Texture.h"
 #include "../../Vector4.h"
 #include "../../Vector4Int.h"
 #include "../../bitwiseEnums.h"
 #include "../../util.h"
-#include "../interpolator/Interpolator.h"
 #include "Histogram.h"
 #include "OrderTable.h"
 #include "SingleColorTable.h"

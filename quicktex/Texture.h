@@ -19,13 +19,14 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <cstring>
+#include <stdexcept>
 #include <tuple>
-#include <vector>
 
 #include "Block.h"
 #include "Color.h"
-#include "ndebug.h"
 
 namespace quicktex {
 

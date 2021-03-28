@@ -26,12 +26,11 @@
 
 #include "../../Block.h"
 #include "../../Encoder.h"
-#include "../../ndebug.h"
+#include "../../Texture.h"
 #include "../bc4/BC4Encoder.h"
 #include "BC5Block.h"
 
 namespace quicktex::s3tc {
-
 class BC5Encoder : public BlockEncoder<BlockTexture<BC5Block>> {
    public:
     using ChannelPair = std::tuple<uint8_t, uint8_t>;

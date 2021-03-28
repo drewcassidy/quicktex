@@ -19,6 +19,9 @@
 
 #include "BC5Encoder.h"
 
+#include "../../Block.h"
+#include "../bc4/BC4Block.h"
+
 namespace quicktex::s3tc {
 BC5Block BC5Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
     auto output = BC5Block();

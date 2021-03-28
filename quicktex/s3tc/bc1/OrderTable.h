@@ -27,11 +27,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
+#include <type_traits>
 
 #include "../../Vector4.h"
 #include "Histogram.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 template <size_t N> class OrderTable {
    public:
     static constexpr unsigned HashCount = 1 << ((N - 1) * 4);     // 16**(N-1)

@@ -23,6 +23,7 @@
 
 #include "../../Block.h"
 #include "../../Encoder.h"
+#include "../../Texture.h"
 #include "../bc1/BC1Encoder.h"
 #include "../bc4/BC4Encoder.h"
 #include "../interpolator/Interpolator.h"

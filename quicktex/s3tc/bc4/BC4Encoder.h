@@ -19,13 +19,12 @@
 
 #pragma once
 
-#include <cassert>
 #include <cstdint>
 #include <stdexcept>
 
 #include "../../Block.h"
 #include "../../Encoder.h"
-#include "../../ndebug.h"
+#include "../../Texture.h"
 #include "BC4Block.h"
 
 namespace quicktex::s3tc {
@@ -37,7 +36,7 @@ class BC4Encoder : public BlockEncoder<BlockTexture<BC4Block>> {
         _channel = channel;
     }
 
-    BC4Block EncodeBlock(const ColorBlock<4,4> &pixels) const override;
+    BC4Block EncodeBlock(const ColorBlock<4, 4> &pixels) const override;
 
     uint8_t GetChannel() const { return _channel; }
 

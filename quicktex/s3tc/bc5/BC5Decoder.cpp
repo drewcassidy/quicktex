@@ -20,7 +20,6 @@
 #include "BC5Decoder.h"
 
 #include "../../Block.h"
-#include "../../ndebug.h"
 #include "BC5Block.h"
 
 namespace quicktex::s3tc {

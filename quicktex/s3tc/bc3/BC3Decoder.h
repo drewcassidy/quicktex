@@ -23,7 +23,7 @@
 
 #include "../../Block.h"
 #include "../../Decoder.h"
-#include "../../ndebug.h"
+#include "../../Texture.h"
 #include "../bc1/BC1Decoder.h"
 #include "../bc4/BC4Decoder.h"
 #include "../interpolator/Interpolator.h"
