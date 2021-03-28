@@ -341,7 +341,7 @@ BC1Block BC1Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
     // refine endpoints by searching for nearby colors
     if (result.error > 0 && _search_rounds > 0) { EndpointSearch(result, pixels); }
 
-    WriteBlock(result);
+    return WriteBlock(result);
 }
 
 // Private methods
@@ -451,6 +451,7 @@ BC1Block BC1Encoder::WriteBlock(EncodeResults &result) const {
     block.SetLowColor(color0);
     block.SetHighColor(color1);
     block.PackSelectors(selectors);
+    return block;
 }
 
 void BC1Encoder::FindEndpointsSingleColor(EncodeResults &result, Color color, bool is_3color) const {

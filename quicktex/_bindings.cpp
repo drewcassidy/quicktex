@@ -66,7 +66,7 @@ template <> struct type_caster<Color> {
         return !PyErr_Occurred();
     }
 
-    static handle cast(Color src, return_value_policy policy, handle parent) {
+    static handle cast(Color src, return_value_policy, handle) {
         PyObject *val = PyTuple_New(4);
 
         for (int i = 0; i < 4; i++) {
