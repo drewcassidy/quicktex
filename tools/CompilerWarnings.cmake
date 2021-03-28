@@ -55,11 +55,7 @@ function(set_project_warnings project_name)
             -Wpedantic   # warn if non-standard C++ is used
             #-Wconversion # warn on type conversions that may lose data
             #-Wsign-conversion  # warn on sign conversions
-            -Wstring-conversion
-            -Wshorten-64-to-32
             -Wenum-conversion
-            -Wbitfield-enum-conversion
-            -Wnull-conversion
             -Wnull-dereference # warn if a null dereference is detected
             -Wdouble-promotion # warn if float is implicit promoted to double
             -Wformat=2 # warn on security issues around functions that format output
