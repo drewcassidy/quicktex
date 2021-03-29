@@ -31,7 +31,7 @@ template <class T> class Decoder {
     using Texture = T;
 
     virtual ~Decoder() = default;
-    virtual RawTexture Decode(const T &encoded) const;
+    virtual RawTexture Decode(const T &encoded) const = 0;
 };
 
 template <class T> class BlockDecoder : public Decoder<T> {
