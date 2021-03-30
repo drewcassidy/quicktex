@@ -7,21 +7,23 @@ from PIL import Image
 
 
 class TestRawTexture(unittest.TestCase):
+    boilerplate = Image.open(images.image_path + '/Boilerplate.png')
+    bp_bytes = boilerplate.tobytes('raw', 'RGBX')
+    width = boilerplate.width
+    height = boilerplate.height
+
     def setUp(self):
-        self.width = 1024
-        self.height = 1024
         self.texture = quicktex.RawTexture(self.width, self.height)
-        self.boilerplate = Image.open(images.image_path + '/Boilerplate.png')
 
     def test_size(self):
-        """test byte size and image dimensions"""
+        """Test byte size and image dimensions"""
         self.assertEqual(self.texture.size, self.width * self.height * 4, "incorrect texture byte size")
         self.assertEqual(self.texture.width, self.width, "incorrect texture width")
         self.assertEqual(self.texture.height, self.height, "incorrect texture height")
         self.assertEqual(self.texture.dimensions, (self.width, self.height), "incorrect texture dimension tuple")
 
     def test_pixels(self):
-        """Test get_ and set_pixel methods for RawTexture"""
+        """Test getting and setting pixel values"""
         color1 = (69, 13, 12, 0)  # totally random color
         color2 = (19, 142, 93, 44)
 
@@ -33,22 +35,26 @@ class TestRawTexture(unittest.TestCase):
         self.assertEqual(self.texture[-1, -1], color2)
         self.assertEqual(tuple(data[0:4]), color1)
         self.assertEqual(tuple(data[-4:]), color2)
+        with self.assertRaises(IndexError):
+            thing = self.texture[self.width, self.height]
+        with self.assertRaises(IndexError):
+            thing = self.texture[-1 - self.width, -1 - self.height]
 
     def test_buffer(self):
         """Test the Buffer protocol implementation for RawTexture"""
         with tempfile.TemporaryFile('r+b') as fp:
-            fp.write(self.boilerplate.tobytes('raw', 'RGBX'))
+            fp.write(self.bp_bytes)
             fp.seek(0)
             bytes_read = fp.readinto(self.texture)
 
-            self.assertEqual(bytes_read, self.texture.size, 'buffer over/underrun')
-        self.assertEqual(self.boilerplate.tobytes('raw', 'RGBX'), self.texture.tobytes(), 'Incorrect bytes after writing to buffer')
-        self.assertEqual(bytes(self.texture), self.texture.tobytes(), "Incorrect bytes reading from buffer")
+        self.assertEqual(bytes_read, self.texture.size, 'buffer over/underrun')
+        self.assertEqual(self.bp_bytes, self.texture.tobytes(), 'Incorrect bytes after writing to buffer')
+        self.assertEqual(self.bp_bytes, bytes(self.texture), "Incorrect bytes after reading from buffer")
 
-    def test_factory(self):
+    def test_frombytes(self):
         """Test the frombytes factory function"""
-        bytetex = quicktex.RawTexture.frombytes(self.boilerplate.tobytes('raw', 'RGBX'), *self.boilerplate.size)
-        self.assertEqual(self.boilerplate.tobytes('raw', 'RGBX'), bytetex.tobytes(), 'Incorrect bytes after writing to buffer')
+        bytetex = quicktex.RawTexture.frombytes(self.bp_bytes, *self.boilerplate.size)
+        self.assertEqual(self.bp_bytes, bytetex.tobytes(), 'Incorrect bytes after writing to buffer')
 
 
 if __name__ == '__main__':

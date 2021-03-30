@@ -25,6 +25,7 @@
 #include <cstring>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 
 #include "Block.h"
 #include "Color.h"
@@ -60,16 +61,41 @@ template <typename T> T BufferToTexture(py::buffer buf, int width, int height) {
     return output;
 }
 
-inline int PyIndex(int val, int size) {
-    if (val < -size) throw std::range_error("index out of range");
-    if (val >= size) throw std::range_error("index out of range");
+inline int PyIndex(int val, int size, std::string name = "index") {
+    if (val < -size || val >= size) throw std::out_of_range(name + " value out of range");
     if (val < 0) return size + val;
     return val;
 }
 
-inline void PyIndex2D(std::tuple<int, int> pnt, std::tuple<int, int> size, int& x, int& y) {
-    x = PyIndex(std::get<0>(pnt), std::get<0>(size));
-    y = PyIndex(std::get<1>(pnt), std::get<1>(size));
+template <typename T, typename Getter, typename Setter, typename Extent> void DefSubscript(py::class_<T> t, Getter&& get, Setter&& set, Extent&& ext) {
+    using V = typename std::invoke_result<Getter, T*, int>::type;
+    t.def(
+        "__getitem__", [get, ext](T& self, int index) { return (self.*get)(PyIndex(index, (self.*ext)())); }, "key"_a);
+    t.def(
+        "__setitem__", [set, ext](T& self, int index, V val) { (self.*set)(PyIndex(index, (self.*ext)()), val); }, "key"_a, "value"_a);
+}
+
+template <typename T, typename Getter, typename Setter, typename Extent> void DefSubscript2D(py::class_<T> t, Getter&& get, Setter&& set, Extent&& ext) {
+    using V = typename std::invoke_result<Getter, T*, int, int>::type;
+    using Coords = std::tuple<int, int>;
+    t.def(
+        "__getitem__",
+        [get, ext](T& self, Coords pnt) {
+            Coords s = (self.*ext)();
+            int x = PyIndex(std::get<0>(pnt), std::get<0>(s), "x");
+            int y = PyIndex(std::get<1>(pnt), std::get<1>(s), "y");
+            return (self.*get)(x, y);
+        },
+        "key"_a);
+    t.def(
+        "__setitem__",
+        [set, ext](T& self, Coords pnt, V val) {
+            Coords s = (self.*ext)();
+            int x = PyIndex(std::get<0>(pnt), std::get<0>(s), "x");
+            int y = PyIndex(std::get<1>(pnt), std::get<1>(s), "y");
+            (self.*set)(x, y, val);
+        },
+        "key"_a, "value"_a);
 }
 
 template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& m, const char* name) {
@@ -87,5 +113,8 @@ template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& 
 
     block_texture.def_property_readonly("blocks_x", &BTex::BlocksX);
     block_texture.def_property_readonly("blocks_y", &BTex::BlocksY);
+    block_texture.def_property_readonly("blocks_xy", &BTex::BlocksXY);
+
+    DefSubscript2D(block_texture, &BTex::GetPixel, &BTex::SetPixel, &BTex::BlocksXY);
 }
 }  // namespace quicktex::bindings

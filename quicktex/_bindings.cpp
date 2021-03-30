@@ -88,6 +88,8 @@ PYBIND11_MODULE(_quicktex, m) {
 
     py::options options;
 
+    // Texture
+
     py::class_<Texture> texture(m, "Texture", py::buffer_protocol());
 
     texture.def_property_readonly("size", &Texture::Size);
@@ -98,19 +100,13 @@ PYBIND11_MODULE(_quicktex, m) {
     texture.def_buffer([](Texture &t) { return py::buffer_info(t.Data(), t.Size()); });
     texture.def("tobytes", [](const Texture &t) { return py::bytes(reinterpret_cast<const char *>(t.Data()), t.Size()); });
 
+    //RawTexture
+
     py::class_<RawTexture> raw_texture(m, "RawTexture", texture);
 
     raw_texture.def(py::init<int, int>(), "width"_a, "height"_a);
-    raw_texture.def("__getitem__", [](RawTexture &t, std::tuple<int, int> pnt) {
-        int x, y;
-        PyIndex2D(pnt, t.Dimensions(), x, y);
-        return t.GetPixel(x, y);
-    });
-    raw_texture.def("__setitem__", [](RawTexture &t, std::tuple<int, int> pnt, Color val) {
-        int x, y;
-        PyIndex2D(pnt, t.Dimensions(), x, y);
-        t.SetPixel(x, y, val);
-    });
+
+    DefSubscript2D(raw_texture, &RawTexture::GetPixel, &RawTexture::SetPixel, &RawTexture::Dimensions);
 
     raw_texture.def_static("frombytes", &BufferToTexture<RawTexture>, "data"_a, "width"_a, "height"_a);
 

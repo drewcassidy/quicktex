@@ -203,16 +203,17 @@ template <typename B> class BlockTexture : public Texture {
 
     constexpr int BlocksX() const { return _width / B::Width; }
     constexpr int BlocksY() const { return _height / B::Height; }
+    constexpr std::tuple<int, int> BlocksXY() const { return std::tuple<int, int>(BlocksX(), BlocksY()); }
 
     virtual B GetBlock(int x, int y) const {
-        if (x < 0 || x >= BlocksX()) throw std::invalid_argument("x value out of range.");
-        if (y < 0 || y >= BlocksY()) throw std::invalid_argument("y value out of range.");
+        if (x < 0 || x >= BlocksX()) throw std::range_error("x value out of range.");
+        if (y < 0 || y >= BlocksY()) throw std::range_error("y value out of range.");
         return _blocks[x + (y * _width)];
     }
 
     virtual void SetBlock(int x, int y, const B &val) {
-        if (x < 0 || x >= BlocksX()) throw std::invalid_argument("x value out of range.");
-        if (y < 0 || y >= BlocksY()) throw std::invalid_argument("y value out of range.");
+        if (x < 0 || x >= BlocksX()) throw std::range_error("x value out of range.");
+        if (y < 0 || y >= BlocksY()) throw std::range_error("y value out of range.");
         _blocks[x + (y * _width)] = val;
     }
 
