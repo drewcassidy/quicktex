@@ -20,10 +20,13 @@
 #pragma once
 
 #include <array>
+#include <climits>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <stdexcept>
 #include <tuple>
+#include <type_traits>
 
 #include "Block.h"
 #include "Color.h"
@@ -44,12 +47,14 @@ class Texture {
      */
     virtual size_t Size() const noexcept = 0;
 
+    virtual const uint8_t *Data() const noexcept = 0;
+    virtual uint8_t *Data() noexcept = 0;
+
    protected:
     Texture(int width, int height) : _width(width), _height(height) {
         if (width <= 0) throw std::invalid_argument("Texture width must be greater than 0");
         if (height <= 0) throw std::invalid_argument("Texture height must be greater than 0");
     }
-    virtual uint8_t *DataMutable() = 0;
 
     int _width;
     int _height;
@@ -142,8 +147,10 @@ class RawTexture : public Texture {
         }
     };
 
+    virtual const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_pixels); }
+    virtual uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_pixels); }
+
    protected:
-    virtual uint8_t *DataMutable() override { return reinterpret_cast<uint8_t *>(_pixels); }
 
     Color *_pixels;
 };
@@ -211,8 +218,10 @@ template <typename B> class BlockTexture : public Texture {
 
     virtual size_t Size() const noexcept override { return (size_t)(BlocksX() * BlocksY()) * sizeof(B); }
 
+    virtual const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_blocks); }
+    virtual uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_blocks); }
+
    protected:
-    virtual uint8_t *DataMutable() override { return reinterpret_cast<uint8_t *>(_blocks); }
 
     B *_blocks;
 };

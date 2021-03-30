@@ -21,6 +21,8 @@
 
 #include <pybind11/pybind11.h>
 
+#include <cstdint>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 
@@ -34,8 +36,29 @@ template <> struct type_caster<quicktex::Color>;
 
 namespace py = pybind11;
 namespace quicktex::bindings {
-
 using namespace pybind11::literals;
+
+template <typename T> T BufferToTexture(py::buffer buf, int width, int height) {
+    static_assert(std::is_base_of<Texture, T>::value);
+    static_assert(std::is_constructible<T, int, int>::value);
+
+    auto info = buf.request(false);
+    auto output = T(width, height);//std::make_shared<T>(width, height);
+    auto dst_size = output.Size();
+
+    if (info.format != py::format_descriptor<uint8_t>::format()) throw std::runtime_error("Incompatible format in python buffer: expected a byte array.");
+    if (info.size < (ssize_t)dst_size) std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
+    if (info.ndim == 1) {
+        if (info.shape[0] < (ssize_t)dst_size) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer has incorrect length.");
+        if (info.strides[0] != 1) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer is not contiguous.");
+    } else {
+        throw std::runtime_error("Incompatible format in python buffer: Incorrect number of dimensions.");
+    }
+
+    std::memcpy(output.Data(), info.ptr, dst_size);
+
+    return output;
+}
 
 template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& m, const char* name) {
     using BTex = BlockTexture<B>;
@@ -47,6 +70,8 @@ template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& 
     block_texture.def(py::init<int, int>(), "width"_a, "height"_a);
     block_texture.def("get_block", &BTex::GetBlock, "x"_a, "y"_a);
     block_texture.def("set_block", &BTex::SetBlock, "x"_a, "y"_a, "block"_a);
+
+    block_texture.def_static("from_bytes", &BufferToTexture<BTex>, "data"_a, "width"_a, "height"_a);
 
     block_texture.def_property_readonly("blocks_x", &BTex::BlocksX);
     block_texture.def_property_readonly("blocks_y", &BTex::BlocksY);
