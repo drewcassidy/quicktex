@@ -49,7 +49,7 @@ add_executable(test_quicktex
 
 target_link_libraries(test_quicktex PRIVATE pybind11::embed)
 
-target_compile_definitions(test_quicktex PRIVATE -DCUSTOM_SYS_PATH="${CMAKE_HOME_DIRECTORY}/env/lib/python3.8/site-packages")
+target_compile_definitions(test_quicktex PRIVATE -DCUSTOM_SYS_PATH="${CMAKE_HOME_DIRECTORY}/env/lib/python3.9/site-packages")
 
 # enable openMP if available
 if (OpenMP_CXX_FOUND)
