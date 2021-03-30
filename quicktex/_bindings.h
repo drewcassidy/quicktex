@@ -43,7 +43,7 @@ template <typename T> T BufferToTexture(py::buffer buf, int width, int height) {
     static_assert(std::is_constructible<T, int, int>::value);
 
     auto info = buf.request(false);
-    auto output = T(width, height);//std::make_shared<T>(width, height);
+    auto output = T(width, height);  // std::make_shared<T>(width, height);
     auto dst_size = output.Size();
 
     if (info.format != py::format_descriptor<uint8_t>::format()) throw std::runtime_error("Incompatible format in python buffer: expected a byte array.");
@@ -58,6 +58,18 @@ template <typename T> T BufferToTexture(py::buffer buf, int width, int height) {
     std::memcpy(output.Data(), info.ptr, dst_size);
 
     return output;
+}
+
+inline int PyIndex(int val, int size) {
+    if (val < -size) throw std::range_error("index out of range");
+    if (val >= size) throw std::range_error("index out of range");
+    if (val < 0) return size + val;
+    return val;
+}
+
+inline void PyIndex2D(std::tuple<int, int> pnt, std::tuple<int, int> size, int& x, int& y) {
+    x = PyIndex(std::get<0>(pnt), std::get<0>(size));
+    y = PyIndex(std::get<1>(pnt), std::get<1>(size));
 }
 
 template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& m, const char* name) {

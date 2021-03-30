@@ -25,12 +25,12 @@ class TestRawTexture(unittest.TestCase):
         color1 = (69, 13, 12, 0)  # totally random color
         color2 = (19, 142, 93, 44)
 
-        self.texture.set_pixel(0, 0, color1)
-        self.texture.set_pixel(self.width - 1, self.height - 1, color2)
+        self.texture[0, 0] = color1
+        self.texture[-1, -1] = color2
         data = self.texture.tobytes()
 
-        self.assertEqual(self.texture.get_pixel(0, 0), color1)
-        self.assertEqual(self.texture.get_pixel(self.width - 1, self.height - 1), color2)
+        self.assertEqual(self.texture[0, 0], color1)
+        self.assertEqual(self.texture[-1, -1], color2)
         self.assertEqual(tuple(data[0:4]), color1)
         self.assertEqual(tuple(data[-4:]), color2)
 

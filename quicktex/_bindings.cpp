@@ -101,12 +101,20 @@ PYBIND11_MODULE(_quicktex, m) {
     py::class_<RawTexture> raw_texture(m, "RawTexture", texture);
 
     raw_texture.def(py::init<int, int>(), "width"_a, "height"_a);
-    raw_texture.def("get_pixel", &RawTexture::GetPixel);
-    raw_texture.def("set_pixel", &RawTexture::SetPixel);
+    raw_texture.def("__getitem__", [](RawTexture &t, std::tuple<int, int> pnt) {
+        int x, y;
+        PyIndex2D(pnt, t.Dimensions(), x, y);
+        return t.GetPixel(x, y);
+    });
+    raw_texture.def("__setitem__", [](RawTexture &t, std::tuple<int, int> pnt, Color val) {
+        int x, y;
+        PyIndex2D(pnt, t.Dimensions(), x, y);
+        t.SetPixel(x, y, val);
+    });
 
     raw_texture.def_static("frombytes", &BufferToTexture<RawTexture>, "data"_a, "width"_a, "height"_a);
 
-//    InitS3TC(m);
+    //    InitS3TC(m);
 }
 
 }  // namespace quicktex::bindings
