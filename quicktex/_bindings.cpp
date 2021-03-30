@@ -96,7 +96,7 @@ PYBIND11_MODULE(_quicktex, m) {
     texture.def_property_readonly("height", &Texture::Height);
 
     texture.def_buffer([](Texture &t) { return py::buffer_info(t.Data(), t.Size()); });
-    texture.def("to_bytes", [](const Texture &t) { return py::bytes(reinterpret_cast<const char *>(t.Data()), t.Size()); });
+    texture.def("tobytes", [](const Texture &t) { return py::bytes(reinterpret_cast<const char *>(t.Data()), t.Size()); });
 
     py::class_<RawTexture> raw_texture(m, "RawTexture", texture);
 
@@ -104,7 +104,7 @@ PYBIND11_MODULE(_quicktex, m) {
     raw_texture.def("get_pixel", &RawTexture::GetPixel);
     raw_texture.def("set_pixel", &RawTexture::SetPixel);
 
-    raw_texture.def_static("from_bytes", &BufferToTexture<RawTexture>, "data"_a, "width"_a, "height"_a);
+    raw_texture.def_static("frombytes", &BufferToTexture<RawTexture>, "data"_a, "width"_a, "height"_a);
 
 //    InitS3TC(m);
 }
