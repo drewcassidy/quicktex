@@ -88,14 +88,14 @@ PYBIND11_MODULE(_quicktex, m) {
 
     py::options options;
 
-    py::class_<Texture> texture(m, "Texture");
+    py::class_<Texture> texture(m, "Texture", py::buffer_protocol());
 
     texture.def_property_readonly("size", &Texture::Size);
     texture.def_property_readonly("dimensions", &Texture::Dimensions);
     texture.def_property_readonly("width", &Texture::Width);
     texture.def_property_readonly("height", &Texture::Height);
 
-//    texture.def_buffer([](Texture &t) { return py::buffer_info(t.Data(), t.Size()); });
+    texture.def_buffer([](Texture &t) { return py::buffer_info(t.Data(), t.Size()); });
     texture.def("to_bytes", [](const Texture &t) { return py::bytes(reinterpret_cast<const char *>(t.Data()), t.Size()); });
 
     py::class_<RawTexture> raw_texture(m, "RawTexture", texture);
