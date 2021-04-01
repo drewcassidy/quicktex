@@ -22,17 +22,17 @@
 #include <array>    // for array
 #include <cassert>  // for assert
 
-#include "../../Block.h"
 #include "../../Color.h"
+#include "../../ColorBlock.h"
 #include "BC4Block.h"
 
 namespace quicktex::s3tc {
 void BC4Decoder::DecodeInto(ColorBlock<4, 4> &dest, const BC4Block &block) const {
-    auto l = block.GetLowAlpha();
-    auto h = block.GetHighAlpha();
+    auto l = block.alpha0;
+    auto h = block.alpha1;
 
     auto values = BC4Block::GetValues(l, h);
-    auto selectors = block.UnpackSelectors();
+    auto selectors = block.GetSelectors();
 
     for (unsigned y = 0; y < 4; y++) {
         for (unsigned x = 0; x < 4; x++) {

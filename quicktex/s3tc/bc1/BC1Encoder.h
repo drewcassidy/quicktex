@@ -26,8 +26,8 @@
 #include <memory>
 #include <tuple>
 
-#include "../../Block.h"
 #include "../../Color.h"
+#include "../../ColorBlock.h"
 #include "../../Encoder.h"
 #include "../../Texture.h"
 #include "../interpolator/Interpolator.h"

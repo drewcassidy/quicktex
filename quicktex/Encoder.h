@@ -21,7 +21,7 @@
 
 #include <memory>
 
-#include "Block.h"
+#include "ColorBlock.h"
 #include "Texture.h"
 
 namespace quicktex {

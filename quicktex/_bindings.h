@@ -27,14 +27,10 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "Block.h"
 #include "Color.h"
+#include "ColorBlock.h"
 #include "Texture.h"
 #include "util.h"
-
-/*namespace pybind11::detail {
-extern template struct type_caster<quicktex::Color>;
-}  // namespace pybind11::detail*/
 
 namespace pybind11::detail {
 using namespace quicktex;
@@ -189,8 +185,10 @@ template <typename B> py::class_<B> BindBlock(py::module_& m, const char* name) 
 
     block.def_readonly_static("width", &B::Width, "The width of the block in pixels.");
     block.def_readonly_static("height", &B::Height, "The height of the block in pixels.");
-    block.def_readonly_static("dimensions", &B::Dimensions, "The dimensions of the block in pixels.");
-    block.def_property_readonly_static("size", [](py::object) { return sizeof(B); }, "The size of the block in bytes.");
+    block.def_property_readonly_static(
+        "dimensions", [](py::object) { return std::make_tuple(B::Width, B::Height); }, "The dimensions of the block in pixels.");
+    block.def_property_readonly_static(
+        "size", [](py::object) { return sizeof(B); }, "The size of the block in bytes.");
 
     block.def_buffer([](B& b) { return py::buffer_info(reinterpret_cast<uint8_t*>(&b), sizeof(B)); });
     block.def(

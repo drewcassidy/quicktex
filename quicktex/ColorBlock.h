@@ -31,28 +31,8 @@
 namespace quicktex {
 using Coords = std::tuple<int, int>;
 
-/**
- * Base class for all compressed blocks
- *
- * IMPORTANT: this class cannot contain any virtual methods or the vtable would add to the derived class size,
- * it is only to act as a base class for type checking reasons. As such, it has limited utility on its own.
- *
- * @tparam N Block width in pixels
- * @tparam M Block height in pixels
- */
-template <int N, int M> class Block {
-    static_assert(N > 0);
-    static_assert(M > 0);
-
+template <int N, int M> class ColorBlock  {
    public:
-    static constexpr int Width = N;
-    static constexpr int Height = M;
-    static constexpr Coords Dimensions = Coords(Width, Height);
-};
-
-template <int N, int M> class ColorBlock : public Block<N, M> {
-   public:
-    using Base = Block<N, M>;
     struct Metrics {
         Color min;
         Color max;
@@ -62,9 +42,12 @@ template <int N, int M> class ColorBlock : public Block<N, M> {
         Vector4Int sums;
     };
 
+    static constexpr int Width = N;
+    static constexpr int Height = M;
+
     constexpr Color Get(int x, int y) const {
-        if (x >= Base::Width || x < 0) throw std::invalid_argument("x value out of range");
-        if (y >= Base::Height || y < 0) throw std::invalid_argument("y value out of range");
+        if (x >= Width || x < 0) throw std::invalid_argument("x value out of range");
+        if (y >= Height || y < 0) throw std::invalid_argument("y value out of range");
 
         return _pixels[x + (N * y)];
     }
@@ -75,8 +58,8 @@ template <int N, int M> class ColorBlock : public Block<N, M> {
     }
 
     void Set(int x, int y, const Color &value) {
-        if (x >= Base::Width || x < 0) throw std::invalid_argument("x value out of range");
-        if (y >= Base::Height || y < 0) throw std::invalid_argument("y value out of range");
+        if (x >= Width || x < 0) throw std::invalid_argument("x value out of range");
+        if (y >= Height || y < 0) throw std::invalid_argument("y value out of range");
         _pixels[x + (N * y)] = value;
     }
 
@@ -86,12 +69,12 @@ template <int N, int M> class ColorBlock : public Block<N, M> {
     }
 
     void GetRow(int y, Color *dst) const {
-        if (y >= Base::Height || y < 0) throw std::invalid_argument("y value out of range");
+        if (y >= Height || y < 0) throw std::invalid_argument("y value out of range");
         std::memcpy(dst, &_pixels[N * y], N * sizeof(Color));
     }
 
     void SetRow(int y, const Color *src) {
-        if (y >= Base::Height || y < 0) throw std::invalid_argument("y value out of range");
+        if (y >= Height || y < 0) throw std::invalid_argument("y value out of range");
         std::memcpy(&_pixels[N * y], src, N * sizeof(Color));
     }
 

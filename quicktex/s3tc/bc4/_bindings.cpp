@@ -17,6 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../_bindings.h"
+
 #include <pybind11/pybind11.h>
 
 #include <array>
@@ -34,17 +36,51 @@ namespace py = pybind11;
 namespace quicktex::bindings {
 
 using namespace quicktex::s3tc;
-using namespace quicktex::s3tc;
 
 void InitBC4(py::module_ &s3tc) {
     auto bc4 = s3tc.def_submodule("_bc4", "internal bc4 module");
     py::options options;
     options.disable_function_signatures();
 
-    // BC4Encoder
-    py::class_<BC4Encoder> bc4_encoder(bc4, "BC4Encoder", R"doc(
-        Base: :py:class:`~quicktex.BlockEncoder`
+    // region BC4Block
+    auto bc4_block = BindBlock<BC4Block>(bc4, "BC4Block");
+    bc4_block.doc() = "A single BC4 block.";
 
+    bc4_block.def(py::init<>());
+    bc4_block.def(py::init<uint8_t, uint8_t, BC1Block::SelectorArray>(), "endpoint0"_a, "endpoint1"_a, "selectors"_a, R"doc(
+        __init__(self, endpoint0: int, endpoint1: int, selectors: List[List[int]]) -> None
+
+        Create a new BC4Block with the specified endpoints and selectors.
+
+        :param int endpoint0: The first endpoint.
+        :param int endpoint1: The second endpoint.
+        :param selectors: the selectors as a 4x4 list of integers, between 0 and 7 inclusive.
+    )doc");
+
+    bc4_block.def_property("endpoints", &BC4Block::GetAlphas, &BC4Block::SetAlphas, "The block's endpoint values as a 2-tuple.");
+    bc4_block.def_property("selectors", &BC4Block::GetSelectors, &BC4Block::SetSelectors, R"doc(
+        The block's selectors as a 4x4 list of integers between 0 and 7 inclusive.
+
+        .. note::
+            This is a property, so directly modifying its value will not propogate back to the block.
+            Instead you must read, modify, then write the new list back to the property, like so::
+
+                selectors = block.selectors
+                selectors[0,0] = 0
+                block.selectors = selectors
+        )doc");
+    bc4_block.def_property_readonly("is_6value", &BC4Block::Is6Value, R"doc(
+        "True if the block uses 6-value interpolation, i.e. endpoint0 <= endpoint1. Readonly.
+    )doc");
+    // endregion
+
+    // region BC4Texture
+    auto bc4_texture = BindBlockTexture<BC4Block>(bc4, "BC4Texture");
+    bc4_texture.doc() = "A texture comprised of BC4 blocks.";
+    // endregion
+
+    // region BC4Encoder
+    py::class_<BC4Encoder> bc4_encoder(bc4, "BC4Encoder", R"doc(
         Encodes single-channel textures to BC4.
     )doc");
 
@@ -56,11 +92,10 @@ void InitBC4(py::module_ &s3tc) {
         :param int channel: the channel that will be read from. 0 to 3 inclusive. Default: 3 (alpha).
     )doc");
     bc4_encoder.def_property_readonly("channel", &BC4Encoder::GetChannel, "The channel that will be read from. 0 to 3 inclusive. Readonly.");
+    // endregion
 
-    // BC4Decoder
+    // region BC4Decoder
     py::class_<BC4Decoder> bc4_decoder(bc4, "BC4Decoder", R"doc(
-        Base: :py:class:`~quicktex.BlockDecoder`
-
         Decodes BC4 textures to a single-channel.
     )doc");
 
@@ -72,6 +107,7 @@ void InitBC4(py::module_ &s3tc) {
         :param int channel: The channel that will be written to. 0 to 3 inclusive. Default: 3 (alpha).
     )doc");
     bc4_decoder.def_property_readonly("channel", &BC4Decoder::GetChannel, "The channel that will be written to. 0 to 3 inclusive. Readonly.");
+    // endregion
 }
 
 }  // namespace quicktex::bindings

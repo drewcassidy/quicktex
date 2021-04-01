@@ -29,8 +29,8 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "../../Block.h"
 #include "../../Color.h"
+#include "../../ColorBlock.h"
 #include "../../Matrix4x4.h"
 #include "../../Texture.h"
 #include "../../Vector4.h"

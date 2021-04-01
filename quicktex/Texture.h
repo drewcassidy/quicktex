@@ -28,8 +28,8 @@
 #include <tuple>
 #include <type_traits>
 
-#include "Block.h"
 #include "Color.h"
+#include "ColorBlock.h"
 
 namespace quicktex {
 

@@ -19,7 +19,7 @@
 
 #include "BC3Decoder.h"
 
-#include "../../Block.h"
+#include "../../ColorBlock.h"
 #include "BC3Block.h"
 
 namespace quicktex::s3tc {

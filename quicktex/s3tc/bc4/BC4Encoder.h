@@ -22,7 +22,7 @@
 #include <cstdint>
 #include <stdexcept>
 
-#include "../../Block.h"
+#include "../../ColorBlock.h"
 #include "../../Encoder.h"
 #include "../../Texture.h"
 #include "BC4Block.h"

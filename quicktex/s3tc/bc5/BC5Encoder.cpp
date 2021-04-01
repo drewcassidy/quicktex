@@ -19,7 +19,7 @@
 
 #include "BC5Encoder.h"
 
-#include "../../Block.h"
+#include "../../ColorBlock.h"
 #include "../bc4/BC4Block.h"
 
 namespace quicktex::s3tc {

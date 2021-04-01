@@ -23,8 +23,8 @@
 #include <cassert>
 #include <cstdint>
 
-#include "../../Block.h"
 #include "../../Color.h"
+#include "../../ColorBlock.h"
 #include "BC1Block.h"
 
 namespace quicktex::s3tc {

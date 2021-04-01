@@ -21,7 +21,7 @@
 
 #include <memory>
 
-#include "../../Block.h"
+#include "../../ColorBlock.h"
 #include "../../Decoder.h"
 #include "../../Texture.h"
 #include "../bc1/BC1Decoder.h"

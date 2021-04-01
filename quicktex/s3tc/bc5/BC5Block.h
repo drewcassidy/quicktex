@@ -19,16 +19,27 @@
 
 #pragma once
 
-#include "../../Block.h"
 #include "../bc4/BC4Block.h"
 
 namespace quicktex::s3tc {
 
-#pragma pack(push, 1)
-class BC5Block : public Block<4, 4> {
+class alignas(8) BC5Block {
    public:
+    static constexpr int Width = 4;
+    static constexpr int Height = 4;
+
+    constexpr BC5Block() {
+        static_assert(sizeof(BC5Block) == 16);
+        static_assert(sizeof(std::array<BC5Block, 10>) == 16 * 10);
+        chan0_block = chan1_block = BC4Block();
+    }
+
+    constexpr BC5Block(const BC4Block &chan0, const BC4Block &chan1) {
+        chan0_block = chan0;
+        chan1_block = chan1;
+    }
+
     BC4Block chan0_block;
     BC4Block chan1_block;
 };
-#pragma pack(pop)
 }  // namespace quicktex::s3tc

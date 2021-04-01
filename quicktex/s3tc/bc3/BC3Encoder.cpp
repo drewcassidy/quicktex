@@ -19,7 +19,7 @@
 
 #include "BC3Encoder.h"
 
-#include "../../Block.h"
+#include "../../ColorBlock.h"
 #include "../bc1/BC1Block.h"
 #include "../bc4/BC4Block.h"
 #include "BC3Block.h"

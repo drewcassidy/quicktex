@@ -17,6 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../_bindings.h"
+
 #include <pybind11/pybind11.h>
 
 #include <array>
@@ -45,7 +47,17 @@ void InitBC3(py::module_ &s3tc) {
     py::options options;
     options.disable_function_signatures();
 
-    // BC3Encoder
+    // region BC3Block
+    auto bc3_block = BindBlock<BC3Block>(bc3, "BC3Block");
+    bc3_block.def(py::init<>());
+    bc3_block.def(py::init<BC4Block, BC1Block>(), "alpha_block"_a, "color_block"_a);
+
+    bc3_block.def_readwrite("alpha_block", &BC3Block::alpha_block);
+    bc3_block.def_readwrite("color_block", &BC3Block::color_block);
+
+    // endregion
+
+    // region BC3Encoder
     py::class_<BC3Encoder> bc3_encoder(bc3, "BC3Encoder", R"doc(
         Base: :py:class:`~quicktex.BlockEncoder`
 
@@ -67,8 +79,9 @@ void InitBC3(py::module_ &s3tc) {
                                       "Internal :py:class:`~quicktex.s3tc.bc1.BC1Encoder` used for RGB data. Readonly.");
     bc3_encoder.def_property_readonly("bc4_encoder", &BC3Encoder::GetBC4Encoder,
                                       "Internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` used for alpha data. Readonly.");
+    // endregion
 
-    // BC3Decoder
+    // region BC3Decoder
     py::class_<BC3Decoder> bc3_decoder(bc3, "BC3Decoder", R"doc(
         Base: :py:class:`~quicktex.BlockDecoder`
 
@@ -88,5 +101,6 @@ void InitBC3(py::module_ &s3tc) {
                                       "Internal :py:class:`~quicktex.s3tc.bc1.BC1Decoder` used for RGB data. Readonly.");
     bc3_decoder.def_property_readonly("bc4_decoder", &BC3Decoder::GetBC4Decoder,
                                       "Internal :py:class:`~quicktex.s3tc.bc4.BC4Decoder` used for alpha data. Readonly.");
+    // endregion
 };
 }  // namespace quicktex::bindings

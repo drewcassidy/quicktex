@@ -24,19 +24,22 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include "../../Block.h"
 #include "../../Color.h"
 #include "../../util.h"
 
 namespace quicktex::s3tc {
 
-#pragma pack(push, 1)
-class BC1Block : public Block<4, 4> {
+class alignas(8) BC1Block {
    public:
+    static constexpr int Width = 4;
+    static constexpr int Height = 4;
+
     using SelectorArray = std::array<std::array<uint8_t, Width>, Height>;
     using ColorPair = std::tuple<Color, Color>;
 
     constexpr BC1Block() {
+        static_assert(sizeof(BC1Block) == 8);
+        static_assert(sizeof(std::array<BC1Block, 10>) == 8 * 10);
         SetColor0Raw(0);
         SetColor1Raw(0);
         SetSelectorsSolid(0);
@@ -80,12 +83,12 @@ class BC1Block : public Block<4, 4> {
 
     SelectorArray GetSelectors() const {
         SelectorArray unpacked;
-        for (unsigned i = 0; i < 4; i++) { unpacked[i] = Unpack<uint8_t, uint8_t, 2, 4>(selectors[i]); }
+        for (int i = 0; i < Height; i++) { unpacked[i] = Unpack<uint8_t, uint8_t, SelectorBits, Width>(_selectors[i]); }
         return unpacked;
     }
 
-    void SetSelectors(const SelectorArray& unpacked, uint8_t mask = 0) {
-        for (unsigned i = 0; i < 4; i++) { selectors[i] = mask ^ Pack<uint8_t, uint8_t, 2, 4>(unpacked[i]); }
+    void SetSelectors(const SelectorArray& unpacked) {
+        for (int i = 0; i < Height; i++) { _selectors[i] = Pack<uint8_t, uint8_t, SelectorBits, Width>(unpacked[i]); }
     }
 
     /**
@@ -93,19 +96,16 @@ class BC1Block : public Block<4, 4> {
      * @param mask the 8-bit mask to use for each row
      */
     void SetSelectorsSolid(uint8_t mask) {
-        for (unsigned i = 0; i < 4; i++) selectors[i] = mask;
+        for (int i = 0; i < Height; i++) _selectors[i] = mask;
     }
 
-    constexpr static inline size_t EndpointSize = 2;
-    constexpr static inline size_t SelectorSize = 4;
-    constexpr static inline uint8_t SelectorBits = 2;
-    constexpr static inline uint8_t SelectorValues = 1 << SelectorBits;
-    constexpr static inline uint8_t SelectorMask = SelectorValues - 1;
+    constexpr static inline size_t EndpointSize = 2; // in bytes
+    constexpr static inline size_t SelectorSize = 4; // in bytes
+    constexpr static inline uint8_t SelectorBits = 2; // in bits
 
    private:
     std::array<uint8_t, EndpointSize> _color_0;
     std::array<uint8_t, EndpointSize> _color_1;
-    std::array<uint8_t, 4> selectors;
+    std::array<uint8_t, SelectorSize> _selectors;
 };
-#pragma pack(pop)
 }  // namespace quicktex::s3tc

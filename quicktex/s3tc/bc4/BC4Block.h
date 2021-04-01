@@ -30,52 +30,63 @@
 
 namespace quicktex::s3tc {
 
-#pragma pack(push, 1)
-class BC4Block : public Block<4, 4> {
+class alignas(8) BC4Block {
    public:
-    using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
+    static constexpr int Width = 4;
+    static constexpr int Height = 4;
 
-    inline uint32_t GetLowAlpha() const { return low_alpha; }
-    inline uint32_t GetHighAlpha() const { return high_alpha; }
-    inline bool Is6Alpha() const { return GetLowAlpha() <= GetHighAlpha(); }
+    using SelectorArray = std::array<std::array<uint8_t, Width>, Height>;
+    using AlphaPair = std::pair<uint8_t, uint8_t>;
+
+    constexpr BC4Block() {
+        static_assert(sizeof(BC4Block) == 8);
+        static_assert(sizeof(std::array<BC4Block, 10>) == 8 * 10);
+        alpha0 = alpha1 = 0;
+        SetSelectorBits(0);
+    }
+
+    constexpr BC4Block(uint8_t valpha0, uint8_t valpha1, const SelectorArray& selectors) {
+        alpha0 = valpha0;
+        alpha1 = valpha1;
+        SetSelectors(selectors);
+    }
+
+    inline bool Is6Value() const { return alpha0 <= alpha1; }
+
+    AlphaPair GetAlphas() const { return AlphaPair(alpha0, alpha1); }
+
+    void SetAlphas(AlphaPair as) {
+        alpha0 = as.first;
+        alpha1 = as.second;
+    }
 
     inline uint64_t GetSelectorBits() const {
-        auto packed = Pack<uint8_t, uint64_t, 8, 6>(selectors);
+        auto packed = Pack<uint8_t, uint64_t, 8, SelectorSize>(selectors);
         assert(packed <= SelectorBitsMax);
         return packed;
     }
 
     void SetSelectorBits(uint64_t packed) {
         assert(packed <= SelectorBitsMax);
-        selectors = Unpack<uint64_t, uint8_t, 8, 6>(packed);
+        selectors = Unpack<uint64_t, uint8_t, 8, SelectorSize>(packed);
     }
 
-    UnpackedSelectors UnpackSelectors() const {
-        UnpackedSelectors unpacked;
-        auto rows = Unpack<uint64_t, uint16_t, 12, 4>(GetSelectorBits());
-        for (unsigned i = 0; i < 4; i++) {
-            auto row = Unpack<uint16_t, uint8_t, SelectorBits, 4>(rows[i]);
+    SelectorArray GetSelectors() const {
+        SelectorArray unpacked;
+        auto rows = Unpack<uint64_t, uint16_t, 12, Width>(GetSelectorBits());
+        for (unsigned i = 0; i < Height; i++) {
+            auto row = Unpack<uint16_t, uint8_t, SelectorBits, Width>(rows[i]);
             unpacked[i] = row;
         }
 
         return unpacked;
     }
 
-    void PackSelectors(const UnpackedSelectors& unpacked) {
-        std::array<uint16_t, 4> rows;
-        for (unsigned i = 0; i < 4; i++) { rows[i] = Pack<uint8_t, uint16_t, SelectorBits, 4>(unpacked[i]); }
-        auto packed = Pack<uint16_t, uint64_t, 12, 4>(rows);
+    void SetSelectors(const SelectorArray& unpacked) {
+        std::array<uint16_t, Height> rows;
+        for (int i = 0; i < Height; i++) { rows[i] = Pack<uint8_t, uint16_t, SelectorBits, Width>(unpacked[i]); }
+        auto packed = Pack<uint16_t, uint64_t, 12, Height>(rows);
         SetSelectorBits(packed);
-    }
-
-    void PackSelectors(const std::array<uint8_t, 16>& unpacked) {
-        auto packed = Pack<uint8_t, uint64_t, 3, 16>(unpacked);
-        SetSelectorBits(packed);
-    }
-
-    inline uint32_t GetSelector(uint32_t x, uint32_t y, uint64_t selector_bits) const {
-        assert((x < 4U) && (y < 4U));
-        return (selector_bits >> (((y * 4) + x) * SelectorBits)) & (SelectorMask);
     }
 
     static inline std::array<uint8_t, 8> GetValues6(uint32_t l, uint32_t h) {
@@ -114,9 +125,10 @@ class BC4Block : public Block<4, 4> {
     constexpr static inline uint8_t SelectorMask = SelectorValues - 1;
     constexpr static inline uint64_t SelectorBitsMax = (1ULL << (8U * SelectorSize)) - 1U;
 
-    uint8_t low_alpha;
-    uint8_t high_alpha;
+    uint8_t alpha0;
+    uint8_t alpha1;
+
+   private:
     std::array<uint8_t, SelectorSize> selectors;
 };
-#pragma pack(pop)
 }  // namespace quicktex::s3tc

@@ -24,7 +24,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include "../../Block.h"
+#include "../../ColorBlock.h"
 #include "../../Encoder.h"
 #include "../../Texture.h"
 #include "../bc4/BC4Encoder.h"
