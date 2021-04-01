@@ -394,18 +394,15 @@ BC1Block BC1Encoder::WriteBlockSolid(Color color) const {
         }
     }
 
-    block.SetLowColor(max16);
-    block.SetHighColor(min16);
-    block.selectors[0] = mask;
-    block.selectors[1] = mask;
-    block.selectors[2] = mask;
-    block.selectors[3] = mask;
+    block.SetColor0Raw(max16);
+    block.SetColor1Raw(min16);
+    block.SetSelectorsSolid(mask);
     return block;
 }
 
 BC1Block BC1Encoder::WriteBlock(EncodeResults &result) const {
     BC1Block block;
-    BC1Block::UnpackedSelectors selectors;
+    BC1Block::SelectorArray selectors;
     uint16_t color1 = result.low.Pack565Unscaled();
     uint16_t color0 = result.high.Pack565Unscaled();
     std::array<uint8_t, 4> lut;
@@ -449,9 +446,9 @@ BC1Block BC1Encoder::WriteBlock(EncodeResults &result) const {
         if (result.color_mode == ColorMode::ThreeColor) { assert(selectors[y][x] != 3); }
     }
 
-    block.SetLowColor(color0);
-    block.SetHighColor(color1);
-    block.PackSelectors(selectors);
+    block.SetColor0Raw(color0);
+    block.SetColor1Raw(color1);
+    block.SetSelectors(selectors);
     return block;
 }
 

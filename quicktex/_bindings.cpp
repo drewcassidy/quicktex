@@ -29,56 +29,6 @@
 
 namespace py = pybind11;
 
-namespace pybind11::detail {
-using namespace quicktex;
-/// Type caster for color class to allow it to be converted to and from a python tuple
-template <> struct type_caster<Color> {
-   public:
-    PYBIND11_TYPE_CASTER(Color, _("Color"));
-
-    bool load(handle src, bool) {
-        PyObject *source = src.ptr();
-
-        PyObject *tmp = PySequence_Tuple(source);
-
-        // if the object is not a tuple, return false
-        if (!tmp) { return false; }  // incorrect type
-
-        // check the size
-        Py_ssize_t size = PyTuple_Size(tmp);
-        if (size < 3 || size > 4) { return false; }  // incorrect size
-
-        value.a = 0xFF;
-        // now we get the contents
-        for (int i = 0; i < size; i++) {
-            PyObject *src_chan = PyTuple_GetItem(tmp, i);
-            PyObject *tmp_chan = PyNumber_Long(src_chan);
-
-            if (!tmp_chan) return false;  // incorrect channel type
-
-            auto chan = PyLong_AsLong(tmp_chan);
-            if (chan > 0xFF || chan < 0) return false;  // item out of range
-            value[static_cast<unsigned>(i)] = static_cast<uint8_t>(chan);
-            Py_DECREF(tmp_chan);
-        }
-        Py_DECREF(tmp);
-
-        return !PyErr_Occurred();
-    }
-
-    static handle cast(Color src, return_value_policy, handle) {
-        PyObject *val = PyTuple_New(4);
-
-        for (int i = 0; i < 4; i++) {
-            PyObject *chan = PyLong_FromLong(src[static_cast<unsigned>(i)]);
-            PyTuple_SetItem(val, i, chan);
-        }
-
-        return val;
-    }
-};
-}  // namespace pybind11::detail
-
 namespace quicktex::bindings {
 
 void InitS3TC(py::module_ &m);
@@ -100,17 +50,16 @@ PYBIND11_MODULE(_quicktex, m) {
     texture.def_buffer([](Texture &t) { return py::buffer_info(t.Data(), t.Size()); });
     texture.def("tobytes", [](const Texture &t) { return py::bytes(reinterpret_cast<const char *>(t.Data()), t.Size()); });
 
-    //RawTexture
+    // RawTexture
 
     py::class_<RawTexture> raw_texture(m, "RawTexture", texture);
 
     raw_texture.def(py::init<int, int>(), "width"_a, "height"_a);
+    raw_texture.def_static("frombytes", &BufferToTexture<RawTexture>, "data"_a, "width"_a, "height"_a);
 
     DefSubscript2D(raw_texture, &RawTexture::GetPixel, &RawTexture::SetPixel, &RawTexture::Dimensions);
 
-    raw_texture.def_static("frombytes", &BufferToTexture<RawTexture>, "data"_a, "width"_a, "height"_a);
-
-    //    InitS3TC(m);
+    InitS3TC(m);
 }
 
 }  // namespace quicktex::bindings

@@ -21,7 +21,9 @@
 #include <cassert>
 #include <cstdint>
 #include <limits>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 #include "ndebug.h"
 
@@ -73,7 +75,7 @@ template <typename I, typename O, size_t S, size_t C> constexpr auto Unpack(I pa
  * @param vals Unpacked std::array of type I and size C.
  * @return Packed integer input of type O.
  */
-template <typename I, typename O, size_t S, size_t C> constexpr auto Pack(const std::array<I, C> &vals) noexcept(ndebug) {
+template <typename I, typename O, size_t S, size_t C> constexpr auto Pack(const std::array<I, C> &vals) {
     // type checking
     static_assert(std::is_unsigned<I>::value, "Unpacked input type must be unsigned");
     static_assert(std::is_unsigned<O>::value, "Packed output type must be unsigned");
@@ -81,9 +83,10 @@ template <typename I, typename O, size_t S, size_t C> constexpr auto Pack(const 
     static_assert(std::numeric_limits<O>::digits >= (C * S), "Packed output type must be big enough to represent the number of bits multiplied by count");
 
     O packed = 0;  // output value of type O
+    const I max = (1U << S) - 1U;
 
     for (unsigned i = 0; i < C; i++) {
-        assert(vals[i] <= (1U << S) - 1U);
+        if (vals[i] > max) throw std::invalid_argument("Input value at index " + std::to_string(i) + " is larger than " + std::to_string(max));
         packed |= static_cast<O>(vals[i]) << (i * S);
     }
 
@@ -147,3 +150,21 @@ constexpr int squarei(int a) { return a * a; }
 constexpr int absi(int a) { return (a < 0) ? -a : a; }
 
 template <typename F> constexpr F lerp(F a, F b, F s) { return a + (b - a) * s; }
+
+template <typename... Args> std::string Format(const char *str, const Args &...args) {
+    auto output = std::string(str);
+
+    std::vector<std::string> values = {{args...}};
+
+    for (unsigned i = 0; i < values.size(); i++) {
+        auto key = "{" + std::to_string(i) + "}";
+        auto value = values[i];
+        while(true) {
+            size_t where = output.find(key);
+            if (where == output.npos) break;
+            output.replace(where, key.length(), value);
+        }
+    }
+
+    return output;
+}

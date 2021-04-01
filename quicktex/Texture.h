@@ -151,11 +151,10 @@ class RawTexture : public Texture {
     virtual uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_pixels); }
 
    protected:
-
     Color *_pixels;
 };
 
-template <typename B> class BlockTexture : public Texture {
+template <typename B> class BlockTexture final: public Texture {
    public:
     using BlockType = B;
     using Base = Texture;
@@ -180,7 +179,7 @@ template <typename B> class BlockTexture : public Texture {
      * Copy constructor
      * @param other object to copy
      */
-    BlockTexture(const BlockTexture<B> &other) : BlockTexture(other.width, other.height) { std::memcpy(_blocks, other._blocks, Size()); }
+    BlockTexture(const BlockTexture<B> &other) : BlockTexture(other._width, other._height) { std::memcpy(_blocks, other._blocks, Size()); }
 
     /**
      * assignment operator
@@ -201,29 +200,28 @@ template <typename B> class BlockTexture : public Texture {
 
     ~BlockTexture() { delete[] _blocks; }
 
-    constexpr int BlocksX() const { return _width / B::Width; }
-    constexpr int BlocksY() const { return _height / B::Height; }
+    constexpr int BlocksX() const { return (_width + B::Width - 1) / B::Width; }
+    constexpr int BlocksY() const { return (_height + B::Height - 1) / B::Height; }
     constexpr std::tuple<int, int> BlocksXY() const { return std::tuple<int, int>(BlocksX(), BlocksY()); }
 
-    virtual B GetBlock(int x, int y) const {
-        if (x < 0 || x >= BlocksX()) throw std::range_error("x value out of range.");
-        if (y < 0 || y >= BlocksY()) throw std::range_error("y value out of range.");
+    B GetBlock(int x, int y) const {
+        if (x < 0 || x >= BlocksX()) throw std::out_of_range("x value out of range.");
+        if (y < 0 || y >= BlocksY()) throw std::out_of_range("y value out of range.");
         return _blocks[x + (y * _width)];
     }
 
-    virtual void SetBlock(int x, int y, const B &val) {
-        if (x < 0 || x >= BlocksX()) throw std::range_error("x value out of range.");
-        if (y < 0 || y >= BlocksY()) throw std::range_error("y value out of range.");
+    void SetBlock(int x, int y, const B &val) {
+        if (x < 0 || x >= BlocksX()) throw std::out_of_range("x value out of range.");
+        if (y < 0 || y >= BlocksY()) throw std::out_of_range("y value out of range.");
         _blocks[x + (y * _width)] = val;
     }
 
-    virtual size_t Size() const noexcept override { return (size_t)(BlocksX() * BlocksY()) * sizeof(B); }
+    size_t Size() const noexcept override { return (size_t)(BlocksX() * BlocksY()) * sizeof(B); }
 
-    virtual const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_blocks); }
-    virtual uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_blocks); }
+    const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_blocks); }
+    uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_blocks); }
 
    protected:
-
     B *_blocks;
 };
 

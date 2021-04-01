@@ -37,6 +37,6 @@ int main() {
     site.attr("addsitedir")(CUSTOM_SYS_PATH);
 
     py::module_ nose = py::module_::import("nose");
-    py::module_ tests = py::module_::import("test_BC1");
-    nose.attr("main")("test_BC1");
+    py::module_ tests = py::module_::import("test_texture");
+    nose.attr("main")("test_texture");
 }

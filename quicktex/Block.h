@@ -29,6 +29,7 @@
 #include "Vector4Int.h"
 
 namespace quicktex {
+using Coords = std::tuple<int, int>;
 
 /**
  * Base class for all compressed blocks
@@ -46,6 +47,7 @@ template <int N, int M> class Block {
    public:
     static constexpr int Width = N;
     static constexpr int Height = M;
+    static constexpr Coords Dimensions = Coords(Width, Height);
 };
 
 template <int N, int M> class ColorBlock : public Block<N, M> {

@@ -33,42 +33,67 @@ namespace quicktex::s3tc {
 #pragma pack(push, 1)
 class BC1Block : public Block<4, 4> {
    public:
-    using UnpackedSelectors = std::array<std::array<uint8_t, Width>, Height>;
+    using SelectorArray = std::array<std::array<uint8_t, Width>, Height>;
+    using ColorPair = std::tuple<Color, Color>;
 
-    constexpr BC1Block() { static_assert(sizeof(BC1Block) == 8); }
-
-    uint16_t GetLowColor() const { return static_cast<uint16_t>(_low_color[0] | (_low_color[1] << 8U)); }
-    uint16_t GetHighColor() const { return static_cast<uint16_t>(_high_color[0] | (_high_color[1] << 8U)); }
-    Color GetLowColor32() const { return Color::Unpack565(GetLowColor()); }
-    Color GetHighColor32() const { return Color::Unpack565(GetHighColor()); }
-
-    bool Is3Color() const { return GetLowColor() <= GetHighColor(); }
-    void SetLowColor(uint16_t c) {
-        _low_color[0] = c & 0xFF;
-        _low_color[1] = (c >> 8) & 0xFF;
-    }
-    void SetHighColor(uint16_t c) {
-        _high_color[0] = c & 0xFF;
-        _high_color[1] = (c >> 8) & 0xFF;
-    }
-    uint32_t GetSelector(uint32_t x, uint32_t y) const {
-        assert((x < 4U) && (y < 4U));
-        return (selectors[y] >> (x * SelectorBits)) & SelectorMask;
-    }
-    void SetSelector(uint32_t x, uint32_t y, uint32_t val) {
-        assert((x < 4U) && (y < 4U) && (val < 4U));
-        selectors[y] &= (~(SelectorMask << (x * SelectorBits)));
-        selectors[y] |= (val << (x * SelectorBits));
+    constexpr BC1Block() {
+        SetColor0Raw(0);
+        SetColor1Raw(0);
+        SetSelectorsSolid(0);
     }
 
-    UnpackedSelectors UnpackSelectors() const {
-        UnpackedSelectors unpacked;
+    constexpr BC1Block(Color color0, Color color1, const SelectorArray& selectors) {
+        SetColor0(color0);
+        SetColor1(color1);
+        SetSelectors(selectors);
+    }
+
+    constexpr BC1Block(Color color0, Color color1, uint8_t solid_mask) {
+        SetColor0(color0);
+        SetColor1(color1);
+        SetSelectorsSolid(solid_mask);
+    }
+
+    uint16_t GetColor0Raw() const { return static_cast<uint16_t>(_color_0[0] | (_color_0[1] << 8U)); }
+    uint16_t GetColor1Raw() const { return static_cast<uint16_t>(_color_1[0] | (_color_1[1] << 8U)); }
+    void SetColor0Raw(uint16_t c) {
+        _color_0[0] = c & 0xFF;
+        _color_0[1] = (c >> 8) & 0xFF;
+    }
+    void SetColor1Raw(uint16_t c) {
+        _color_1[0] = c & 0xFF;
+        _color_1[1] = (c >> 8) & 0xFF;
+    }
+
+    Color GetColor0() const { return Color::Unpack565(GetColor0Raw()); }
+    Color GetColor1() const { return Color::Unpack565(GetColor1Raw()); }
+    ColorPair GetColors() const { return {GetColor0(), GetColor1()}; }
+
+    void SetColor0(Color c) { SetColor0Raw(c.Pack565()); }
+    void SetColor1(Color c) { SetColor1Raw(c.Pack565()); }
+    void SetColors(ColorPair cs) {
+        SetColor0(std::get<0>(cs));
+        SetColor1(std::get<1>(cs));
+    }
+
+    bool Is3Color() const { return GetColor0Raw() <= GetColor1Raw(); }
+
+    SelectorArray GetSelectors() const {
+        SelectorArray unpacked;
         for (unsigned i = 0; i < 4; i++) { unpacked[i] = Unpack<uint8_t, uint8_t, 2, 4>(selectors[i]); }
         return unpacked;
     }
 
-    void PackSelectors(const UnpackedSelectors& unpacked, uint8_t mask = 0) {
+    void SetSelectors(const SelectorArray& unpacked, uint8_t mask = 0) {
         for (unsigned i = 0; i < 4; i++) { selectors[i] = mask ^ Pack<uint8_t, uint8_t, 2, 4>(unpacked[i]); }
+    }
+
+    /**
+     * Set every row of selectors to the same 8-bit mask. useful for solid-color blocks
+     * @param mask the 8-bit mask to use for each row
+     */
+    void SetSelectorsSolid(uint8_t mask) {
+        for (unsigned i = 0; i < 4; i++) selectors[i] = mask;
     }
 
     constexpr static inline size_t EndpointSize = 2;
@@ -78,10 +103,8 @@ class BC1Block : public Block<4, 4> {
     constexpr static inline uint8_t SelectorMask = SelectorValues - 1;
 
    private:
-    std::array<uint8_t, EndpointSize> _low_color;
-    std::array<uint8_t, EndpointSize> _high_color;
-
-   public:
+    std::array<uint8_t, EndpointSize> _color_0;
+    std::array<uint8_t, EndpointSize> _color_1;
     std::array<uint8_t, 4> selectors;
 };
 #pragma pack(pop)

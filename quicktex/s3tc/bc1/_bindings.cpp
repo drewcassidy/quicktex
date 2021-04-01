@@ -17,7 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../_bindings.h"
+
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <array>
 #include <cstddef>
@@ -45,10 +48,42 @@ void InitBC1(py::module_ &s3tc) {
     py::options options;
     options.disable_function_signatures();
 
-    // BC1Encoder
-    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder" R"doc(
-        Encodes RGB textures to BC1.
+    // region BC1Block
+    auto bc1_block = BindBlock<BC1Block>(bc1, "BC1Block");
+    bc1_block.doc() = "A single BC1 block.";
+
+    bc1_block.def(py::init<>());
+    bc1_block.def(py::init<Color, Color, BC1Block::SelectorArray>(), "color0"_a, "color1"_a, "selectors"_a, R"doc(
+        __init__(self, color0, color1) -> None
+
+        Create a new BC1Block with the specified endpoints and selectors
+
+        :param color0: The first endpoint
+        :param color1: The second endpoint
+        :param selectors: the selectors as a 4x4 list of integers, between 0 and 3 inclusive.
     )doc");
+
+    bc1_block.def_property("colors", &BC1Block::GetColors, &BC1Block::SetColors, "The block's endpoint colors as a 2-tuple.");
+    bc1_block.def_property("selectors", &BC1Block::GetSelectors, &BC1Block::SetSelectors, R"doc(
+        The block's selectors as a 4x4 list of integers between 0 and 3 inclusive.
+
+        .. note::
+            This is a property, so directly modifying its value will not propogate back to the block.
+            Instead you must read, modify, then write the new value back to the property, like so::
+
+                selectors = block.selectors
+                selectors[0,0] = 0
+                block.selectors = selectors
+    )doc");
+    // endregion
+
+    //region BC1Texture
+    auto bc1_texture = BindBlockTexture<BC1Block>(bc1, "BC1Texture");
+    bc1_texture.doc() = "A texture comprised of BC1 blocks.";
+    //endregion
+
+    //region BC1Encoder
+    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", "Encodes RGB textures to BC1.");
 
     py::enum_<BC1Encoder::EndpointMode>(bc1_encoder, "EndpointMode", "Enum representing various methods of finding endpoints in a block.")
         .value("LeastSquares", BC1Encoder::EndpointMode::LeastSquares, "Find endpoints using a 2D least squares approach.")
@@ -127,8 +162,9 @@ void InitBC1(py::module_ &s3tc) {
     bc1_encoder.def_property("power_iterations", &BC1Encoder::GetPowerIterations, &BC1Encoder::SetPowerIterations,
                              "Number of power iterations used with the PCA endpoint mode. Value should be around 4 to 6. "
                              "Automatically clamped to between :py:const:`BC1Encoder.min_power_iterations` and :py:const:`BC1Encoder.max_power_iterations`");
+    //endregion
 
-    // BC1Decoder
+    //region BC1Decoder
     py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", R"doc(
         Base: :py:class:`~quicktex.BlockDecoder`
 
@@ -147,5 +183,6 @@ void InitBC1(py::module_ &s3tc) {
 
     bc1_decoder.def_property_readonly("interpolator", &BC1Decoder::GetInterpolator, "The interpolator used by this decoder. This is a readonly property.");
     bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha, "Determines if the alpha channel of the output is written to.");
+    //endregion
 }
 }  // namespace quicktex::bindings
