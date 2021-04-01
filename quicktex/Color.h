@@ -34,9 +34,9 @@ class Color {
     uint8_t b;
     uint8_t a;
 
-    constexpr Color() { SetRGBA(0, 0, 0, 0xFF); }
+    constexpr Color() : Color(0, 0, 0, 0xFF) {}
 
-    constexpr Color(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va = 0xFF) { SetRGBA(vr, vg, vb, va); }
+    constexpr Color(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va = 0xFF) : r(vr), g(vg), b(vb), a(va) {}
 
     Color(Vector4Int v);
 
