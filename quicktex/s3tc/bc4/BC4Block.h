@@ -20,22 +20,34 @@
 #pragma once
 
 #include <array>
-#include <cassert>
 #include <cstdint>
 #include <cstdlib>
-
-#include "../../util.h"
+#include <utility>
 
 namespace quicktex::s3tc {
 
 class alignas(8) BC4Block {
    public:
-    static constexpr int Width = 4;
-    static constexpr int Height = 4;
+    static constexpr size_t Width = 4;
+    static constexpr size_t Height = 4;
+
+    static constexpr size_t SelectorSize = 6;                       // size of selector array in bytes
+    static constexpr size_t SelectorBits = 3;                       // size of a selector in bits
+    static constexpr size_t SelectorMax = (1 << SelectorBits) - 1;  // maximum value of a selector
 
     using SelectorArray = std::array<std::array<uint8_t, Width>, Height>;
     using AlphaPair = std::pair<uint8_t, uint8_t>;
 
+    uint8_t alpha0;  // first endpoint
+    uint8_t alpha1;  // second endpoint
+
+   private:
+    std::array<uint8_t, SelectorSize> _selectors;  // internal array of selector bytes
+
+   public:
+    // Constructors
+
+    /// Create a new BC4Block
     constexpr BC4Block() {
         static_assert(sizeof(BC4Block) == 8);
         static_assert(sizeof(std::array<BC4Block, 10>) == 8 * 10);
@@ -44,76 +56,51 @@ class alignas(8) BC4Block {
         _selectors = {0, 0, 0, 0, 0, 0};
     }
 
+    /**
+     * Create a new BC4Block
+     * @param valpha0 first endpoint value
+     * @param valpha1 second endpoint value
+     * @param selectors the selectors as a 4x4 array of integers, between 0 and 7 inclusive.
+     */
     BC4Block(uint8_t valpha0, uint8_t valpha1, const SelectorArray& selectors) {
         alpha0 = valpha0;
         alpha1 = valpha1;
         SetSelectors(selectors);
     }
 
-    constexpr AlphaPair GetAlphas() const { return AlphaPair(alpha0, alpha1); }
+    /**
+     * Create a new solid BC4Block
+     * @param alpha first endpoint value
+     */
+    BC4Block(uint8_t alpha) {
+        alpha0 = alpha;
+        alpha1 = alpha;
+        _selectors.fill(0);
+    }
 
+    /// Get a alpha0 and alpha1 as a pair
+    AlphaPair GetAlphas() const { return AlphaPair(alpha0, alpha1); }
+
+    /// Set alpha0 and alpha1 as a pair
     void SetAlphas(AlphaPair as) {
         alpha0 = as.first;
         alpha1 = as.second;
     }
 
-    constexpr uint64_t GetSelectorBits() const {
-        auto packed = Pack<uint8_t, uint64_t, 8, SelectorSize>(_selectors);
-        assert(packed <= SelectorsPackedMax);
-        return packed;
-    }
+    /// Get the block's selectors as a 4x4 array of integers between 0 and 7 inclusive.
+    SelectorArray GetSelectors() const;
 
-    void SetSelectorBits(uint64_t packed) {
-        assert(packed <= SelectorsPackedMax);
-        _selectors = Unpack<uint64_t, uint8_t, 8, SelectorSize>(packed);
-    }
+    /// Get the block's selectors as a 4x4 array of integers between 0 and 7 inclusive.
+    void SetSelectors(const SelectorArray& unpacked);
 
-    constexpr SelectorArray GetSelectors() const {
-        auto rows = Unpack<uint64_t, uint16_t, SelectorBits * Width, Height>(GetSelectorBits());
-        auto unpacked = MapArray(rows, Unpack<uint16_t, uint8_t, SelectorBits, Width>);
-        return unpacked;
-    }
+    /// True if the block uses 6-value interpolation, i.e. alpha0 <= alpha1.
+    bool Is6Value() const { return alpha0 <= alpha1; }
 
-    void SetSelectors(const SelectorArray& unpacked) {
-        auto rows = MapArray(unpacked, Pack<uint8_t, uint16_t, SelectorBits, Width>);
-        auto packed = Pack<uint16_t, uint64_t, SelectorBits * Width, Height>(rows);
-        SetSelectorBits(packed);
-    }
-
-    constexpr bool Is6Value() const { return alpha0 <= alpha1; }
-
-    static constexpr std::array<uint8_t, 8> GetValues6(unsigned l, unsigned h) {
-        return {static_cast<uint8_t>(l),
-                static_cast<uint8_t>(h),
-                static_cast<uint8_t>((l * 4 + h) / 5),
-                static_cast<uint8_t>((l * 3 + h * 2) / 5),
-                static_cast<uint8_t>((l * 2 + h * 3) / 5),
-                static_cast<uint8_t>((l + h * 4) / 5),
-                0,
-                255};
-    }
-
-    static constexpr std::array<uint8_t, 8> GetValues8(unsigned l, unsigned h) {
-        return {static_cast<uint8_t>(l),
-                static_cast<uint8_t>(h),
-                static_cast<uint8_t>((l * 6 + h) / 7),
-                static_cast<uint8_t>((l * 5 + h * 2) / 7),
-                static_cast<uint8_t>((l * 4 + h * 3) / 7),
-                static_cast<uint8_t>((l * 3 + h * 4) / 7),
-                static_cast<uint8_t>((l * 2 + h * 5) / 7),
-                static_cast<uint8_t>((l + h * 6) / 7)};
-    }
-
-    static constexpr std::array<uint8_t, 8> GetValues(unsigned l, unsigned h) { return l > h ? GetValues8(l, h) : GetValues6(l, h); }
-
-    static constexpr size_t SelectorSize = 6;
-    static constexpr uint8_t SelectorBits = 3;
-    static constexpr uint64_t SelectorsPackedMax = (1ULL << (8U * SelectorSize)) - 1U;
-
-    uint8_t alpha0;
-    uint8_t alpha1;
+    /// The interpolated values of this block as an array of 8 integers.
+    std::array<uint8_t, 8> GetValues() const { return Is6Value() ? GetValues6() : GetValues8(); }
 
    private:
-    std::array<uint8_t, SelectorSize> _selectors;
+    std::array<uint8_t, 8> GetValues6() const;
+    std::array<uint8_t, 8> GetValues8() const;
 };
 }  // namespace quicktex::s3tc

@@ -84,10 +84,9 @@ template <typename I, typename O, size_t S, size_t C> constexpr O Pack(const std
     static_assert(std::numeric_limits<O>::digits >= (C * S), "Packed output type must be big enough to represent the number of bits multiplied by count");
 
     O packed = 0;  // output value of type O
-    const I max = (1U << S) - 1U;
 
     for (unsigned i = 0; i < C; i++) {
-        if (vals[i] > max) throw std::invalid_argument("Input value at index " + std::to_string(i) + " is larger than " + std::to_string(max));
+        assert(vals[i] <= (1U << S) - 1U);
         packed |= static_cast<O>(vals[i]) << (i * S);
     }
 

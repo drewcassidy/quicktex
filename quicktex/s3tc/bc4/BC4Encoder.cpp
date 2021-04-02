@@ -25,12 +25,11 @@
 
 #include "../../Color.h"
 #include "../../ColorBlock.h"
+#include "../../util.h"
 #include "BC4Block.h"
 
 namespace quicktex::s3tc {
 BC4Block BC4Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
-    auto output = BC4Block();
-
     uint8_t min = UINT8_MAX;
     uint8_t max = 0;
 
@@ -40,12 +39,8 @@ BC4Block BC4Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
         max = std::max(max, value);
     }
 
-    output.alpha1 = min;
-    output.alpha0 = max;
-
     if (max == min) {
-        output.SetSelectorBits(0);
-        return output;
+        return BC4Block(min);  // solid block
     }
 
     auto selectors = BC4Block::SelectorArray();
@@ -74,9 +69,7 @@ BC4Block BC4Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
         }
     }
 
-    output.SetSelectors(selectors);
-
-    return output;
+    return BC4Block(max, min, selectors);
 }
 
 }  // namespace quicktex::s3tc

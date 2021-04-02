@@ -28,10 +28,7 @@
 
 namespace quicktex::s3tc {
 void BC4Decoder::DecodeInto(ColorBlock<4, 4> &dest, const BC4Block &block) const {
-    auto l = block.alpha0;
-    auto h = block.alpha1;
-
-    auto values = BC4Block::GetValues(l, h);
+    auto values = block.GetValues();
     auto selectors = block.GetSelectors();
 
     for (unsigned y = 0; y < 4; y++) {
