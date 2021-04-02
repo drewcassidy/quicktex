@@ -100,11 +100,9 @@ template <size_t Size, int Op(int)> constexpr std::array<uint8_t, Size> ExpandAr
     return res;
 }
 
-template <typename I, typename Fn, size_t N> constexpr auto MapArray(const std::array<I, N> &input, Fn&& op) {
+template <typename I, typename Fn, size_t N> constexpr auto MapArray(const std::array<I, N> &input, Fn op) {
     std::array<std::invoke_result_t<Fn, I>, N> output;
-    for (unsigned i = 0; i < N; i++) {
-        output[i] = op(input[i]);
-    }
+    for (unsigned i = 0; i < N; i++) { output[i] = op(input[i]); }
     return output;
 }
 
