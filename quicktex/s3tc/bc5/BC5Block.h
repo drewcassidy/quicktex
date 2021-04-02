@@ -31,10 +31,11 @@ class alignas(8) BC5Block {
     constexpr BC5Block() {
         static_assert(sizeof(BC5Block) == 16);
         static_assert(sizeof(std::array<BC5Block, 10>) == 16 * 10);
+        static_assert(alignof(BC5Block) >= 8);
         chan0_block = chan1_block = BC4Block();
     }
 
-    constexpr BC5Block(const BC4Block &chan0, const BC4Block &chan1) {
+    BC5Block(const BC4Block &chan0, const BC4Block &chan1) {
         chan0_block = chan0;
         chan1_block = chan1;
     }

@@ -100,6 +100,14 @@ template <size_t Size, int Op(int)> constexpr std::array<uint8_t, Size> ExpandAr
     return res;
 }
 
+template <typename I, typename Fn, size_t N> constexpr auto MapArray(const std::array<I, N> &input, Fn&& op) {
+    std::array<std::invoke_result_t<Fn, I>, N> output;
+    for (unsigned i = 0; i < N; i++) {
+        output[i] = op(input[i]);
+    }
+    return output;
+}
+
 template <typename S> constexpr S scale8To5(S v) {
     auto v2 = v * 31 + 128;
     return static_cast<S>((v2 + (v2 >> 8)) >> 8);
@@ -159,7 +167,7 @@ template <typename... Args> std::string Format(const char *str, const Args &...a
     for (unsigned i = 0; i < values.size(); i++) {
         auto key = "{" + std::to_string(i) + "}";
         auto value = values[i];
-        while(true) {
+        while (true) {
             size_t where = output.find(key);
             if (where == output.npos) break;
             output.replace(where, key.length(), value);

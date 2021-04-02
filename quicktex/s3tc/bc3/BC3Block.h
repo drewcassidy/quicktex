@@ -32,11 +32,12 @@ class alignas(8) BC3Block {
     constexpr BC3Block() {
         static_assert(sizeof(BC3Block) == 16);
         static_assert(sizeof(std::array<BC3Block, 10>) == 16 * 10);
+        static_assert(alignof(BC3Block) >= 8);
         alpha_block = BC4Block();
         color_block = BC1Block();
     }
 
-    constexpr BC3Block(const BC4Block &alpha, const BC1Block &color) {
+    BC3Block(const BC4Block &alpha, const BC1Block &color) {
         alpha_block = alpha;
         color_block = color;
     }

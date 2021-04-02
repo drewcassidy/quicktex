@@ -66,9 +66,6 @@ class Color {
     operator Vector4Int() const;
     friend Vector4Int operator-(const Color &lhs, const Color &rhs);
 
-    void SetRGBA(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va);
-    void SetRGBA(const Color &other) { SetRGBA(other.r, other.g, other.b, other.a); }
-
     void SetRGB(uint8_t vr, uint8_t vg, uint8_t vb);
     void SetRGB(const Color &other) { SetRGB(other.r, other.g, other.b); }
 

@@ -35,38 +35,39 @@ class alignas(8) BC1Block {
     static constexpr int Height = 4;
 
     using SelectorArray = std::array<std::array<uint8_t, Width>, Height>;
-    using ColorPair = std::tuple<Color, Color>;
+    using ColorPair = std::pair<Color, Color>;
 
     constexpr BC1Block() {
         static_assert(sizeof(BC1Block) == 8);
         static_assert(sizeof(std::array<BC1Block, 10>) == 8 * 10);
-        SetColor0Raw(0);
-        SetColor1Raw(0);
-        SetSelectorsSolid(0);
+        static_assert(alignof(BC1Block) >= 8);
+        _color0 = _color1 = {0, 0};
+        _selectors = {0, 0, 0, 0};
     }
 
-    constexpr BC1Block(Color color0, Color color1, const SelectorArray& selectors) {
+    BC1Block(Color color0, Color color1, const SelectorArray& selectors) {
         SetColor0(color0);
         SetColor1(color1);
         SetSelectors(selectors);
     }
 
-    constexpr BC1Block(Color color0, Color color1, uint8_t solid_mask) {
-        SetColor0(color0);
-        SetColor1(color1);
-        SetSelectorsSolid(solid_mask);
+    BC1Block(uint16_t ep0, uint16_t ep1, const SelectorArray& selectors) {
+        SetColor0Raw(ep0);
+        SetColor1Raw(ep1);
+        SetSelectors(selectors);
     }
 
-    uint16_t GetColor0Raw() const { return static_cast<uint16_t>(_color_0[0] | (_color_0[1] << 8U)); }
-    uint16_t GetColor1Raw() const { return static_cast<uint16_t>(_color_1[0] | (_color_1[1] << 8U)); }
-    void SetColor0Raw(uint16_t c) {
-        _color_0[0] = c & 0xFF;
-        _color_0[1] = (c >> 8) & 0xFF;
+    BC1Block(uint16_t ep0, uint16_t ep1, uint8_t solid_mask) {
+        SetColor0Raw(ep0);
+        SetColor1Raw(ep1);
+        _selectors.fill(solid_mask);
     }
-    void SetColor1Raw(uint16_t c) {
-        _color_1[0] = c & 0xFF;
-        _color_1[1] = (c >> 8) & 0xFF;
-    }
+
+    constexpr uint16_t GetColor0Raw() const { return Pack<uint8_t, uint16_t, 8, EndpointSize>(_color0); }
+    constexpr uint16_t GetColor1Raw() const { return Pack<uint8_t, uint16_t, 8, EndpointSize>(_color1); }
+
+    void SetColor0Raw(uint16_t c) { _color0 = Unpack<uint16_t, uint8_t, 8, EndpointSize>(c); }
+    void SetColor1Raw(uint16_t c) { _color1 = Unpack<uint16_t, uint8_t, 8, EndpointSize>(c); }
 
     Color GetColor0() const { return Color::Unpack565(GetColor0Raw()); }
     Color GetColor1() const { return Color::Unpack565(GetColor1Raw()); }
@@ -75,37 +76,23 @@ class alignas(8) BC1Block {
     void SetColor0(Color c) { SetColor0Raw(c.Pack565()); }
     void SetColor1(Color c) { SetColor1Raw(c.Pack565()); }
     void SetColors(ColorPair cs) {
-        SetColor0(std::get<0>(cs));
-        SetColor1(std::get<1>(cs));
+        SetColor0(cs.first);
+        SetColor1(cs.second);
     }
 
-    bool Is3Color() const { return GetColor0Raw() <= GetColor1Raw(); }
+    constexpr SelectorArray GetSelectors() const { return MapArray(_selectors, Unpack<uint8_t, uint8_t, SelectorBits, Width>); }
 
-    SelectorArray GetSelectors() const {
-        SelectorArray unpacked;
-        for (int i = 0; i < Height; i++) { unpacked[i] = Unpack<uint8_t, uint8_t, SelectorBits, Width>(_selectors[i]); }
-        return unpacked;
-    }
+    void SetSelectors(const SelectorArray& unpacked) { _selectors = MapArray(unpacked, Pack<uint8_t, uint8_t, SelectorBits, Width>); }
 
-    void SetSelectors(const SelectorArray& unpacked) {
-        for (int i = 0; i < Height; i++) { _selectors[i] = Pack<uint8_t, uint8_t, SelectorBits, Width>(unpacked[i]); }
-    }
+    constexpr bool Is3Color() const { return GetColor0Raw() <= GetColor1Raw(); }
 
-    /**
-     * Set every row of selectors to the same 8-bit mask. useful for solid-color blocks
-     * @param mask the 8-bit mask to use for each row
-     */
-    void SetSelectorsSolid(uint8_t mask) {
-        for (int i = 0; i < Height; i++) _selectors[i] = mask;
-    }
-
-    constexpr static inline size_t EndpointSize = 2; // in bytes
-    constexpr static inline size_t SelectorSize = 4; // in bytes
-    constexpr static inline uint8_t SelectorBits = 2; // in bits
+    constexpr static inline size_t EndpointSize = 2;   // in bytes
+    constexpr static inline size_t SelectorSize = 4;   // in bytes
+    constexpr static inline uint8_t SelectorBits = 2;  // in bits
 
    private:
-    std::array<uint8_t, EndpointSize> _color_0;
-    std::array<uint8_t, EndpointSize> _color_1;
+    std::array<uint8_t, EndpointSize> _color0;
+    std::array<uint8_t, EndpointSize> _color1;
     std::array<uint8_t, SelectorSize> _selectors;
 };
 }  // namespace quicktex::s3tc

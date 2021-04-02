@@ -47,7 +47,7 @@ void InitBC4(py::module_ &s3tc) {
     bc4_block.doc() = "A single BC4 block.";
 
     bc4_block.def(py::init<>());
-    bc4_block.def(py::init<uint8_t, uint8_t, BC1Block::SelectorArray>(), "endpoint0"_a, "endpoint1"_a, "selectors"_a, R"doc(
+    bc4_block.def(py::init<uint8_t, uint8_t, BC4Block::SelectorArray>(), "endpoint0"_a, "endpoint1"_a, "selectors"_a, R"doc(
         __init__(self, endpoint0: int, endpoint1: int, selectors: List[List[int]]) -> None
 
         Create a new BC4Block with the specified endpoints and selectors.
