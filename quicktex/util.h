@@ -23,6 +23,7 @@
 #include <limits>
 #include <string>
 #include <type_traits>
+#include <functional>
 #include <vector>
 
 #include "ndebug.h"
@@ -48,7 +49,7 @@ template <typename S> constexpr auto iabs(S i) {
  * @param packed Packed integer input of type I.
  * @return Unpacked std::array of type O and size C.
  */
-template <typename I, typename O, size_t S, size_t C> constexpr auto Unpack(I packed) noexcept(ndebug) {
+template <typename I, typename O, size_t S, size_t C> constexpr std::array<O, C> Unpack(I packed) {
     // type checking
     static_assert(std::is_unsigned<I>::value, "Packed input type must be unsigned");
     static_assert(std::is_unsigned<O>::value, "Unpacked output type must be unsigned");
@@ -75,7 +76,7 @@ template <typename I, typename O, size_t S, size_t C> constexpr auto Unpack(I pa
  * @param vals Unpacked std::array of type I and size C.
  * @return Packed integer input of type O.
  */
-template <typename I, typename O, size_t S, size_t C> constexpr auto Pack(const std::array<I, C> &vals) {
+template <typename I, typename O, size_t S, size_t C> constexpr O Pack(const std::array<I, C> &vals) {
     // type checking
     static_assert(std::is_unsigned<I>::value, "Unpacked input type must be unsigned");
     static_assert(std::is_unsigned<O>::value, "Packed output type must be unsigned");
@@ -100,8 +101,12 @@ template <size_t Size, int Op(int)> constexpr std::array<uint8_t, Size> ExpandAr
     return res;
 }
 
-template <typename I, typename Fn, size_t N> constexpr auto MapArray(const std::array<I, N> &input, Fn op) {
-    std::array<std::invoke_result_t<Fn, I>, N> output;
+template <typename Seq, typename Fn> constexpr auto MapArray(const Seq &input, Fn op) {
+    using I = typename Seq::value_type;
+    using O = decltype(op(std::declval<I>()));
+    constexpr size_t N = std::tuple_size<Seq>::value;
+
+    std::array<O, N> output;
     for (unsigned i = 0; i < N; i++) { output[i] = op(input[i]); }
     return output;
 }
