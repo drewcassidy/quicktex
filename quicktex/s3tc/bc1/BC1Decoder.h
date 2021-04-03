@@ -32,9 +32,9 @@ class BC1Decoder final : public BlockDecoder<BlockTexture<BC1Block>> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
-    BC1Decoder(bool write_alpha, InterpolatorPtr interpolator) : write_alpha(write_alpha), _interpolator(interpolator) {}
+    BC1Decoder(bool vwrite_alpha, InterpolatorPtr interpolator) : write_alpha(vwrite_alpha), _interpolator(interpolator) {}
 
-    BC1Decoder(bool write_alpha = false) : BC1Decoder(write_alpha, std::make_shared<Interpolator>()) {}
+    BC1Decoder(bool vwrite_alpha = false) : BC1Decoder(vwrite_alpha, std::make_shared<Interpolator>()) {}
 
     BC1Decoder(InterpolatorPtr interpolator) : BC1Decoder(false, interpolator) {}
 

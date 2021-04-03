@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <utility>
+
 #include "../bc4/BC4Block.h"
 
 namespace quicktex::s3tc {
@@ -27,6 +29,11 @@ class alignas(8) BC5Block {
    public:
     static constexpr int Width = 4;
     static constexpr int Height = 4;
+
+    using BlockPair = std::pair<BC4Block, BC4Block>;
+
+    BC4Block chan0_block;
+    BC4Block chan1_block;
 
     constexpr BC5Block() {
         static_assert(sizeof(BC5Block) == 16);
@@ -40,7 +47,11 @@ class alignas(8) BC5Block {
         chan1_block = chan1;
     }
 
-    BC4Block chan0_block;
-    BC4Block chan1_block;
+    BlockPair GetBlocks() const { return BlockPair(chan0_block, chan1_block); }
+
+    void SetBlocks(const BlockPair &pair) {
+        chan0_block = pair.first;
+        chan1_block = pair.second;
+    }
 };
 }  // namespace quicktex::s3tc

@@ -68,7 +68,10 @@ void InitBC4(py::module_ &s3tc) {
                 selectors = block.selectors
                 selectors[0,0] = 0
                 block.selectors = selectors
-        )doc");
+    )doc");
+    bc4_block.def_property_readonly("values", &BC4Block::GetValues, R"doc(
+        The interpolated values used to decode the block, coresponding with the indices in :py:attr:`selectors`.
+    )doc");
     bc4_block.def_property_readonly("is_6value", &BC4Block::Is6Value, R"doc(
         "True if the block uses 6-value interpolation, i.e. endpoint0 <= endpoint1. Readonly.
     )doc");

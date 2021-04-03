@@ -49,12 +49,26 @@ void InitBC3(py::module_ &s3tc) {
 
     // region BC3Block
     auto bc3_block = BindBlock<BC3Block>(bc3, "BC3Block");
+    bc3_block.doc() = "A single BC3 block.";
+
     bc3_block.def(py::init<>());
-    bc3_block.def(py::init<BC4Block, BC1Block>(), "alpha_block"_a, "color_block"_a);
+    bc3_block.def(py::init<BC4Block, BC1Block>(), "alpha_block"_a, "color_block"_a, R"doc(
+        __init__(self, alpha_block: BC4Block, color_block: BC1Block) -> None
 
-    bc3_block.def_readwrite("alpha_block", &BC3Block::alpha_block);
-    bc3_block.def_readwrite("color_block", &BC3Block::color_block);
+        Create a new BC3Block out of a BC4 block and a BC1 block.
 
+        :param BC4Block alpha_block: The BC4 block used for alpha data.
+        :param BC1Block color_block: The BC1 block used for RGB data.
+    )doc");
+
+    bc3_block.def_readwrite("alpha_block", &BC3Block::alpha_block, "The BC4 block used for alpha data.");
+    bc3_block.def_readwrite("color_block", &BC3Block::color_block, "The BC1 block used for rgb data.");
+    bc3_block.def_property("blocks", &BC3Block::GetBlocks, &BC3Block::SetBlocks, "The BC4 and BC1 blocks that make up this block as a 2-tuple.");
+    // endregion
+
+    // region BC3Texture
+    auto bc3_texture = BindBlockTexture<BC3Block>(bc3, "BC3Texture");
+    bc3_texture.doc() = "A texture comprised of BC3 blocks.";
     // endregion
 
     // region BC3Encoder
@@ -102,5 +116,5 @@ void InitBC3(py::module_ &s3tc) {
     bc3_decoder.def_property_readonly("bc4_decoder", &BC3Decoder::GetBC4Decoder,
                                       "Internal :py:class:`~quicktex.s3tc.bc4.BC4Decoder` used for alpha data. Readonly.");
     // endregion
-};
+}
 }  // namespace quicktex::bindings
