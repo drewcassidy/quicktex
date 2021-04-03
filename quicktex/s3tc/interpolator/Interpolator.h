@@ -94,10 +94,18 @@ class Interpolator {
      * Generates the 4 colors for a BC1 block from the given 5:6:5-packed colors
      * @param low first 5:6:5 color for the block
      * @param high second 5:6:5 color for the block
-     * @return and array of 4 Color values, with indices matching BC1 selectors
+     * @param allow_3color if true, a different interpolation mode will be used if high >= low
+     * @return an array of 4 Color values, with indices matching BC1 selectors
      */
-    virtual std::array<Color, 4> InterpolateBC1(uint16_t low, uint16_t high, bool allow_3color = true) const;
+    std::array<Color, 4> Interpolate565BC1(uint16_t low, uint16_t high, bool allow_3color = true) const;
 
+    /**
+     * Generates the 4 colors for a BC1 block from the given
+     * @param low the first color for the block, as a seperated 5:6:5 Color object
+     * @param high the second color for the block, as a seperated 5:6:5 Color object
+     * @param use_3color if the 3-color interpolation mode should be used
+     * @return an array of 4 Color values, with indices matching BC1 selectors
+     */
     virtual std::array<Color, 4> InterpolateBC1(Color low, Color high, bool use_3color) const;
 
     /**

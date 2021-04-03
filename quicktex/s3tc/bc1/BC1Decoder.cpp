@@ -36,7 +36,7 @@ ColorBlock<4, 4> BC1Decoder::DecodeBlock(const BC1Block &block, bool use_3color)
     const auto l = block.GetColor0Raw();
     const auto h = block.GetColor1Raw();
     const auto selectors = block.GetSelectors();
-    const auto colors = _interpolator->InterpolateBC1(l, h, use_3color);
+    const auto colors = _interpolator->Interpolate565BC1(l, h, use_3color);
 
     for (unsigned y = 0; y < 4; y++) {
         for (unsigned x = 0; x < 4; x++) {
