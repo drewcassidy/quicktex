@@ -123,7 +123,7 @@ class RawTexture : public Texture {
         }
 
         return block;
-    };
+    }
 
     template <int N, int M> void SetBlock(int block_x, int block_y, const ColorBlock<N, M> &block) {
         if (block_x < 0) throw std::invalid_argument("x value out of range.");
@@ -145,7 +145,7 @@ class RawTexture : public Texture {
                 for (int y = 0; y < M; y++) { SetPixel((pixel_x + x) % _width, (pixel_y + y) % _height, block.Get(x, y)); }
             }
         }
-    };
+    }
 
     virtual const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_pixels); }
     virtual uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_pixels); }
