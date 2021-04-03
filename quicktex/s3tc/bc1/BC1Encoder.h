@@ -46,8 +46,8 @@ class BC1Encoder final : public BlockEncoder<BlockTexture<BC1Block>> {
     using OrderingPair = std::tuple<unsigned, unsigned>;
     using CBlock = ColorBlock<4, 4>;
 
-    inline static constexpr unsigned min_power_iterations = 4;
-    inline static constexpr unsigned max_power_iterations = 10;
+    static constexpr unsigned min_power_iterations = 4;
+    static constexpr unsigned max_power_iterations = 10;
 
     enum class ColorMode {
         // An incomplete block with invalid selectors or endpoints

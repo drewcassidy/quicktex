@@ -89,6 +89,15 @@ void InitBC3(py::module_ &s3tc) {
         :param Interpolator interpolator: The interpolation mode to use for encoding. Default: :py:class:`~quicktex.s3tc.interpolator.Interpolator`.
     )doc");
 
+    bc3_encoder.def("encode", &BC3Encoder::Encode, "texture"_a, R"doc(
+        encode(self, texture: RawTexture) -> BC3Texture
+
+        Encode a raw texture into a new BC3Texture using the encoder's current settings.
+
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new BC3Texture with the same dimension as the input.
+    )doc");
+
     bc3_encoder.def_property_readonly("bc1_encoder", &BC3Encoder::GetBC1Encoder,
                                       "Internal :py:class:`~quicktex.s3tc.bc1.BC1Encoder` used for RGB data. Readonly.");
     bc3_encoder.def_property_readonly("bc4_encoder", &BC3Encoder::GetBC4Encoder,
@@ -109,6 +118,15 @@ void InitBC3(py::module_ &s3tc) {
         Create a new BC3 decoder with the specified interpolator.
 
         :param Interpolator interpolator: The interpolation mode to use for decoding. Default: :py:class:`~quicktex.s3tc.interpolator.Interpolator`.
+    )doc");
+
+    bc3_decoder.def("decode", &BC3Decoder::Decode, "texture"_a, R"doc(
+        decode(self, texture: BC3Texture) -> RawTexture
+
+        Decode a BC3 texture into a new RawTexture using the decoder's current settings.
+
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new RawTexture with the same dimensions as the input
     )doc");
 
     bc3_decoder.def_property_readonly("bc1_decoder", &BC3Decoder::GetBC1Decoder,

@@ -108,7 +108,7 @@ void InitBC1(py::module_ &s3tc) {
                "when using a BC1 texture.");
 
     bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode>(), "level"_a = 5, "color_mode"_a = BC1Encoder::ColorMode::FourColor);
-    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode, InterpolatorPtr>(), "level"_a, "color_mode"_a, "interpolator"_a, R"pbdoc(
+    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode, InterpolatorPtr>(), "level"_a, "color_mode"_a, "interpolator"_a, R"doc(
         __init__(self, level: int = 5, color_mode=ColorMode.FourColor, interpolator=Interpolator()) -> None
 
         Create a new BC1 encoder with the specified preset level, color mode, and interpolator.
@@ -116,16 +116,25 @@ void InitBC1(py::module_ &s3tc) {
         :param int level: The preset level of the resulting encoder, between 0 and 18 inclusive. See :py:meth:`set_level` for more information. Default: 5.
         :param ColorMode color_mode: The color mode of the resulting BC1Encoder. Default: :py:class:`~quicktex.s3tc.bc1.BC1Encoder.ColorMode.FourColor`.
         :param Interpolator interpolator: The interpolation mode to use for encoding. Default: :py:class:`~quicktex.s3tc.interpolator.Interpolator`.
-    )pbdoc");
+    )doc");
 
-    bc1_encoder.def("set_level", &BC1Encoder::SetLevel, "level"_a, R"pbdoc(
+    bc1_encoder.def("encode", &BC1Encoder::Encode, "texture"_a, R"doc(
+        encode(self, texture: RawTexture) -> BC1Texture
+
+        Encode a raw texture into a new BC1Texture using the encoder's current settings.
+
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new BC1Texture with the same dimension as the input.
+    )doc");
+
+    bc1_encoder.def("set_level", &BC1Encoder::SetLevel, "level"_a, R"doc(
         set_level(self, level : int = 5) -> None
 
         Select a preset quality level, between 0 and 18 inclusive.  Higher quality levels are slower, but produce blocks that are a closer match to input.
         This has no effect on the size of the resulting texture, since BC1 is a fixed-ratio compression method. For better control, see the advanced API below
 
         :param int level: The preset level of the resulting encoder, between 0 and 18 inclusive. Default: 5.
-    )pbdoc");
+    )doc");
 
     bc1_encoder.def_property_readonly("interpolator", &BC1Encoder::GetInterpolator,
                                       "The :py:class:`~quicktex.s3tc.interpolator.Interpolator` used by this encoder. This is a readonly property.");
@@ -173,14 +182,23 @@ void InitBC1(py::module_ &s3tc) {
     )doc");
 
     bc1_decoder.def(py::init<bool>(), "write_alpha"_a = false);
-    bc1_decoder.def(py::init<bool, InterpolatorPtr>(), "write_alpha"_a, "interpolator"_a, R"pbdoc(
+    bc1_decoder.def(py::init<bool, InterpolatorPtr>(), "write_alpha"_a, "interpolator"_a, R"doc(
         __init__(self, interpolator = Interpolator()) -> None
 
         Create a new BC1 decoder with the specificied interpolator.
 
         :param bool write_alpha: Determines if the alpha channel of the output is written to. Default: False;
         :param Interpolator interpolator: The interpolation mode to use for decoding. Default: :py:class:`~quicktex.s3tc.interpolator.Interpolator`.
-        )pbdoc");
+    )doc");
+
+    bc1_decoder.def("decode", &BC1Decoder::Decode, "texture"_a, R"doc(
+        decode(self, texture: BC1Texture) -> RawTexture
+
+        Decode a BC1 texture into a new RawTexture using the decoder's current settings.
+
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new RawTexture with the same dimensions as the input
+    )doc");
 
     bc1_decoder.def_property_readonly("interpolator", &BC1Decoder::GetInterpolator, "The interpolator used by this decoder. This is a readonly property.");
     bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha, "Determines if the alpha channel of the output is written to.");

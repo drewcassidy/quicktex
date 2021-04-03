@@ -94,6 +94,16 @@ void InitBC4(py::module_ &s3tc) {
 
         :param int channel: the channel that will be read from. 0 to 3 inclusive. Default: 3 (alpha).
     )doc");
+
+    bc4_encoder.def("encode", &BC4Encoder::Encode, "texture"_a, R"doc(
+        encode(self, texture: RawTexture) -> BC4Texture
+
+        Encode a raw texture into a new BC4Texture using the encoder's current settings.
+
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new BC4Texture with the same dimension as the input.
+    )doc");
+    
     bc4_encoder.def_property_readonly("channel", &BC4Encoder::GetChannel, "The channel that will be read from. 0 to 3 inclusive. Readonly.");
     // endregion
 
@@ -109,6 +119,16 @@ void InitBC4(py::module_ &s3tc) {
 
         :param int channel: The channel that will be written to. 0 to 3 inclusive. Default: 3 (alpha).
     )doc");
+
+    bc4_decoder.def("decode", &BC4Decoder::Decode, "texture"_a, R"doc(
+        decode(self, texture: BC4Texture) -> RawTexture
+
+        Decode a BC4 texture into a new RawTexture using the decoder's current settings.
+
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new RawTexture with the same dimensions as the input
+    )doc");
+    
     bc4_decoder.def_property_readonly("channel", &BC4Decoder::GetChannel, "The channel that will be written to. 0 to 3 inclusive. Readonly.");
     // endregion
 }

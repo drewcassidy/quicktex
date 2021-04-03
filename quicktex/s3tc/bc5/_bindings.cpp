@@ -80,6 +80,15 @@ void InitBC5(py::module_ &s3tc) {
         :param int chan1: the second channel that will be read from. 0 to 3 inclusive. Default: 1 (green).
     )doc");
 
+    bc5_encoder.def("encode", &BC5Encoder::Encode, "texture"_a, R"doc(
+        encode(self, texture: RawTexture) -> BC5Texture
+
+        Encode a raw texture into a new BC5Texture using the encoder's current settings.
+
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new BC5Texture with the same dimension as the input.
+    )doc");
+
     bc5_encoder.def_property_readonly("channels", &BC5Encoder::GetChannels, "A 2-tuple of channels that will be read from. 0 to 3 inclusive. Readonly.");
     bc5_encoder.def_property_readonly("bc4_encoders", &BC5Encoder::GetBC4Encoders,
                                       "2-tuple of internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` s used for each channel. Readonly.");
@@ -99,6 +108,15 @@ void InitBC5(py::module_ &s3tc) {
 
         :param int chan0: the first channel that will be written to. 0 to 3 inclusive. Default: 0 (red).
         :param int chan1: the second channel that will be written to. 0 to 3 inclusive. Default: 1 (green).
+    )doc");
+
+    bc5_decoder.def("decode", &BC5Decoder::Decode, "texture"_a, R"doc(
+        decode(self, texture: BC5Texture) -> RawTexture
+
+        Decode a BC5 texture into a new RawTexture using the decoder's current settings.
+
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new RawTexture with the same dimensions as the input
     )doc");
 
     bc5_decoder.def_property_readonly("channels", &BC5Decoder::GetChannels, "A 2-tuple of channels that will be written to. 0 to 3 inclusive. Readonly.");
