@@ -9,12 +9,11 @@ prefix = '_'
 modules = set()
 
 
-def find_submodules(mod):
-    print(mod.__name__)
-    modules.add(mod.__name__.split('.')[-1])
+def find_submodules(pkg):
+    modules.add(pkg.__name__.split('.')[-1])
 
-    for element_name in dir(mod):
-        element = getattr(mod, element_name)
+    for element_name in dir(pkg):
+        element = getattr(pkg, element_name)
         if inspect.ismodule(element):
             find_submodules(element)
 
@@ -22,17 +21,20 @@ def find_submodules(mod):
 if __name__ == "__main__":
     find_submodules(__import__(prefix + package))
     with tempfile.TemporaryDirectory() as out:
+
+        # generate stubs using mypy Stubgen
         sg.generate_stubs(sg.parse_options(['-o', out, '-p', prefix + package]))
-        print(os.path.abspath(os.curdir))
+
+        # walk resulting stubs and move them to their new location
         for root, dirs, files in os.walk(out):
             for stub_name in files:
-                module_path = os.path.relpath(root, out)
+                # location of the extension module's stub file
+                ext_module = os.path.relpath(root, out)
 
                 if stub_name != '__init__.pyi':
-                    module_path = os.path.join(module_path, os.path.splitext(stub_name)[0])
+                    ext_module = os.path.join(ext_module, os.path.splitext(stub_name)[0])
 
-                module_name = module_path.replace(prefix, '')
-
+                # open and read the stub file and replace all extension module names with their python counterparts
                 with open(os.path.join(root, stub_name), 'r') as fp:
                     contents = fp.read()
 
@@ -40,5 +42,9 @@ if __name__ == "__main__":
                     new_mod = mod.replace(prefix, '')
                     contents.replace(mod, new_mod)
 
-                with open(os.path.join(os.curdir, *module_name.split('.'), '__init__.pyi'), 'w') as fp:
+                # write out to the new location
+                py_module = ext_module.replace(prefix, '')
+
+                with open(os.path.join(os.curdir, *py_module.split('.'), '__init__.pyi'), 'w') as fp:
                     fp.write(contents)
+                    print(ext_module + ' -> ' + fp.name)
