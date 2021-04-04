@@ -1,7 +1,7 @@
 import inspect
 import os.path
 import tempfile
-import mypy.stubgen as sg
+import pybind11_stubgen as sg
 
 package = 'quicktex'
 prefix = '_'
@@ -20,16 +20,24 @@ def find_submodules(pkg):
 
 if __name__ == "__main__":
     find_submodules(__import__(prefix + package))
+
+    pkgdir = os.path.abspath(os.curdir)
+
     with tempfile.TemporaryDirectory() as out:
 
         # generate stubs using mypy Stubgen
-        sg.generate_stubs(sg.parse_options(['-o', out, '-p', prefix + package]))
+        sg.main(['-o', out, '--root-module-suffix', "", prefix + package])
+
+        os.curdir = pkgdir
 
         # walk resulting stubs and move them to their new location
         for root, dirs, files in os.walk(out):
             for stub_name in files:
                 # location of the extension module's stub file
                 ext_module = os.path.relpath(root, out)
+
+                if stub_name.split('.')[-1] != 'pyi':
+                    continue
 
                 if stub_name != '__init__.pyi':
                     ext_module = os.path.join(ext_module, os.path.splitext(stub_name)[0])

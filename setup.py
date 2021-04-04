@@ -123,6 +123,7 @@ setup(
     extras_require={
         "tests": ["nose", "parameterized"],
         "docs": ["sphinx", "myst-parser", "sphinx-rtd-theme"],
+        "stubs": ["pybind11-stubgen"],
     },
     entry_points='''
         [console_scripts]
