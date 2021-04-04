@@ -4,9 +4,13 @@ dist/
 build/
 *.egg-info
 *.pyc
+*.pyi
 
 #sphinx
 docs/_build/
+
+#mypy
+out
 
 # IDEs
 **/.idea
