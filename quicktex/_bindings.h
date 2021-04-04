@@ -165,16 +165,12 @@ template <typename T, typename Getter, typename Setter, typename Extent> void De
 
 template <typename B> py::class_<B> BindBlock(py::module_& m, const char* name) {
     const char* frombytes_doc = R"doc(
-        from_bytes(b) -> {0}
-
         Create a new {0} by copying a bytes-like object.
 
         :param b: A bytes-like object at least the size of the block.
     )doc";
 
     const char* tobytes_doc = R"doc(
-        tobytes(self) -> bytes
-
         Pack the {0} into a bytestring.
 
         :returns: A bytes object of length {1}.
@@ -200,8 +196,6 @@ template <typename B> py::class_<B> BindBlock(py::module_& m, const char* name) 
 
 template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& m, const char* name) {
     const auto* const constructor_str = R"doc(
-        __init__(self, width: int, height: int) -> None
-
         Create a new blank {0} with the given dimensions.
         If the dimenions are not multiples of the block dimensions, enough blocks will be allocated
         to cover the entire texture, and it will be implicitly cropped during decoding.
@@ -211,8 +205,6 @@ template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& 
         )doc";
 
     const auto* const from_bytes_str = R"doc(
-        from_bytes(b, width: int, height: int) -> {0}
-
         Create a new {0} with the given dimensions, and copy a bytes-like object into it.
         If the dimenions are not multiples of the block dimensions, enough blocks will be allocated
         to cover the entire texture, and it will be implicitly cropped during decoding.
@@ -232,9 +224,6 @@ template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& 
     block_texture.def_property_readonly("width_blocks", &BTex::BlocksX, "The width of the texture in blocks.");
     block_texture.def_property_readonly("height_blocks", &BTex::BlocksY, "The height of the texture in blocks.");
     block_texture.def_property_readonly("dimensions_blocks", &BTex::BlocksXY, "The dimensions of the texture in blocks.");
-
-    block_texture.def_property_readonly_static(
-        "block", [](py::object) { return py::type::of<B>(); }, "The block type used by this texture.");
 
     DefSubscript2D(block_texture, &BTex::GetBlock, &BTex::SetBlock, &BTex::BlocksXY);
 

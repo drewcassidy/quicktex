@@ -45,17 +45,12 @@ using InterpolatorPtr = std::shared_ptr<Interpolator>;
 void InitBC1(py::module_ &s3tc) {
     auto bc1 = s3tc.def_submodule("_bc1", "internal bc1 module");
 
-    py::options options;
-    options.disable_function_signatures();
-
     // region BC1Block
     auto bc1_block = BindBlock<BC1Block>(bc1, "BC1Block");
     bc1_block.doc() = "A single BC1 block.";
 
     bc1_block.def(py::init<>());
     bc1_block.def(py::init<Color, Color, BC1Block::SelectorArray>(), "color0"_a, "color1"_a, "selectors"_a, R"doc(
-        __init__(self, color0, color1, selectors: List[List[int]]) -> None
-
         Create a new BC1Block with the specified endpoints and selectors
 
         :param color0: The first endpoint
@@ -109,8 +104,6 @@ void InitBC1(py::module_ &s3tc) {
 
     bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode>(), "level"_a = 5, "color_mode"_a = BC1Encoder::ColorMode::FourColor);
     bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode, InterpolatorPtr>(), "level"_a, "color_mode"_a, "interpolator"_a, R"doc(
-        __init__(self, level: int = 5, color_mode=ColorMode.FourColor, interpolator=Interpolator()) -> None
-
         Create a new BC1 encoder with the specified preset level, color mode, and interpolator.
 
         :param int level: The preset level of the resulting encoder, between 0 and 18 inclusive. See :py:meth:`set_level` for more information. Default: 5.
@@ -119,8 +112,6 @@ void InitBC1(py::module_ &s3tc) {
     )doc");
 
     bc1_encoder.def("encode", &BC1Encoder::Encode, "texture"_a, R"doc(
-        encode(self, texture: RawTexture) -> BC1Texture
-
         Encode a raw texture into a new BC1Texture using the encoder's current settings.
 
         :param RawTexture texture: Input texture to encode.
@@ -128,8 +119,6 @@ void InitBC1(py::module_ &s3tc) {
     )doc");
 
     bc1_encoder.def("set_level", &BC1Encoder::SetLevel, "level"_a, R"doc(
-        set_level(self, level : int = 5) -> None
-
         Select a preset quality level, between 0 and 18 inclusive.  Higher quality levels are slower, but produce blocks that are a closer match to input.
         This has no effect on the size of the resulting texture, since BC1 is a fixed-ratio compression method. For better control, see the advanced API below
 
@@ -183,8 +172,6 @@ void InitBC1(py::module_ &s3tc) {
 
     bc1_decoder.def(py::init<bool>(), "write_alpha"_a = false);
     bc1_decoder.def(py::init<bool, InterpolatorPtr>(), "write_alpha"_a, "interpolator"_a, R"doc(
-        __init__(self, interpolator = Interpolator()) -> None
-
         Create a new BC1 decoder with the specificied interpolator.
 
         :param bool write_alpha: Determines if the alpha channel of the output is written to. Default: False;
@@ -192,8 +179,6 @@ void InitBC1(py::module_ &s3tc) {
     )doc");
 
     bc1_decoder.def("decode", &BC1Decoder::Decode, "texture"_a, R"doc(
-        decode(self, texture: BC1Texture) -> RawTexture
-
         Decode a BC1 texture into a new RawTexture using the decoder's current settings.
 
         :param RawTexture texture: Input texture to encode.

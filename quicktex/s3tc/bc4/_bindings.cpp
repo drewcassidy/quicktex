@@ -20,6 +20,7 @@
 #include "../../_bindings.h"
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <array>
 #include <cstddef>
@@ -39,8 +40,6 @@ using namespace quicktex::s3tc;
 
 void InitBC4(py::module_ &s3tc) {
     auto bc4 = s3tc.def_submodule("_bc4", "internal bc4 module");
-    py::options options;
-    options.disable_function_signatures();
 
     // region BC4Block
     auto bc4_block = BindBlock<BC4Block>(bc4, "BC4Block");
@@ -48,8 +47,6 @@ void InitBC4(py::module_ &s3tc) {
 
     bc4_block.def(py::init<>());
     bc4_block.def(py::init<uint8_t, uint8_t, BC4Block::SelectorArray>(), "endpoint0"_a, "endpoint1"_a, "selectors"_a, R"doc(
-        __init__(self, endpoint0: int, endpoint1: int, selectors: List[List[int]]) -> None
-
         Create a new BC4Block with the specified endpoints and selectors.
 
         :param int endpoint0: The first endpoint.
@@ -88,16 +85,12 @@ void InitBC4(py::module_ &s3tc) {
     )doc");
 
     bc4_encoder.def(py::init<uint8_t>(), py::arg("channel") = 3, R"doc(
-        __init__(channel : int = 3) -> None
-
         Create a new BC4 encoder with the specified channel
 
         :param int channel: the channel that will be read from. 0 to 3 inclusive. Default: 3 (alpha).
     )doc");
 
     bc4_encoder.def("encode", &BC4Encoder::Encode, "texture"_a, R"doc(
-        encode(self, texture: RawTexture) -> BC4Texture
-
         Encode a raw texture into a new BC4Texture using the encoder's current settings.
 
         :param RawTexture texture: Input texture to encode.
@@ -113,16 +106,12 @@ void InitBC4(py::module_ &s3tc) {
     )doc");
 
     bc4_decoder.def(py::init<uint8_t>(), py::arg("channel") = 3, R"doc(
-        __init__(channel : int = 3) -> None
-
         Create a new BC4 decoder with the specified channel
 
         :param int channel: The channel that will be written to. 0 to 3 inclusive. Default: 3 (alpha).
     )doc");
 
     bc4_decoder.def("decode", &BC4Decoder::Decode, "texture"_a, R"doc(
-        decode(self, texture: BC4Texture) -> RawTexture
-
         Decode a BC4 texture into a new RawTexture using the decoder's current settings.
 
         :param RawTexture texture: Input texture to encode.

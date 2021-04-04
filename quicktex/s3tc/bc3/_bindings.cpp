@@ -44,8 +44,6 @@ using BC1DecoderPtr = std::shared_ptr<BC1Decoder>;
 
 void InitBC3(py::module_ &s3tc) {
     auto bc3 = s3tc.def_submodule("_bc3", "internal bc3 module");
-    py::options options;
-    options.disable_function_signatures();
 
     // region BC3Block
     auto bc3_block = BindBlock<BC3Block>(bc3, "BC3Block");
@@ -53,8 +51,6 @@ void InitBC3(py::module_ &s3tc) {
 
     bc3_block.def(py::init<>());
     bc3_block.def(py::init<BC4Block, BC1Block>(), "alpha_block"_a, "color_block"_a, R"doc(
-        __init__(self, alpha_block: BC4Block, color_block: BC1Block) -> None
-
         Create a new BC3Block out of a BC4 block and a BC1 block.
 
         :param BC4Block alpha_block: The BC4 block used for alpha data.
@@ -73,15 +69,11 @@ void InitBC3(py::module_ &s3tc) {
 
     // region BC3Encoder
     py::class_<BC3Encoder> bc3_encoder(bc3, "BC3Encoder", R"doc(
-        Base: :py:class:`~quicktex.BlockEncoder`
-
         Encodes RGBA textures to BC3
     )doc");
 
     bc3_encoder.def(py::init<unsigned>(), "level"_a = 5);
     bc3_encoder.def(py::init<unsigned, InterpolatorPtr>(), "level"_a, "interpolator"_a, R"doc(
-        __init__(self, level: int = 5, interpolator=Interpolator()) -> None
-
         Create a new BC3 encoder with the specified preset level and interpolator.
 
         :param int level: The preset level of the resulting encoder, between 0 and 18 inclusive.
@@ -90,8 +82,6 @@ void InitBC3(py::module_ &s3tc) {
     )doc");
 
     bc3_encoder.def("encode", &BC3Encoder::Encode, "texture"_a, R"doc(
-        encode(self, texture: RawTexture) -> BC3Texture
-
         Encode a raw texture into a new BC3Texture using the encoder's current settings.
 
         :param RawTexture texture: Input texture to encode.
@@ -106,23 +96,17 @@ void InitBC3(py::module_ &s3tc) {
 
     // region BC3Decoder
     py::class_<BC3Decoder> bc3_decoder(bc3, "BC3Decoder", R"doc(
-        Base: :py:class:`~quicktex.BlockDecoder`
-
         Decodes BC3 textures to RGBA
     )doc");
 
     bc3_decoder.def(py::init<>());
     bc3_decoder.def(py::init<InterpolatorPtr>(), "interpolator"_a, R"doc(
-        __init__(interpolator = Interpolator()) -> None
-
         Create a new BC3 decoder with the specified interpolator.
 
         :param Interpolator interpolator: The interpolation mode to use for decoding. Default: :py:class:`~quicktex.s3tc.interpolator.Interpolator`.
     )doc");
 
     bc3_decoder.def("decode", &BC3Decoder::Decode, "texture"_a, R"doc(
-        decode(self, texture: BC3Texture) -> RawTexture
-
         Decode a BC3 texture into a new RawTexture using the decoder's current settings.
 
         :param RawTexture texture: Input texture to encode.

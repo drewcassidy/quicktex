@@ -37,8 +37,6 @@ using namespace quicktex::s3tc;
 
 void InitBC5(py::module_ &s3tc) {
     auto bc5 = s3tc.def_submodule("_bc5", "internal bc5 module");
-    py::options options;
-    options.disable_function_signatures();
 
     // region BC5Block
     auto bc5_block = BindBlock<BC5Block>(bc5, "BC5Block");
@@ -46,8 +44,6 @@ void InitBC5(py::module_ &s3tc) {
 
     bc5_block.def(py::init<>());
     bc5_block.def(py::init<BC4Block, BC4Block>(), "chan0_block"_a, "chan1_block"_a, R"doc(
-        __init__(self, chan0_block: BC4Block, chan1_block: BC4Block) -> None
-
         Create a new BC5Block out of two BC4 blocks.
 
         :param BC4Block chan0_block: The BC4 block used for the first channel.
@@ -66,14 +62,10 @@ void InitBC5(py::module_ &s3tc) {
 
     // region BC5Encoder
     py::class_<BC5Encoder> bc5_encoder(bc5, "BC5Encoder", R"doc(
-        Base: :py:class:`~quicktex.BlockEncoder`
-
         Encodes dual-channel textures to BC5.
     )doc");
 
     bc5_encoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1, R"doc(
-        __init__(chan0 : int = 0, chan1 : int = 1) -> None
-
         Create a new BC5 encoder with the specified channels
 
         :param int chan0: the first channel that will be read from. 0 to 3 inclusive. Default: 0 (red).
@@ -81,8 +73,6 @@ void InitBC5(py::module_ &s3tc) {
     )doc");
 
     bc5_encoder.def("encode", &BC5Encoder::Encode, "texture"_a, R"doc(
-        encode(self, texture: RawTexture) -> BC5Texture
-
         Encode a raw texture into a new BC5Texture using the encoder's current settings.
 
         :param RawTexture texture: Input texture to encode.
@@ -96,14 +86,10 @@ void InitBC5(py::module_ &s3tc) {
 
     // region BC5Decoder
     py::class_<BC5Decoder> bc5_decoder(bc5, "BC5Decoder", R"doc(
-        Base: :py:class:`~quicktex.BlockDecoder`
-
         Decodes BC4 textures to two channels.
     )doc");
 
     bc5_decoder.def(py::init<uint8_t, uint8_t>(), py::arg("chan0") = 0, py::arg("chan1") = 1, R"doc(
-        __init__(chan0 : int = 0, chan1 : int = 1) -> None
-
         Create a new BC5 decoder with the specified channels
 
         :param int chan0: the first channel that will be written to. 0 to 3 inclusive. Default: 0 (red).
@@ -111,8 +97,6 @@ void InitBC5(py::module_ &s3tc) {
     )doc");
 
     bc5_decoder.def("decode", &BC5Decoder::Decode, "texture"_a, R"doc(
-        decode(self, texture: BC5Texture) -> RawTexture
-
         Decode a BC5 texture into a new RawTexture using the decoder's current settings.
 
         :param RawTexture texture: Input texture to encode.

@@ -38,8 +38,8 @@ void InitS3TC(py::module_ &m) {
 
     InitInterpolator(s3tc);
     InitBC1(s3tc);
-    InitBC3(s3tc);
     InitBC4(s3tc);
+    InitBC3(s3tc);
     InitBC5(s3tc);
 }
 }  // namespace quicktex::bindings
