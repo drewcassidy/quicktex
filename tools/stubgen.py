@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
                 for mod in modules:
                     new_mod = mod.replace(prefix, '')
-                    contents.replace(mod, new_mod)
+                    contents = contents.replace(mod, new_mod)
 
                 # write out to the new location
                 py_module = ext_module.replace(prefix, '')
