@@ -52,7 +52,7 @@ PYBIND11_MODULE(_quicktex, m) {
 
     // RawTexture
 
-    py::class_<RawTexture> raw_texture(m, "RawTexture", texture);
+    py::class_<RawTexture, Texture> raw_texture(m, "RawTexture");
 
     raw_texture.def(py::init<int, int>(), "width"_a, "height"_a);
     raw_texture.def_static("frombytes", &BufferToTexture<RawTexture>, "data"_a, "width"_a, "height"_a);

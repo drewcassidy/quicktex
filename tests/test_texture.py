@@ -1,7 +1,7 @@
 import unittest
 import nose
 import quicktex
-import images
+import tests.images as images
 import tempfile
 from PIL import Image
 

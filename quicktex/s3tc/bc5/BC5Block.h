@@ -53,5 +53,8 @@ class alignas(8) BC5Block {
         chan0_block = pair.first;
         chan1_block = pair.second;
     }
+
+    bool operator==(const BC5Block& other) const = default;
+    bool operator!=(const BC5Block& other) const = default;
 };
 }  // namespace quicktex::s3tc

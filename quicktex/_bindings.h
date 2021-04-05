@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 
 #include <cstdint>
@@ -140,7 +141,8 @@ template <typename T, typename Getter, typename Setter, typename Extent> void De
         "__setitem__", [set, ext](T& self, int index, V val) { (self.*set)(PyIndex(index, (self.*ext)()), val); }, "key"_a, "value"_a);
 }
 
-template <typename T, typename Getter, typename Setter, typename Extent> void DefSubscript2D(py::class_<T> t, Getter&& get, Setter&& set, Extent&& ext) {
+template <typename Tpy, typename Getter, typename Setter, typename Extent> void DefSubscript2D(Tpy t, Getter&& get, Setter&& set, Extent&& ext) {
+    using T = typename Tpy::type;
     using V = typename std::invoke_result<Getter, T*, int, int>::type;
     using Coords = std::tuple<int, int>;
     t.def(
@@ -154,7 +156,7 @@ template <typename T, typename Getter, typename Setter, typename Extent> void De
         "key"_a);
     t.def(
         "__setitem__",
-        [set, ext](T& self, Coords pnt, V val) {
+        [set, ext](T& self, Coords pnt, const V& val) {
             Coords s = (self.*ext)();
             int x = PyIndex(std::get<0>(pnt), std::get<0>(s), "x");
             int y = PyIndex(std::get<1>(pnt), std::get<1>(s), "y");
@@ -186,6 +188,8 @@ template <typename B> py::class_<B> BindBlock(py::module_& m, const char* name) 
     block.def_property_readonly_static(
         "size", [](py::object) { return sizeof(B); }, "The size of the block in bytes.");
 
+    block.def(py::self == py::self);
+
     block.def_buffer([](B& b) { return py::buffer_info(reinterpret_cast<uint8_t*>(&b), sizeof(B)); });
     block.def(
         "tobytes", [](const B& b) { return py::bytes(reinterpret_cast<const char*>(&b), sizeof(B)); },
@@ -216,7 +220,7 @@ template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& 
 
     using BTex = BlockTexture<B>;
 
-    py::class_<BTex> block_texture(m, name, py::type::of<Texture>(), py::is_final());
+    py::class_<BTex, Texture> block_texture(m, name);
 
     block_texture.def(py::init<int, int>(), "width"_a, "height"_a, Format(constructor_str, name).c_str());
     block_texture.def_static("from_bytes", &BufferToTexture<BTex>, "data"_a, "width"_a, "height"_a, Format(from_bytes_str, name).c_str());

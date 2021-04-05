@@ -55,5 +55,8 @@ class alignas(8) BC3Block {
         alpha_block = blocks.first;
         color_block = blocks.second;
     }
+
+    bool operator==(const BC3Block& other) const = default;
+    bool operator!=(const BC3Block& other) const = default;
 };
 }  // namespace quicktex::s3tc

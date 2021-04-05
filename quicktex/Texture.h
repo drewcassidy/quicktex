@@ -22,11 +22,13 @@
 #include <array>
 #include <climits>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 #include "Color.h"
 #include "ColorBlock.h"
@@ -69,40 +71,25 @@ class RawTexture : public Texture {
      * @param width width of the texture in pixels
      * @param height height of the texture in pixels
      */
-    RawTexture(int width, int height);
+    RawTexture(int width, int height) : Base(width, height), _pixels(_width * _height) {}
 
-    /**
-     * Move constructor
-     * @param other object to move
-     */
-    RawTexture(RawTexture &&other);
+    Color GetPixel(int x, int y) const {
+        if (x < 0 || x >= _width) throw std::invalid_argument("x value out of range.");
+        if (y < 0 || y >= _height) throw std::invalid_argument("y value out of range.");
+        return _pixels.at(x + (y * _width));
+    }
 
-    /**
-     * Copy constructor
-     * @param other object to copy
-     */
-    RawTexture(const RawTexture &other);
+    void SetPixel(int x, int y, Color val) {
+        if (x < 0 || x >= _width) throw std::invalid_argument("x value out of range.");
+        if (y < 0 || y >= _height) throw std::invalid_argument("y value out of range.");
+        _pixels.at(x + (y * _width)) = val;
+    }
 
-    /**
-     * assignment operator
-     * @param other object to copy (passed by value)
-     * @return this
-     */
-    RawTexture &operator=(RawTexture other) noexcept;
-
-    virtual ~RawTexture() override { delete[] _pixels; }
-
-    friend void swap(RawTexture &first, RawTexture &second) noexcept;
-
-    virtual Color GetPixel(int x, int y) const;
-
-    virtual void SetPixel(int x, int y, Color val);
-
-    virtual size_t Size() const noexcept override { return static_cast<unsigned long>(Width() * Height()) * sizeof(Color); }
+    size_t Size() const noexcept override { return static_cast<unsigned long>(Width() * Height()) * sizeof(Color); }
 
     template <int N, int M> ColorBlock<N, M> GetBlock(int block_x, int block_y) const {
-        if (block_x < 0 || (block_x + 1) * N > _width) throw std::invalid_argument("x value out of range.");
-        if (block_y < 0 || (block_y + 1) * M > _height) throw std::invalid_argument("y value out of range.");
+        if (block_x < 0 || (block_x + 1) * N > _width) throw std::out_of_range("x value out of range.");
+        if (block_y < 0 || (block_y + 1) * M > _height) throw std::out_of_range("y value out of range.");
 
         // coordinates in the image of the top-left pixel of the selected block
         ColorBlock<N, M> block;
@@ -126,8 +113,8 @@ class RawTexture : public Texture {
     }
 
     template <int N, int M> void SetBlock(int block_x, int block_y, const ColorBlock<N, M> &block) {
-        if (block_x < 0) throw std::invalid_argument("x value out of range.");
-        if (block_y < 0) throw std::invalid_argument("y value out of range.");
+        if (block_x < 0) throw std::out_of_range("x value out of range.");
+        if (block_y < 0) throw std::out_of_range("y value out of range.");
 
         // coordinates in the image of the top-left pixel of the selected block
         int pixel_x = block_x * N;
@@ -147,14 +134,19 @@ class RawTexture : public Texture {
         }
     }
 
-    virtual const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_pixels); }
-    virtual uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_pixels); }
+    virtual const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_pixels.data()); }
+    virtual uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_pixels.data()); }
 
    protected:
-    Color *_pixels;
+    std::vector<Color> _pixels;
 };
 
-template <typename B> class BlockTexture final: public Texture {
+template <typename B> class BlockTexture final : public Texture {
+   private:
+    std::vector<B> _blocks;
+    int _width_b;
+    int _height_b;
+
    public:
     using BlockType = B;
     using Base = Texture;
@@ -164,65 +156,32 @@ template <typename B> class BlockTexture final: public Texture {
      * @param width width of the texture in pixels. must be divisible by B::Width
      * @param height height of the texture in pixels. must be divisible by B::Height
      */
-    BlockTexture(int width, int height) : Base(width, height) { _blocks = new B[(size_t)(BlocksX() * BlocksY())]; }
-
-    /**
-     * Move constructor
-     * @param other object to move
-     */
-    BlockTexture(BlockTexture<B> &&other) : Base(other._width, other._height) {
-        _blocks = other._blocks;
-        other._blocks = nullptr;
+    BlockTexture(int width, int height) : Base(width, height) {
+        _width_b = (_width + B::Width - 1) / B::Width;
+        _height_b = (_height + B::Height - 1) / B::Height;
+        _blocks = std::vector<B>(_width_b * _height_b);
     }
 
-    /**
-     * Copy constructor
-     * @param other object to copy
-     */
-    BlockTexture(const BlockTexture<B> &other) : BlockTexture(other._width, other._height) { std::memcpy(_blocks, other._blocks, Size()); }
-
-    /**
-     * assignment operator
-     * @param other object to copy (passed by value)
-     * @return this
-     */
-    BlockTexture &operator=(BlockTexture<B> other) {
-        swap(*this, other);
-        return *this;
-    }
-
-    friend void swap(BlockTexture<B> &first, BlockTexture<B> &second) noexcept {
-        using std::swap;  // enable ADL
-        swap(first._blocks, second._blocks);
-        swap(first._width, second._width);
-        swap(first._height, second._height);
-    }
-
-    ~BlockTexture() { delete[] _blocks; }
-
-    constexpr int BlocksX() const { return (_width + B::Width - 1) / B::Width; }
-    constexpr int BlocksY() const { return (_height + B::Height - 1) / B::Height; }
-    constexpr std::tuple<int, int> BlocksXY() const { return std::tuple<int, int>(BlocksX(), BlocksY()); }
+    constexpr int BlocksX() const { return _width_b; }
+    constexpr int BlocksY() const { return _height_b; }
+    constexpr std::tuple<int, int> BlocksXY() const { return std::tuple<int, int>(_width_b, _height_b); }
 
     B GetBlock(int x, int y) const {
-        if (x < 0 || x >= BlocksX()) throw std::out_of_range("x value out of range.");
-        if (y < 0 || y >= BlocksY()) throw std::out_of_range("y value out of range.");
-        return _blocks[x + (y * _width)];
+        if (x < 0 || x >= _width_b) throw std::out_of_range("x value out of range.");
+        if (y < 0 || y >= _height_b) throw std::out_of_range("y value out of range.");
+        return _blocks.at(x + (y * _width_b));
     }
 
     void SetBlock(int x, int y, const B &val) {
-        if (x < 0 || x >= BlocksX()) throw std::out_of_range("x value out of range.");
-        if (y < 0 || y >= BlocksY()) throw std::out_of_range("y value out of range.");
-        _blocks[x + (y * _width)] = val;
+        if (x < 0 || x >= _width_b) throw std::out_of_range("x value out of range.");
+        if (y < 0 || y >= _height_b) throw std::out_of_range("y value out of range.");
+        _blocks.at(x + (y * _width_b)) = val;
     }
 
-    size_t Size() const noexcept override { return (size_t)(BlocksX() * BlocksY()) * sizeof(B); }
+    size_t Size() const noexcept override { return _blocks.size() * sizeof(B); }
 
-    const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_blocks); }
-    uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_blocks); }
-
-   protected:
-    B *_blocks;
+    const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_blocks.data()); }
+    uint8_t *Data() noexcept override{ return reinterpret_cast<uint8_t *>(_blocks.data()); }
 };
 
 }  // namespace quicktex

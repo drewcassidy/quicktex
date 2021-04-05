@@ -99,6 +99,9 @@ class alignas(8) BC4Block {
     /// The interpolated values of this block as an array of 8 integers.
     std::array<uint8_t, 8> GetValues() const { return Is6Value() ? GetValues6() : GetValues8(); }
 
+    bool operator==(const BC4Block& other) const = default;
+    bool operator!=(const BC4Block& other) const = default;
+
    private:
     std::array<uint8_t, 8> GetValues6() const;
     std::array<uint8_t, 8> GetValues8() const;

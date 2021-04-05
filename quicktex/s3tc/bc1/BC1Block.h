@@ -122,5 +122,8 @@ class alignas(8) BC1Block {
     void SetSelectors(const SelectorArray& unpacked);
 
     bool Is3Color() const { return GetColor0Raw() <= GetColor1Raw(); }
+
+    bool operator==(const BC1Block& other) const = default;
+    bool operator!=(const BC1Block& other) const = default;
 };
 }  // namespace quicktex::s3tc
