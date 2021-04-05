@@ -26,8 +26,6 @@
 #include <functional>
 #include <vector>
 
-#include "ndebug.h"
-
 #define UINT5_MAX 0x1FU  // 31
 #define UINT6_MAX 0x3FU  // 63
 
