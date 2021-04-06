@@ -1,8 +1,9 @@
 import unittest
 import nose
-from parameterized import parameterized_class
-from quicktex.s3tc.bc1 import BC1Block, BC1Texture, BC1Encoder
+from parameterized import parameterized, parameterized_class
+from quicktex.s3tc.bc1 import BC1Block, BC1Texture, BC1Encoder, BC1Decoder
 from tests.images import BC1Blocks
+from PIL import Image, ImageChops
 
 in_endpoints = ((253, 254, 255), (65, 70, 67))  # has some small changes that should encode the same
 out_endpoints = ((255, 255, 255, 255), (66, 69, 66, 255))
@@ -124,14 +125,14 @@ class TestBC1Texture(unittest.TestCase):
         ("3Color_Black", BC1Encoder.ColorMode.ThreeColorBlack),
     ])
 class TestBC1Encoder(unittest.TestCase):
-    """Test BC1 encoder with a variety of inputs with 3 color blocks disabled."""
+    """Test BC1Encoder"""
 
     @classmethod
     def setUpClass(cls):
         cls.bc1_encoder = BC1Encoder(5, cls.color_mode)
 
     def test_block_4color(self):
-        """Test encoder output with 4 color greyscale testblock."""
+        """Test encoder output with 4 color greyscale test block"""
         out_tex = self.bc1_encoder.encode(BC1Blocks.greyscale.texture)
 
         self.assertEqual(out_tex.dimensions_blocks, (1, 1), 'encoded texture has multiple blocks')
@@ -142,7 +143,7 @@ class TestBC1Encoder(unittest.TestCase):
         self.assertEqual(out_block, BC1Blocks.greyscale.block, 'encoded block is incorrect')
 
     def test_block_3color(self):
-        """Test encoder output with 3 color test block."""
+        """Test encoder output with 3 color test block"""
         out_tex = self.bc1_encoder.encode(BC1Blocks.three_color.texture)
 
         self.assertEqual(out_tex.dimensions_blocks, (1, 1), 'encoded texture has multiple blocks')
@@ -156,7 +157,7 @@ class TestBC1Encoder(unittest.TestCase):
             self.assertFalse(out_block.is_3color, 'returned 3-color block in 4-color mode')
 
     def test_block_3color_black(self):
-        """Test encoder output with 3 color test block with black pixels."""
+        """Test encoder output with 3 color test block with black pixels"""
         out_tex = self.bc1_encoder.encode(BC1Blocks.three_color_black.texture)
 
         self.assertEqual(out_tex.dimensions_blocks, (1, 1), 'encoded texture has multiple blocks')
@@ -172,6 +173,32 @@ class TestBC1Encoder(unittest.TestCase):
             self.assertFalse(has_black and out_block.is_3color, 'returned 3color block with black pixels')
         else:
             self.assertFalse(out_block.is_3color, 'returned 3-color block in 4-color mode')
+
+
+class TestBC1Decoder(unittest.TestCase):
+    """Test BC1Decoder"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.bc1_decoder = BC1Decoder()
+
+    @parameterized.expand([
+        ("4color", BC1Blocks.greyscale.block, BC1Blocks.greyscale.image),
+        ("3color", BC1Blocks.three_color.block, BC1Blocks.three_color.image),
+        ("3color_black", BC1Blocks.three_color_black.block, BC1Blocks.three_color_black.image)
+    ])
+    def test_block(self, _, block, image):
+        """Test decoder output for a single block"""
+        in_tex = BC1Texture(4, 4)
+        in_tex[0, 0] = block
+        out_tex = self.bc1_decoder.decode(in_tex)
+
+        self.assertEqual(out_tex.dimensions, (4, 4), 'decoded texture has incorrect dimensions')
+
+        out_img = Image.frombytes('RGBA', (4, 4), out_tex.tobytes())
+        img_diff = ImageChops.difference(out_img, image).convert('L')
+        img_hist = img_diff.histogram()
+        self.assertEqual(16, img_hist[0], 'decoded block is incorrect')
 
 
 if __name__ == '__main__':

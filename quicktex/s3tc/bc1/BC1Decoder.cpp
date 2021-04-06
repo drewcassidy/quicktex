@@ -29,7 +29,7 @@
 
 namespace quicktex::s3tc {
 
-ColorBlock<4, 4> BC1Decoder::DecodeBlock(const BC1Block &block) const { return DecodeBlock(block, false); }
+ColorBlock<4, 4> BC1Decoder::DecodeBlock(const BC1Block &block) const { return DecodeBlock(block, true); }
 
 ColorBlock<4, 4> BC1Decoder::DecodeBlock(const BC1Block &block, bool use_3color) const {
     auto output = ColorBlock<4, 4>();
