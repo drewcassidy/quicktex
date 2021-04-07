@@ -104,6 +104,11 @@ class TestBC1Texture(unittest.TestCase):
 
         self.assertEqual(self.tex[-1, -1], self.tex[self.wb - 1, self.hb - 1], 'incorrect negative subscripting')
 
+        with self.assertRaises(IndexError):
+            thing = self.tex[self.wb, self.hb]
+        with self.assertRaises(IndexError):
+            thing = self.tex[-1 - self.wb, -1 - self.hb]
+
     def test_buffer(self):
         """Test the buffer protocol of BC1Texture"""
         mv = memoryview(self.tex)
