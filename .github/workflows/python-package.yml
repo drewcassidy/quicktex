@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.7, 3.8, 3.9 ]
-        os: [ macos-latest, windows-latest, Ubuntu-latest]
+        os: [ macos-latest, windows-latest, Ubuntu-latest ]
 
     steps:
       - uses: actions/checkout@v2
@@ -39,6 +39,11 @@ jobs:
         run: |
           echo "CC=gcc-10" >> $GITHUB_ENV
           echo "CXX=g++-10" >> $GITHUB_ENV
+
+      - name: Set up macOS environment
+        if: runner.os == 'macOS'
+        # openMP isnt part of core apple clang for some reason?
+        run: brew install openmp
 
       - name: Install dependencies
         run: |
