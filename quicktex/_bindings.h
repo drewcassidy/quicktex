@@ -195,7 +195,7 @@ template <typename B> py::class_<B> BindBlock(py::module_& m, const char* name) 
         "tobytes", [](const B& b) { return py::bytes(reinterpret_cast<const char*>(&b), sizeof(B)); },
         Format(tobytes_doc, name, std::to_string(sizeof(B))).c_str());
 
-    return block;
+    return std::move(block);
 }
 
 template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& m, const char* name) {
@@ -231,6 +231,6 @@ template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& 
 
     DefSubscript2D(block_texture, &BTex::GetBlock, &BTex::SetBlock, &BTex::BlocksXY);
 
-    return block_texture;
+    return std::move(block_texture);
 }
 }  // namespace quicktex::bindings
