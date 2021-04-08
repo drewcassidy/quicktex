@@ -43,7 +43,7 @@ jobs:
       - name: Set up macOS environment
         if: runner.os == 'macOS'
         # openMP isnt part of core apple clang for some reason?
-        run: brew install openmp
+        run: brew install libomp
 
       - name: Install dependencies
         run: |
