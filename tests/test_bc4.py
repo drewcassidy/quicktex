@@ -51,17 +51,20 @@ class TestBC4Block(unittest.TestCase):
         self.assertEqual(block.endpoints, self.endpoints, 'incorrect endpoints')
 
     def test_eq(self):
+        """Test equality between two identical blocks"""
         block1 = BC4Block.frombytes(self.block_bytes)
         block2 = BC4Block.frombytes(self.block_bytes)
         self.assertEqual(block1, block2, 'identical blocks not equal')
 
     def test_values_6(self):
+        """Test values of a 6-value block"""
         block = BC4Block(8, 248, [[0] * 4] * 4)
 
         self.assertEqual(block.values, [8, 248, 56, 104, 152, 200, 0, 255], 'incorrect values')
         self.assertTrue(block.is_6value, 'incorrect is_6value')
 
     def test_values_8(self):
+        """Test values of an 8-value block"""
         block = BC4Block(240, 16, [[0] * 4] * 4)
 
         self.assertEqual(block.values, [240, 16, 208, 176, 144, 112, 80, 48], 'incorrect values')

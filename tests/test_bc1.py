@@ -52,6 +52,7 @@ class TestBC1Block(unittest.TestCase):
         self.assertFalse(block.is_3color, 'incorrect color mode')
 
     def test_eq(self):
+        """Test equality between two identical blocks"""
         block1 = BC1Block.frombytes(block_bytes)
         block2 = BC1Block.frombytes(block_bytes)
         self.assertEqual(block1, block2, 'identical blocks not equal')
