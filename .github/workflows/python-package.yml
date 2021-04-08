@@ -57,3 +57,4 @@ jobs:
 
       - name: Test with nose
         run: python -I -m nose tests -d
+        working-directory: ..
