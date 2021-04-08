@@ -55,6 +55,9 @@ jobs:
       - name: Compile and install
         run: python setup.py build --debug install
 
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+
       - name: Test with nose
         run: python -I -m nose tests -d
-        working-directory: ..
+        working-directory: tests
