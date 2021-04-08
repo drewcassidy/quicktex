@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.7, 3.8, 3.9 ]
-        os: [ macos-latest, windows-latest, Ubuntu-20.04]
+        os: [ macos-latest, windows-latest, Ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install flake8 ninja Pillow click nose parameterized pybind11-stubgen
+          python -m pip install flake8 ninja Pillow click nose parameterized
 
       - name: Lint with flake8
         run: |
@@ -56,5 +56,4 @@ jobs:
         run: python setup.py build --debug install
 
       - name: Test with nose
-        run: python -I -m nose tests -d
-        working-directory: tests
+        run: nosetests tests -d
