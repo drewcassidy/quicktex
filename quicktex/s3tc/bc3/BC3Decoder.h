@@ -21,9 +21,9 @@
 
 #include <memory>
 
-#include "../../BlockDecoder.h"
-#include "../../BlockView.h"
-#include "../../ndebug.h"
+#include "../../ColorBlock.h"
+#include "../../Decoder.h"
+#include "../../Texture.h"
 #include "../bc1/BC1Decoder.h"
 #include "../bc4/BC4Decoder.h"
 #include "../interpolator/Interpolator.h"
@@ -31,7 +31,7 @@
 
 namespace quicktex::s3tc {
 
-class BC3Decoder : public BlockDecoderTemplate<BC3Block, 4, 4> {
+class BC3Decoder : public BlockDecoder<BlockTexture<BC3Block>> {
    public:
     using BC1DecoderPtr = std::shared_ptr<BC1Decoder>;
     using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
@@ -41,7 +41,7 @@ class BC3Decoder : public BlockDecoderTemplate<BC3Block, 4, 4> {
 
     BC3Decoder() : BC3Decoder(std::make_shared<Interpolator>()) {}
 
-    void DecodeBlock(Color4x4 dest, BC3Block *const block) const noexcept(ndebug) override;
+    ColorBlock<4, 4> DecodeBlock(const BC3Block &block) const override;
 
     BC1DecoderPtr GetBC1Decoder() const { return _bc1_decoder; }
     BC4DecoderPtr GetBC4Decoder() const { return _bc4_decoder; }

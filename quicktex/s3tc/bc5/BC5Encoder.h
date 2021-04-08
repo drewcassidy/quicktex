@@ -24,15 +24,14 @@
 #include <tuple>
 #include <type_traits>
 
-#include "../../BlockEncoder.h"
-#include "../../BlockView.h"
-#include "../../ndebug.h"
+#include "../../ColorBlock.h"
+#include "../../Encoder.h"
+#include "../../Texture.h"
 #include "../bc4/BC4Encoder.h"
 #include "BC5Block.h"
 
 namespace quicktex::s3tc {
-
-class BC5Encoder : public BlockEncoderTemplate<BC5Block, 4, 4> {
+class BC5Encoder : public BlockEncoder<BlockTexture<BC5Block>> {
    public:
     using ChannelPair = std::tuple<uint8_t, uint8_t>;
     using BC4EncoderPtr = std::shared_ptr<BC4Encoder>;
@@ -41,7 +40,7 @@ class BC5Encoder : public BlockEncoderTemplate<BC5Block, 4, 4> {
     BC5Encoder(uint8_t chan0 = 0, uint8_t chan1 = 1) : BC5Encoder(std::make_shared<BC4Encoder>(chan0), std::make_shared<BC4Encoder>(chan1)) {}
     BC5Encoder(BC4EncoderPtr chan0_encoder, BC4EncoderPtr chan1_encoder) : _chan0_encoder(chan0_encoder), _chan1_encoder(chan1_encoder) {}
 
-    void EncodeBlock(Color4x4 pixels, BC5Block *dest) const override;
+    BC5Block EncodeBlock(const ColorBlock<4, 4> &pixels) const override;
 
     ChannelPair GetChannels() const { return ChannelPair(_chan0_encoder->GetChannel(), _chan1_encoder->GetChannel()); }
 

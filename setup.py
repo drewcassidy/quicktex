@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import glob
 import subprocess
 
 from setuptools import setup, Extension, find_packages
@@ -99,6 +100,9 @@ class CMakeBuild(build_ext):
         )
 
 
+# Find stub files
+stubs = [path.replace('quicktex/', '') for path in glob.glob('quicktex/**/*.pyi', recursive=True)]
+
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
@@ -113,10 +117,17 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     packages=find_packages('.'),
     package_dir={'': '.'},
-    install_requires=["Pillow"],
+    package_data={'': ['py.typed'] + stubs},
+    include_package_data=True,
+    install_requires=["Pillow", "click"],
     extras_require={
         "tests": ["nose", "parameterized"],
         "docs": ["sphinx", "myst-parser", "sphinx-rtd-theme"],
+        "stubs": ["pybind11-stubgen"],
     },
+    entry_points='''
+        [console_scripts]
+        quicktex=quicktex.cli:cli
+    ''',
     zip_safe=False,
 )

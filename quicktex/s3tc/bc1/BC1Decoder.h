@@ -20,28 +20,26 @@
 #pragma once
 
 #include <memory>
-#include <type_traits>
 
-#include "../../BlockDecoder.h"
-#include "../../BlockView.h"
-#include "../../ndebug.h"
+#include "../../ColorBlock.h"
+#include "../../Decoder.h"
+#include "../../Texture.h"
 #include "../interpolator/Interpolator.h"
 #include "BC1Block.h"
 
 namespace quicktex::s3tc {
-class BC1Decoder final : public BlockDecoderTemplate<BC1Block, 4, 4> {
+class BC1Decoder final : public BlockDecoder<BlockTexture<BC1Block>> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
-    BC1Decoder(bool write_alpha, InterpolatorPtr interpolator) : write_alpha(write_alpha), _interpolator(interpolator) {}
+    BC1Decoder(bool vwrite_alpha, InterpolatorPtr interpolator) : write_alpha(vwrite_alpha), _interpolator(interpolator) {}
 
-    BC1Decoder(bool write_alpha = false) : BC1Decoder(write_alpha, std::make_shared<Interpolator>()) {}
+    BC1Decoder(bool vwrite_alpha = false) : BC1Decoder(vwrite_alpha, std::make_shared<Interpolator>()) {}
 
     BC1Decoder(InterpolatorPtr interpolator) : BC1Decoder(false, interpolator) {}
 
-    void DecodeBlock(Color4x4 dest, BC1Block *const block) const noexcept(ndebug) override;
-
-    void DecodeBlock(Color4x4 dest, BC1Block *const block, bool allow_3color) const noexcept(ndebug);
+    ColorBlock<4, 4> DecodeBlock(const BC1Block& block) const override;
+    ColorBlock<4, 4> DecodeBlock(const BC1Block& block, bool use_3color) const;
 
     InterpolatorPtr GetInterpolator() const { return _interpolator; }
 

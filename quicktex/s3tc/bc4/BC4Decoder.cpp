@@ -22,24 +22,31 @@
 #include <array>    // for array
 #include <cassert>  // for assert
 
-#include "../../BlockView.h"  // for ColorBlock
-#include "../../ndebug.h"     // for ndebug
+#include "../../Color.h"
+#include "../../ColorBlock.h"
 #include "BC4Block.h"
 
-namespace quicktex::s3tc  {
-void BC4Decoder::DecodeBlock(Byte4x4 dest, BC4Block *const block) const noexcept(ndebug) {
-    auto l = block->GetLowAlpha();
-    auto h = block->GetHighAlpha();
-
-    auto values = BC4Block::GetValues(l, h);
-    auto selectors = block->UnpackSelectors();
+namespace quicktex::s3tc {
+void BC4Decoder::DecodeInto(ColorBlock<4, 4> &dest, const BC4Block &block) const {
+    auto values = block.GetValues();
+    auto selectors = block.GetSelectors();
 
     for (unsigned y = 0; y < 4; y++) {
         for (unsigned x = 0; x < 4; x++) {
             const auto selector = selectors[y][x];
             assert(selector < 8);
-            dest.Set(x, y, values[selector]);
+
+            auto color = dest.Get(x, y);
+            color[_channel] = values[selector];
+            dest.Set(x, y, color);
         }
     }
+}
+
+ColorBlock<4, 4> BC4Decoder::DecodeBlock(const BC4Block &block) const {
+    auto output = ColorBlock<4, 4>();
+    DecodeInto(output, block);
+
+    return output;
 }
 }  // namespace quicktex::s3tc

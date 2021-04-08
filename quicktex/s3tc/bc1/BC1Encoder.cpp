@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -28,14 +29,14 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "../../BlockView.h"
 #include "../../Color.h"
+#include "../../ColorBlock.h"
 #include "../../Matrix4x4.h"
+#include "../../Texture.h"
 #include "../../Vector4.h"
 #include "../../Vector4Int.h"
 #include "../../bitwiseEnums.h"
 #include "../../util.h"
-#include "../interpolator/Interpolator.h"
 #include "Histogram.h"
 #include "OrderTable.h"
 #include "SingleColorTable.h"
@@ -258,11 +259,10 @@ void BC1Encoder::SetOrderings(OrderingPair orderings) {
 void BC1Encoder::SetPowerIterations(unsigned int power_iters) { _power_iterations = clamp(power_iters, min_power_iterations, max_power_iterations); }
 
 // Public methods
-void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
+BC1Block BC1Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
     if (pixels.IsSingleColor()) {
         // single-color pixel block, do it the fast way
-        WriteBlockSolid(pixels.Get(0, 0), dest);
-        return;
+        return WriteBlockSolid(pixels.Get(0, 0));
     }
 
     auto metrics = pixels.GetMetrics();
@@ -289,12 +289,12 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
         EndpointMode endpoint_mode = (round == 1) ? EndpointMode::BoundingBox : _endpoint_mode;
 
         EncodeResults trial_orig;
-        FindEndpoints(pixels, trial_orig, metrics, endpoint_mode);
+        FindEndpoints(trial_orig, pixels, metrics, endpoint_mode);
 
         EncodeResults trial_result = trial_orig;
 
-        FindSelectors<ColorMode::FourColor>(pixels, trial_result, error_mode);
-        RefineBlockLS<ColorMode::FourColor>(pixels, trial_result, metrics, error_mode, total_ls_passes);
+        FindSelectors<ColorMode::FourColor>(trial_result, pixels, error_mode);
+        RefineBlockLS<ColorMode::FourColor>(trial_result, pixels, metrics, error_mode, total_ls_passes);
 
         if (!needs_block_error || trial_result.error < result.error) {
             result = trial_result;
@@ -304,20 +304,20 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
 
     // First refinement pass using ordered cluster fit
     if (result.error > 0 && use_likely_orderings) {
-        for (unsigned iter = 0; iter < total_cf_passes; iter++) { RefineBlockCF<ColorMode::FourColor>(pixels, result, metrics, _error_mode, _orderings4); }
+        for (unsigned iter = 0; iter < total_cf_passes; iter++) { RefineBlockCF<ColorMode::FourColor>(result, pixels, metrics, _error_mode, _orderings4); }
     }
 
     // try for 3-color block
     if (result.error > 0 && (bool)(_color_mode & ColorMode::ThreeColor)) {
         EncodeResults trial_result = orig;
 
-        FindSelectors<ColorMode::ThreeColor>(pixels, trial_result, ErrorMode::Full);
-        RefineBlockLS<ColorMode::ThreeColor>(pixels, trial_result, metrics, ErrorMode::Full, total_ls_passes);
+        FindSelectors<ColorMode::ThreeColor>(trial_result, pixels, ErrorMode::Full);
+        RefineBlockLS<ColorMode::ThreeColor>(trial_result, pixels, metrics, ErrorMode::Full, total_ls_passes);
 
         // First refinement pass using ordered cluster fit
         if (trial_result.error > 0 && use_likely_orderings) {
             for (unsigned iter = 0; iter < total_cf_passes; iter++) {
-                RefineBlockCF<ColorMode::ThreeColor>(pixels, trial_result, metrics, ErrorMode::Full, _orderings3);
+                RefineBlockCF<ColorMode::ThreeColor>(trial_result, pixels, metrics, ErrorMode::Full, _orderings3);
             }
         }
 
@@ -329,21 +329,21 @@ void BC1Encoder::EncodeBlock(Color4x4 pixels, BC1Block *dest) const {
         EncodeResults trial_result;
         BlockMetrics metrics_no_black = pixels.GetMetrics(true);
 
-        FindEndpoints(pixels, trial_result, metrics_no_black, EndpointMode::PCA, true);
-        FindSelectors<ColorMode::ThreeColorBlack>(pixels, trial_result, ErrorMode::Full);
-        RefineBlockLS<ColorMode::ThreeColorBlack>(pixels, trial_result, metrics_no_black, ErrorMode::Full, total_ls_passes);
+        FindEndpoints(trial_result, pixels, metrics_no_black, EndpointMode::PCA, true);
+        FindSelectors<ColorMode::ThreeColorBlack>(trial_result, pixels, ErrorMode::Full);
+        RefineBlockLS<ColorMode::ThreeColorBlack>(trial_result, pixels, metrics_no_black, ErrorMode::Full, total_ls_passes);
 
         if (trial_result.error < result.error) { result = trial_result; }
     }
 
     // refine endpoints by searching for nearby colors
-    if (result.error > 0 && _search_rounds > 0) { EndpointSearch(pixels, result); }
+    if (result.error > 0 && _search_rounds > 0) { EndpointSearch(result, pixels); }
 
-    WriteBlock(result, dest);
+    return WriteBlock(result);
 }
 
 // Private methods
-void BC1Encoder::WriteBlockSolid(Color color, BC1Block *dest) const {
+BC1Block BC1Encoder::WriteBlockSolid(Color color) const {
     uint8_t mask = 0xAA;  // 2222
     uint16_t min16, max16;
 
@@ -390,65 +390,58 @@ void BC1Encoder::WriteBlockSolid(Color color, BC1Block *dest) const {
         }
     }
 
-    dest->SetLowColor(max16);
-    dest->SetHighColor(min16);
-    dest->selectors[0] = mask;
-    dest->selectors[1] = mask;
-    dest->selectors[2] = mask;
-    dest->selectors[3] = mask;
+    return BC1Block(max16, min16, mask);
 }
 
-void BC1Encoder::WriteBlock(EncodeResults &block, BC1Block *dest) const {
-    BC1Block::UnpackedSelectors selectors;
-    uint16_t color1 = block.low.Pack565Unscaled();
-    uint16_t color0 = block.high.Pack565Unscaled();
+BC1Block BC1Encoder::WriteBlock(EncodeResults &result) const {
+    BC1Block::SelectorArray selectors;
+    uint16_t ep1 = result.low.Pack565Unscaled();
+    uint16_t ep0 = result.high.Pack565Unscaled();
     std::array<uint8_t, 4> lut;
 
-    assert(block.color_mode != ColorMode::Incomplete);
+    assert(result.color_mode != ColorMode::Incomplete);
 
-    if ((bool)(block.color_mode & ColorMode::FourColor)) {
+    if ((bool)(result.color_mode & ColorMode::FourColor)) {
         lut = {1, 3, 2, 0};
 
-        if (color1 > color0) {
-            std::swap(color1, color0);
+        if (ep1 > ep0) {
+            std::swap(ep1, ep0);
             lut = {0, 2, 3, 1};
-        } else if (color1 == color0) {
-            if (color1 > 0) {
-                color1--;
+        } else if (ep1 == ep0) {
+            if (ep1 > 0) {
+                ep1--;
                 lut = {0, 0, 0, 0};
             } else {
-                assert(color1 == 0 && color0 == 0);
-                color0 = 1;
-                color1 = 0;
+                assert(ep1 == 0 && ep0 == 0);
+                ep0 = 1;
+                ep1 = 0;
                 lut = {1, 1, 1, 1};
             }
         }
 
-        assert(color0 > color1);
+        assert(ep0 > ep1);
     } else {
         lut = {1, 2, 0, 3};
 
-        if (color1 < color0) {
-            std::swap(color1, color0);
+        if (ep1 < ep0) {
+            std::swap(ep1, ep0);
             lut = {0, 2, 1, 3};
         }
 
-        assert(color0 <= color1);
+        assert(ep0 <= ep1);
     }
 
     for (unsigned i = 0; i < 16; i++) {
         unsigned x = i % 4;
         unsigned y = i / 4;
-        selectors[y][x] = lut[block.selectors[i]];
-        if (block.color_mode == ColorMode::ThreeColor) { assert(selectors[y][x] != 3); }
+        selectors[y][x] = lut[result.selectors[i]];
+        if (result.color_mode == ColorMode::ThreeColor) { assert(selectors[y][x] != 3); }
     }
 
-    dest->SetLowColor(color0);
-    dest->SetHighColor(color1);
-    dest->PackSelectors(selectors);
+    return BC1Block(ep0, ep1, selectors);
 }
 
-void BC1Encoder::FindEndpointsSingleColor(EncodeResults &block, Color color, bool is_3color) const {
+void BC1Encoder::FindEndpointsSingleColor(EncodeResults &result, Color color, bool is_3color) const {
     auto &match5 = is_3color ? _single_match5_half : _single_match5;
     auto &match6 = is_3color ? _single_match6_half : _single_match6;
 
@@ -456,40 +449,40 @@ void BC1Encoder::FindEndpointsSingleColor(EncodeResults &block, Color color, boo
     BC1MatchEntry match_g = match6->at(color.g);
     BC1MatchEntry match_b = match5->at(color.b);
 
-    block.color_mode = is_3color ? ColorMode::ThreeColor : ColorMode::FourColor;
-    block.error = match_r.error + match_g.error + match_b.error;
-    block.low = Color(match_r.low, match_g.low, match_b.low);
-    block.high = Color(match_r.high, match_g.high, match_b.high);
+    result.color_mode = is_3color ? ColorMode::ThreeColor : ColorMode::FourColor;
+    result.error = match_r.error + match_g.error + match_b.error;
+    result.low = Color(match_r.low, match_g.low, match_b.low);
+    result.high = Color(match_r.high, match_g.high, match_b.high);
     // selectors decided when writing, no point deciding them now
 }
 
-void BC1Encoder::FindEndpointsSingleColor(EncodeResults &block, Color4x4 &pixels, Color color, bool is_3color) const {
-    std::array<Color, 4> colors = _interpolator->InterpolateBC1(block.low, block.high, is_3color);
+void BC1Encoder::FindEndpointsSingleColor(EncodeResults &result, const CBlock &pixels, Color color, bool is_3color) const {
+    std::array<Color, 4> colors = _interpolator->InterpolateBC1(result.low, result.high, is_3color);
     Vector4Int result_vector = (Vector4Int)colors[2];
 
-    FindEndpointsSingleColor(block, color, is_3color);
+    FindEndpointsSingleColor(result, color, is_3color);
 
-    block.error = 0;
-    for (unsigned i = 0; i < 16; i++) {
+    result.error = 0;
+    for (int i = 0; i < 16; i++) {
         Vector4Int pixel_vector = (Vector4Int)pixels.Get(i);
         auto diff = pixel_vector - result_vector;
-        block.error += diff.SqrMag();
-        block.selectors[i] = 1;
+        result.error += diff.SqrMag();
+        result.selectors[i] = 1;
     }
 }
 
-void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const BlockMetrics &metrics, EndpointMode endpoint_mode, bool ignore_black) const {
+void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, EndpointMode endpoint_mode, bool ignore_black) const {
     if (metrics.is_greyscale) {
         // specialized greyscale case
-        const unsigned fr = pixels.Get(0).r;
+        const unsigned fr = pixels.Get(0, 0).r;
 
         if (metrics.max.r - metrics.min.r < 2) {
             // single color block
             uint8_t fr5 = (uint8_t)scale8To5(fr);
             uint8_t fr6 = (uint8_t)scale8To6(fr);
 
-            block.low = Color(fr5, fr6, fr5);
-            block.high = block.low;
+            result.low = Color(fr5, fr6, fr5);
+            result.high = result.low;
         } else {
             uint8_t lr5 = scale8To5(metrics.min.r);
             uint8_t lr6 = scale8To6(metrics.min.r);
@@ -497,8 +490,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
             uint8_t hr5 = scale8To5(metrics.max.r);
             uint8_t hr6 = scale8To6(metrics.max.r);
 
-            block.low = Color(lr5, lr6, lr5);
-            block.high = Color(hr5, hr6, hr5);
+            result.low = Color(lr5, lr6, lr5);
+            result.high = Color(hr5, hr6, hr5);
         }
     } else if (endpoint_mode == EndpointMode::LeastSquares) {
         //  2D Least Squares approach from Humus's example, with added inset and optimal rounding.
@@ -517,7 +510,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
 
         std::array<unsigned, 3> sums_xy;
 
-        for (unsigned i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++) {
             auto val = pixels.Get(i);
             for (unsigned c = 0; c < 3; c++) { sums_xy[c] += val[chan0] * val[c]; }
         }
@@ -556,8 +549,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
             h[c] = ((h[c] - inset) / 255.0f);
         }
 
-        block.low = Color::PreciseRound565(l);
-        block.high = Color::PreciseRound565(h);
+        result.low = Color::PreciseRound565(l);
+        result.high = Color::PreciseRound565(h);
     } else if (endpoint_mode == EndpointMode::BoundingBox) {
         // Algorithm from icbc.h compress_dxt1_fast()
         Vector4 l, h;
@@ -575,7 +568,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
 
         // Select the correct diagonal across the bounding box
         int icov_xz = 0, icov_yz = 0;
-        for (unsigned i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++) {
             int b = (int)pixels.Get(i).b - metrics.avg.b;
             icov_xz += b * (int)pixels.Get(i).r - metrics.avg.r;
             icov_yz += b * (int)pixels.Get(i).g - metrics.avg.g;
@@ -584,8 +577,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
         if (icov_xz < 0) std::swap(l[0], h[0]);
         if (icov_yz < 0) std::swap(l[1], h[1]);
 
-        block.low = Color::PreciseRound565(l);
-        block.high = Color::PreciseRound565(h);
+        result.low = Color::PreciseRound565(l);
+        result.high = Color::PreciseRound565(h);
     } else if (endpoint_mode == EndpointMode::BoundingBoxInt) {
         // Algorithm from icbc.h compress_dxt1_fast(), but converted to integer.
 
@@ -600,7 +593,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
         }
 
         int icov_xz = 0, icov_yz = 0;
-        for (unsigned i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++) {
             int b = (int)pixels.Get(i).b - metrics.avg.b;
             icov_xz += b * (int)pixels.Get(i).r - metrics.avg.r;
             icov_yz += b * (int)pixels.Get(i).g - metrics.avg.g;
@@ -609,8 +602,8 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
         if (icov_xz < 0) std::swap(min.r, max.r);
         if (icov_yz < 0) std::swap(min.g, max.g);
 
-        block.low = min.ScaleTo565();
-        block.high = max.ScaleTo565();
+        result.low = min.ScaleTo565();
+        result.high = max.ScaleTo565();
     } else if (endpoint_mode == EndpointMode::PCA) {
         // the slow way
         // Select 2 colors along the principle axis. (There must be a faster/simpler way.)
@@ -621,7 +614,7 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
         Vector4 axis = {306, 601, 117};  // Luma vector
         Matrix4x4 covariance = Matrix4x4::Identity();
 
-        for (unsigned i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++) {
             auto val = pixels.Get(i);
             if (ignore_black && val.IsBlack()) continue;
 
@@ -657,9 +650,9 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
         float min_dot = INFINITY;
         float max_dot = -INFINITY;
 
-        unsigned min_index = 0, max_index = 0;
+        int min_index = 0, max_index = 0;
 
-        for (unsigned i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++) {
             auto val = pixels.Get(i);
             if (ignore_black && val.IsBlack()) continue;
 
@@ -677,19 +670,19 @@ void BC1Encoder::FindEndpoints(Color4x4 pixels, EncodeResults &block, const Bloc
             }
         }
 
-        block.low = pixels.Get(min_index).ScaleTo565();
-        block.high = pixels.Get(max_index).ScaleTo565();
+        result.low = pixels.Get(min_index).ScaleTo565();
+        result.high = pixels.Get(max_index).ScaleTo565();
     }
 
-    block.color_mode = ColorMode::Incomplete;
+    result.color_mode = ColorMode::Incomplete;
 }
 
-template <BC1Encoder::ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixels, EncodeResults &block, ErrorMode error_mode) const {
+template <BC1Encoder::ColorMode M> void BC1Encoder::FindSelectors(EncodeResults &result, const CBlock &pixels, ErrorMode error_mode) const {
     assert(!((error_mode != ErrorMode::Full) && (bool)(M & ColorMode::ThreeColor)));
 
     const int color_count = (unsigned)M & 0x0F;
 
-    std::array<Color, 4> colors = _interpolator->InterpolateBC1(block.low, block.high, color_count == 3);
+    std::array<Color, 4> colors = _interpolator->InterpolateBC1(result.low, result.high, color_count == 3);
     std::array<Vector4Int, 4> color_vectors;
 
     if (color_count == 4) {
@@ -705,11 +698,11 @@ template <BC1Encoder::ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixe
     if (error_mode == ErrorMode::None || error_mode == ErrorMode::Faster) {
         Vector4Int axis = color_vectors[3] - color_vectors[0];
         std::array<int, 4> dots;
-        for (unsigned i = 0; i < 4; i++) { dots[i] = axis.Dot(color_vectors[i]); }
+        for (int i = 0; i < 4; i++) { dots[i] = axis.Dot(color_vectors[i]); }
         int t0 = dots[0] + dots[1], t1 = dots[1] + dots[2], t2 = dots[2] + dots[3];
         axis *= 2;
 
-        for (unsigned i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++) {
             Vector4Int pixel_vector = Vector4Int::FromColorRGB(pixels.Get(i));
             int dot = axis.Dot(pixel_vector);
             uint8_t level = (dot <= t0) + (dot < t1) + (dot < t2);
@@ -721,16 +714,16 @@ template <BC1Encoder::ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixe
                 // llvm is just going to unswitch this anyways so its not an issue
                 auto diff = pixel_vector - color_vectors[selector];
                 total_error += diff.SqrMag();
-                if (i % 4 != 0 && total_error >= block.error) break;  // check only once per row if we're generating too much error
+                if (i % 4 != 0 && total_error >= result.error) break;  // check only once per row if we're generating too much error
             }
 
-            block.selectors[i] = selector;
+            result.selectors[i] = selector;
         }
     } else if (error_mode == ErrorMode::Check2) {
         Vector4Int axis = color_vectors[3] - color_vectors[0];
         const float f = 4.0f / ((float)axis.SqrMag() + .00000125f);
 
-        for (unsigned i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++) {
             Vector4Int pixel_vector = Vector4Int::FromColorRGB(pixels.Get(i));
             auto diff = pixel_vector - color_vectors[0];
             float sel_f = (float)diff.Dot(axis) * f + 0.5f;
@@ -751,14 +744,14 @@ template <BC1Encoder::ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixe
 
             total_error += best_err;
 
-            if (total_error >= block.error) break;
+            if (total_error >= result.error) break;
 
-            block.selectors[i] = best_sel;
+            result.selectors[i] = best_sel;
         }
     } else if (error_mode == ErrorMode::Full) {
         unsigned max_sel = (bool)(M == ColorMode::ThreeColor) ? 3 : 4;
 
-        for (unsigned i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++) {
             unsigned best_error = UINT_MAX;
             uint8_t best_sel = 0;
             Vector4Int pixel_vector = Vector4Int::FromColorRGB(pixels.Get(i));
@@ -774,31 +767,31 @@ template <BC1Encoder::ColorMode M> void BC1Encoder::FindSelectors(Color4x4 &pixe
             }
 
             total_error += best_error;
-            if (total_error >= block.error) { break; }
+            if (total_error >= result.error) { break; }
 
             assert(best_sel < max_sel);
-            block.selectors[i] = best_sel;
+            result.selectors[i] = best_sel;
         }
     } else {
         assert(false);
     }
-    block.error = total_error;
-    block.color_mode = M;
+    result.error = total_error;
+    result.color_mode = M;
 }
 
-template <BC1Encoder::ColorMode M> bool BC1Encoder::RefineEndpointsLS(Color4x4 pixels, EncodeResults &block, BlockMetrics metrics) const {
+template <BC1Encoder::ColorMode M> bool BC1Encoder::RefineEndpointsLS(EncodeResults &result, const CBlock &pixels, BlockMetrics metrics) const {
     const int color_count = (unsigned)M & 0x0F;
     static_assert(color_count == 3 || color_count == 4);
-    assert(block.color_mode != ColorMode::Incomplete);
+    assert(result.color_mode != ColorMode::Incomplete);
 
     int denominator = color_count - 1;
 
     Vector4 q00 = {0, 0, 0};
     Vector4 matrix = Vector4(0);
 
-    for (unsigned i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++) {
         const Color color = pixels.Get(i);
-        const uint8_t sel = block.selectors[i];
+        const uint8_t sel = result.selectors[i];
 
         if ((bool)(M & ColorMode::ThreeColorBlack) && color.IsBlack()) continue;
         if ((bool)(M & ColorMode::ThreeColor) && sel == 3U) continue;  // NOTE: selectors for 3-color are in linear order here, but not in original
@@ -813,7 +806,7 @@ template <BC1Encoder::ColorMode M> bool BC1Encoder::RefineEndpointsLS(Color4x4 p
     // invert matrix
     float det = matrix.Determinant2x2();  // z00 * z11 - z01 * z10;
     if (fabs(det) < 1e-8f) {
-        block.color_mode = ColorMode::Incomplete;
+        result.color_mode = ColorMode::Incomplete;
         return false;
     }
 
@@ -826,16 +819,16 @@ template <BC1Encoder::ColorMode M> bool BC1Encoder::RefineEndpointsLS(Color4x4 p
     Vector4 low = (matrix[0] * q00) + (matrix[1] * q10);
     Vector4 high = (matrix[2] * q00) + (matrix[3] * q10);
 
-    block.color_mode = M;
-    block.low = Color::PreciseRound565(low);
-    block.high = Color::PreciseRound565(high);
+    result.color_mode = M;
+    result.low = Color::PreciseRound565(low);
+    result.high = Color::PreciseRound565(high);
     return true;
 }
 
-template <BC1Encoder::ColorMode M> void BC1Encoder::RefineEndpointsLS(std::array<Vector4, 17> &sums, EncodeResults &block, Vector4 &matrix, Hash hash) const {
+template <BC1Encoder::ColorMode M> void BC1Encoder::RefineEndpointsLS(EncodeResults &result, std::array<Vector4, 17> &sums, Vector4 &matrix, Hash hash) const {
     const int color_count = (unsigned)M & 0x0F;
     static_assert(color_count == 3 || color_count == 4);
-    assert(block.color_mode != ColorMode::Incomplete);
+    assert(result.color_mode != ColorMode::Incomplete);
 
     int denominator = color_count - 1;
 
@@ -852,30 +845,30 @@ template <BC1Encoder::ColorMode M> void BC1Encoder::RefineEndpointsLS(std::array
     Vector4 low = (matrix[0] * q00) + (matrix[1] * q10);
     Vector4 high = (matrix[2] * q00) + (matrix[3] * q10);
 
-    block.color_mode = M;
-    block.low = Color::PreciseRound565(low);
-    block.high = Color::PreciseRound565(high);
+    result.color_mode = M;
+    result.low = Color::PreciseRound565(low);
+    result.high = Color::PreciseRound565(high);
 }
 
 template <BC1Encoder::ColorMode M>
-void BC1Encoder::RefineBlockLS(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned passes) const {
+void BC1Encoder::RefineBlockLS(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, ErrorMode error_mode, unsigned passes) const {
     assert(error_mode != ErrorMode::None || passes == 1);
 
     for (unsigned pass = 0; pass < passes; pass++) {
-        EncodeResults trial_result = block;
+        EncodeResults trial_result = result;
         Vector4 low, high;
 
-        bool multicolor = RefineEndpointsLS<ColorMode::FourColor>(pixels, trial_result, metrics);
+        bool multicolor = RefineEndpointsLS<ColorMode::FourColor>(trial_result, pixels, metrics);
         if (!multicolor) {
             FindEndpointsSingleColor(trial_result, pixels, metrics.avg, (M != ColorMode::FourColor));
         } else {
-            FindSelectors<M>(pixels, trial_result, error_mode);
+            FindSelectors<M>(trial_result, pixels, error_mode);
         }
 
-        if (trial_result.low == block.low && trial_result.high == block.high) break;
+        if (trial_result.low == result.low && trial_result.high == result.high) break;
 
-        if (error_mode == ErrorMode::None || trial_result.error < block.error) {
-            block = trial_result;
+        if (error_mode == ErrorMode::None || trial_result.error < result.error) {
+            result = trial_result;
         } else {
             return;
         }
@@ -883,15 +876,15 @@ void BC1Encoder::RefineBlockLS(Color4x4 &pixels, EncodeResults &block, BlockMetr
 }
 
 template <BC1Encoder::ColorMode M>
-void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const {
+void BC1Encoder::RefineBlockCF(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const {
     const int color_count = (unsigned)M & 0x0F;
     static_assert(color_count == 3 || color_count == 4);
-    assert(block.color_mode != ColorMode::Incomplete);
+    assert(result.color_mode != ColorMode::Incomplete);
 
     using OrderTable = OrderTable<color_count>;
     using Hist = Histogram<color_count>;
 
-    EncodeResults orig = block;
+    EncodeResults orig = result;
     Hist h = Hist(orig.selectors);
 
     Hash start_hash = OrderTable::GetHash(h);
@@ -900,11 +893,11 @@ void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetr
     std::array<Vector4, 16> color_vectors;
     std::array<uint32_t, 16> dots;
 
-    for (unsigned i = 0; i < 16; i++) {
-        color_vectors[i] = Vector4::FromColorRGB(pixels.Get(i));
-        int dot = 0x1000000 + (int)color_vectors[i].Dot(axis);
+    for (int i = 0; i < 16; i++) {
+        color_vectors[(unsigned)i] = Vector4::FromColorRGB(pixels.Get(i));
+        int dot = 0x1000000 + (int)color_vectors[(unsigned)i].Dot(axis);
         assert(dot >= 0);
-        dots[i] = (uint32_t)(dot << 4) | i;
+        dots[(unsigned)i] = (uint32_t)(dot << 4) | i;
     }
 
     std::sort(dots.begin(), dots.end());
@@ -926,17 +919,17 @@ void BC1Encoder::RefineBlockCF(Color4x4 &pixels, EncodeResults &block, BlockMetr
         if (OrderTable::IsSingleColor(trial_hash)) {
             FindEndpointsSingleColor(trial_result, pixels, metrics.avg, (color_count == 3));
         } else {
-            RefineEndpointsLS<M>(sums, trial_result, trial_matrix, trial_hash);
-            FindSelectors<M>(pixels, trial_result, error_mode);
+            RefineEndpointsLS<M>(trial_result, sums, trial_matrix, trial_hash);
+            FindSelectors<M>(trial_result, pixels, error_mode);
         }
 
-        if (trial_result.error < block.error) { block = trial_result; }
+        if (trial_result.error < result.error) { result = trial_result; }
         if (trial_result.error == 0) break;
     }
 }
 
-void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block) const {
-    if (block.solid) return;
+void BC1Encoder::EndpointSearch(EncodeResults &result, const CBlock &pixels) const {
+    if (result.solid) return;
 
     static const std::array<Vector4Int, 16> Voxels = {{
         {1, 0, 0, 3},    // 0
@@ -967,7 +960,7 @@ void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block) const {
         if ((int)(i & 31) == forbidden_direction) continue;
 
         Vector4Int delta = Voxels[voxel_index];
-        EncodeResults trial_result = block;
+        EncodeResults trial_result = result;
 
         if (i & 16) {
             trial_result.low.r = (uint8_t)clamp(trial_result.low.r + delta[0], 0, 31);
@@ -979,21 +972,21 @@ void BC1Encoder::EndpointSearch(Color4x4 &pixels, EncodeResults &block) const {
             trial_result.high.b = (uint8_t)clamp(trial_result.high.b + delta[2], 0, 31);
         }
 
-        switch (block.color_mode) {
+        switch (result.color_mode) {
             default:
             case ColorMode::FourColor:
-                FindSelectors<ColorMode::FourColor>(pixels, trial_result, _error_mode);
+                FindSelectors<ColorMode::FourColor>(trial_result, pixels, _error_mode);
                 break;
             case ColorMode::ThreeColor:
-                FindSelectors<ColorMode::ThreeColor>(pixels, trial_result, ErrorMode::Full);
+                FindSelectors<ColorMode::ThreeColor>(trial_result, pixels, ErrorMode::Full);
                 break;
             case ColorMode::ThreeColorBlack:
-                FindSelectors<ColorMode::ThreeColorBlack>(pixels, trial_result, ErrorMode::Full);
+                FindSelectors<ColorMode::ThreeColorBlack>(trial_result, pixels, ErrorMode::Full);
                 break;
         }
 
-        if (trial_result.error < block.error) {
-            block = trial_result;
+        if (trial_result.error < result.error) {
+            result = trial_result;
 
             forbidden_direction = delta[3] | (int)(i & 16);
             prev_improvement_index = i;

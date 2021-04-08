@@ -17,7 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../_bindings.h"
+
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <array>
 #include <cstddef>
@@ -25,8 +28,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "../../BlockDecoder.h"
-#include "../../BlockEncoder.h"
+#include "../../Decoder.h"
+#include "../../Encoder.h"
 #include "../interpolator/Interpolator.h"
 #include "BC1Decoder.h"
 #include "BC1Encoder.h"
@@ -41,18 +44,44 @@ using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
 void InitBC1(py::module_ &s3tc) {
     auto bc1 = s3tc.def_submodule("_bc1", "internal bc1 module");
-    auto block_encoder = py::type::of<BlockEncoder>();
-    auto block_decoder = py::type::of<BlockDecoder>();
 
-    py::options options;
-    options.disable_function_signatures();
+    // region BC1Block
+    auto bc1_block = BindBlock<BC1Block>(bc1, "BC1Block");
+    bc1_block.doc() = "A single BC1 block.";
 
-    // BC1Encoder
-    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", block_encoder, R"doc(
-        Base: :py:class:`~quicktex.BlockEncoder`
+    bc1_block.def(py::init<>());
+    bc1_block.def(py::init<Color, Color, BC1Block::SelectorArray>(), "color0"_a, "color1"_a, "selectors"_a, R"doc(
+        Create a new BC1Block with the specified endpoints and selectors
 
-        Encodes RGB textures to BC1.
+        :param color0: The first endpoint
+        :param color1: The second endpoint
+        :param selectors: the selectors as a 4x4 list of integers, between 0 and 3 inclusive.
     )doc");
+
+    bc1_block.def_property("endpoints", &BC1Block::GetColors, &BC1Block::SetColors, "The block's endpoint colors as a 2-tuple.");
+    bc1_block.def_property("selectors", &BC1Block::GetSelectors, &BC1Block::SetSelectors, R"doc(
+        The block's selectors as a 4x4 list of integers between 0 and 3 inclusive.
+
+        .. note::
+            This is a property, so directly modifying its value will not propogate back to the block.
+            Instead you must read, modify, then write the new list back to the property, like so::
+
+                selectors = block.selectors
+                selectors[0,0] = 0
+                block.selectors = selectors
+    )doc");
+    bc1_block.def_property_readonly("is_3color", &BC1Block::Is3Color, R"doc(
+        "True if the block uses 3-color interpolation, i.e. color0 <= color1. This value should be ignored when decoding as part of a BC3 block. Readonly.
+    )doc");
+    // endregion
+
+    // region BC1Texture
+    auto bc1_texture = BindBlockTexture<BC1Block>(bc1, "BC1Texture");
+    bc1_texture.doc() = "A texture comprised of BC1 blocks.";
+    // endregion
+
+    // region BC1Encoder
+    py::class_<BC1Encoder> bc1_encoder(bc1, "BC1Encoder", "Encodes RGB textures to BC1.");
 
     py::enum_<BC1Encoder::EndpointMode>(bc1_encoder, "EndpointMode", "Enum representing various methods of finding endpoints in a block.")
         .value("LeastSquares", BC1Encoder::EndpointMode::LeastSquares, "Find endpoints using a 2D least squares approach.")
@@ -74,24 +103,27 @@ void InitBC1(py::module_ &s3tc) {
                "when using a BC1 texture.");
 
     bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode>(), "level"_a = 5, "color_mode"_a = BC1Encoder::ColorMode::FourColor);
-    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode, InterpolatorPtr>(), "level"_a, "color_mode"_a, "interpolator"_a, R"pbdoc(
-        __init__(self, level: int = 5, color_mode=ColorMode.FourColor, interpolator=Interpolator()) -> None
-
+    bc1_encoder.def(py::init<unsigned, BC1Encoder::ColorMode, InterpolatorPtr>(), "level"_a, "color_mode"_a, "interpolator"_a, R"doc(
         Create a new BC1 encoder with the specified preset level, color mode, and interpolator.
 
         :param int level: The preset level of the resulting encoder, between 0 and 18 inclusive. See :py:meth:`set_level` for more information. Default: 5.
         :param ColorMode color_mode: The color mode of the resulting BC1Encoder. Default: :py:class:`~quicktex.s3tc.bc1.BC1Encoder.ColorMode.FourColor`.
         :param Interpolator interpolator: The interpolation mode to use for encoding. Default: :py:class:`~quicktex.s3tc.interpolator.Interpolator`.
-    )pbdoc");
+    )doc");
 
-    bc1_encoder.def("set_level", &BC1Encoder::SetLevel, "level"_a, R"pbdoc(
-        set_level(self, level : int = 5) -> None
+    bc1_encoder.def("encode", &BC1Encoder::Encode, "texture"_a, R"doc(
+        Encode a raw texture into a new BC1Texture using the encoder's current settings.
 
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new BC1Texture with the same dimension as the input.
+    )doc");
+
+    bc1_encoder.def("set_level", &BC1Encoder::SetLevel, "level"_a, R"doc(
         Select a preset quality level, between 0 and 18 inclusive.  Higher quality levels are slower, but produce blocks that are a closer match to input.
         This has no effect on the size of the resulting texture, since BC1 is a fixed-ratio compression method. For better control, see the advanced API below
 
         :param int level: The preset level of the resulting encoder, between 0 and 18 inclusive. Default: 5.
-    )pbdoc");
+    )doc");
 
     bc1_encoder.def_property_readonly("interpolator", &BC1Encoder::GetInterpolator,
                                       "The :py:class:`~quicktex.s3tc.interpolator.Interpolator` used by this encoder. This is a readonly property.");
@@ -131,25 +163,30 @@ void InitBC1(py::module_ &s3tc) {
     bc1_encoder.def_property("power_iterations", &BC1Encoder::GetPowerIterations, &BC1Encoder::SetPowerIterations,
                              "Number of power iterations used with the PCA endpoint mode. Value should be around 4 to 6. "
                              "Automatically clamped to between :py:const:`BC1Encoder.min_power_iterations` and :py:const:`BC1Encoder.max_power_iterations`");
+    // endregion
 
-    // BC1Decoder
-    py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", block_decoder, R"doc(
-        Base: :py:class:`~quicktex.BlockDecoder`
-
+    // region BC1Decoder
+    py::class_<BC1Decoder> bc1_decoder(bc1, "BC1Decoder", R"doc(
         Decodes BC1 textures to RGB
     )doc");
 
     bc1_decoder.def(py::init<bool>(), "write_alpha"_a = false);
-    bc1_decoder.def(py::init<bool, InterpolatorPtr>(), "write_alpha"_a, "interpolator"_a, R"pbdoc(
-        __init__(self, interpolator = Interpolator()) -> None
-
+    bc1_decoder.def(py::init<bool, InterpolatorPtr>(), "write_alpha"_a, "interpolator"_a, R"doc(
         Create a new BC1 decoder with the specificied interpolator.
 
         :param bool write_alpha: Determines if the alpha channel of the output is written to. Default: False;
         :param Interpolator interpolator: The interpolation mode to use for decoding. Default: :py:class:`~quicktex.s3tc.interpolator.Interpolator`.
-        )pbdoc");
+    )doc");
+
+    bc1_decoder.def("decode", &BC1Decoder::Decode, "texture"_a, R"doc(
+        Decode a BC1 texture into a new RawTexture using the decoder's current settings.
+
+        :param RawTexture texture: Input texture to encode.
+        :returns: A new RawTexture with the same dimensions as the input
+    )doc");
 
     bc1_decoder.def_property_readonly("interpolator", &BC1Decoder::GetInterpolator, "The interpolator used by this decoder. This is a readonly property.");
     bc1_decoder.def_readwrite("write_alpha", &BC1Decoder::write_alpha, "Determines if the alpha channel of the output is written to.");
+    // endregion
 }
 }  // namespace quicktex::bindings

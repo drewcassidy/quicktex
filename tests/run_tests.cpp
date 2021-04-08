@@ -25,6 +25,7 @@
 #include <string>
 
 namespace py = pybind11;
+using namespace pybind11::literals;
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -37,6 +38,7 @@ int main() {
     site.attr("addsitedir")(CUSTOM_SYS_PATH);
 
     py::module_ nose = py::module_::import("nose");
-    py::module_ tests = py::module_::import("test_BC1");
-    nose.attr("main")("test_BC1");
+    py::module_ tests = py::module_::import("tests");
+    py::list argv(1);
+    nose.attr("runmodule")("name"_a = "tests.test_bc1", "exit"_a = false);
 }

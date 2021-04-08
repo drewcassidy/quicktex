@@ -34,9 +34,9 @@ class Color {
     uint8_t b;
     uint8_t a;
 
-    Color();
+    constexpr Color() : Color(0, 0, 0, 0xFF) {}
 
-    Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xFF);
+    constexpr Color(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va = 0xFF) : r(vr), g(vg), b(vb), a(va) {}
 
     Color(Vector4Int v);
 
@@ -65,9 +65,6 @@ class Color {
     operator Vector4() const;
     operator Vector4Int() const;
     friend Vector4Int operator-(const Color &lhs, const Color &rhs);
-
-    void SetRGBA(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va);
-    void SetRGBA(const Color &other) { SetRGBA(other.r, other.g, other.b, other.a); }
 
     void SetRGB(uint8_t vr, uint8_t vg, uint8_t vb);
     void SetRGB(const Color &other) { SetRGB(other.r, other.g, other.b); }

@@ -94,10 +94,18 @@ class Interpolator {
      * Generates the 4 colors for a BC1 block from the given 5:6:5-packed colors
      * @param low first 5:6:5 color for the block
      * @param high second 5:6:5 color for the block
-     * @return and array of 4 Color values, with indices matching BC1 selectors
+     * @param allow_3color if true, a different interpolation mode will be used if high >= low
+     * @return an array of 4 Color values, with indices matching BC1 selectors
      */
-    virtual std::array<Color, 4> InterpolateBC1(uint16_t low, uint16_t high, bool allow_3color = true) const;
+    std::array<Color, 4> Interpolate565BC1(uint16_t low, uint16_t high, bool allow_3color = true) const;
 
+    /**
+     * Generates the 4 colors for a BC1 block from the given
+     * @param low the first color for the block, as a seperated 5:6:5 Color object
+     * @param high the second color for the block, as a seperated 5:6:5 Color object
+     * @param use_3color if the 3-color interpolation mode should be used
+     * @return an array of 4 Color values, with indices matching BC1 selectors
+     */
     virtual std::array<Color, 4> InterpolateBC1(Color low, Color high, bool use_3color) const;
 
     /**
@@ -127,27 +135,27 @@ class Interpolator {
     }
 };
 
-class InterpolatorRound : public Interpolator {
+class InterpolatorRound final : public Interpolator {
    public:
-    uint8_t Interpolate5(uint8_t v0, uint8_t v1) const override;
-    uint8_t Interpolate6(uint8_t v0, uint8_t v1) const override;
-    uint8_t Interpolate8(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t Interpolate5(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t Interpolate6(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t Interpolate8(uint8_t v0, uint8_t v1) const override;
 
-    Type GetType() const noexcept override { return Type::IdealRound; }
+    virtual Type GetType() const noexcept override { return Type::IdealRound; }
 };
 
-class InterpolatorNvidia : public Interpolator {
+class InterpolatorNvidia final : public Interpolator {
    public:
-    uint8_t Interpolate5(uint8_t v0, uint8_t v1) const override;
-    uint8_t Interpolate6(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t Interpolate5(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t Interpolate6(uint8_t v0, uint8_t v1) const override;
 
-    uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const override;
-    uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const override;
 
-    std::array<Color, 4> InterpolateBC1(Color low, Color high, bool use_3color) const override;
+    virtual std::array<Color, 4> InterpolateBC1(Color low, Color high, bool use_3color) const override;
 
-    Type GetType() const noexcept override { return Type::Nvidia; }
-    bool CanInterpolate8Bit() const noexcept override { return false; }
+    virtual Type GetType() const noexcept override { return Type::Nvidia; }
+    virtual bool CanInterpolate8Bit() const noexcept override { return false; }
 
    private:
     Color InterpolateColor565(const Color &c0, const Color &c1) const {
@@ -159,16 +167,16 @@ class InterpolatorNvidia : public Interpolator {
     }
 };
 
-class InterpolatorAMD : public Interpolator {
+class InterpolatorAMD final : public Interpolator {
    public:
-    uint8_t Interpolate5(uint8_t v0, uint8_t v1) const override;
-    uint8_t Interpolate6(uint8_t v0, uint8_t v1) const override;
-    uint8_t Interpolate8(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t Interpolate5(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t Interpolate6(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t Interpolate8(uint8_t v0, uint8_t v1) const override;
 
-    uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const override;
-    uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const override;
-    uint8_t InterpolateHalf8(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const override;
+    virtual uint8_t InterpolateHalf8(uint8_t v0, uint8_t v1) const override;
 
-    Type GetType() const noexcept override { return Type::AMD; }
+    virtual Type GetType() const noexcept override { return Type::AMD; }
 };
 }  // namespace quicktex::s3tc

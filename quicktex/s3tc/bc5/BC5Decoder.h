@@ -24,15 +24,15 @@
 #include <tuple>
 #include <type_traits>
 
-#include "../../BlockDecoder.h"
-#include "../../BlockView.h"
-#include "../../ndebug.h"
+#include "../../ColorBlock.h"
+#include "../../Decoder.h"
+#include "../../Texture.h"
 #include "../bc4/BC4Decoder.h"
 #include "BC5Block.h"
 
 namespace quicktex::s3tc {
 
-class BC5Decoder : public BlockDecoderTemplate<BC5Block, 4, 4> {
+class BC5Decoder : public BlockDecoder<BlockTexture<BC5Block>> {
    public:
     using ChannelPair = std::tuple<uint8_t, uint8_t>;
     using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
@@ -41,7 +41,7 @@ class BC5Decoder : public BlockDecoderTemplate<BC5Block, 4, 4> {
     BC5Decoder(uint8_t chan0 = 0, uint8_t chan1 = 1) : BC5Decoder(std::make_shared<BC4Decoder>(chan0), std::make_shared<BC4Decoder>(chan1)) {}
     BC5Decoder(BC4DecoderPtr chan0_decoder, BC4DecoderPtr chan1_decoder) : _chan0_decoder(chan0_decoder), _chan1_decoder(chan1_decoder) {}
 
-    void DecodeBlock(Color4x4 dest, BC5Block *const block) const noexcept(ndebug) override;
+    ColorBlock<4, 4> DecodeBlock(const BC5Block &block) const override;
 
     ChannelPair GetChannels() const { return ChannelPair(_chan0_decoder->GetChannel(), _chan1_decoder->GetChannel()); }
 

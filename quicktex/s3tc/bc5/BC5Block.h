@@ -19,15 +19,42 @@
 
 #pragma once
 
+#include <utility>
+
 #include "../bc4/BC4Block.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
-#pragma pack(push, 1)
-class BC5Block {
+class alignas(8) BC5Block {
    public:
+    static constexpr int Width = 4;
+    static constexpr int Height = 4;
+
+    using BlockPair = std::pair<BC4Block, BC4Block>;
+
     BC4Block chan0_block;
     BC4Block chan1_block;
+
+    constexpr BC5Block() {
+        static_assert(sizeof(BC5Block) == 16);
+        static_assert(sizeof(std::array<BC5Block, 10>) == 16 * 10);
+        static_assert(alignof(BC5Block) >= 8);
+        chan0_block = chan1_block = BC4Block();
+    }
+
+    BC5Block(const BC4Block &chan0, const BC4Block &chan1) {
+        chan0_block = chan0;
+        chan1_block = chan1;
+    }
+
+    BlockPair GetBlocks() const { return BlockPair(chan0_block, chan1_block); }
+
+    void SetBlocks(const BlockPair &pair) {
+        chan0_block = pair.first;
+        chan1_block = pair.second;
+    }
+
+    bool operator==(const BC5Block& other) const = default;
+    bool operator!=(const BC5Block& other) const = default;
 };
-#pragma pack(pop)
 }  // namespace quicktex::s3tc

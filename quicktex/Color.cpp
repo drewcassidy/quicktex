@@ -18,7 +18,8 @@
  */
 #include "Color.h"
 
-#include <algorithm>  // for max, Min
+#include <algorithm>
+#include <stdexcept>
 
 #include "Vector4.h"
 #include "Vector4Int.h"
@@ -26,11 +27,17 @@
 
 namespace quicktex {
 
-Color::Color() { SetRGBA(0, 0, 0, 0xFF); }
+Color::Color(Vector4Int v) {
+    if (v.MaxAbs() > 0xFF) throw std::invalid_argument("Vector members out of range");
+    for (int i = 0; i < 4; i++) {
+        if (v[i] < 0) throw std::range_error("Color members cannot be negative");
+    }
 
-Color::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { SetRGBA(r, g, b, a); }
-
-Color::Color(Vector4Int v) { SetRGBA((uint8_t)v[0], (uint8_t)v[1], (uint8_t)v[2], (uint8_t)v[3]); }
+    r = static_cast<uint8_t>(v[0]);
+    g = static_cast<uint8_t>(v[1]);
+    b = static_cast<uint8_t>(v[2]);
+    a = static_cast<uint8_t>(v[3]);
+}
 
 uint16_t Color::Pack565Unscaled(uint8_t r, uint8_t g, uint8_t b) {
     assert5bit(r);
@@ -77,13 +84,6 @@ Color Color::PreciseRound565(Vector4 &v) {
     assert5bit(b);
 
     return Color(r, g, b);
-}
-
-void Color::SetRGBA(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va = 0xFF) {
-    r = vr;
-    g = vg;
-    b = vb;
-    a = va;
 }
 
 void Color::SetRGB(uint8_t vr, uint8_t vg, uint8_t vb) {

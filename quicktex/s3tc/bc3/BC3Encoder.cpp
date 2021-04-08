@@ -19,12 +19,16 @@
 
 #include "BC3Encoder.h"
 
-#include "../../BlockView.h"
+#include "../../ColorBlock.h"
+#include "../bc1/BC1Block.h"
+#include "../bc4/BC4Block.h"
 #include "BC3Block.h"
 
 namespace quicktex::s3tc {
-void BC3Encoder::EncodeBlock(Color4x4 pixels, BC3Block *dest) const {
-    _bc1_encoder->EncodeBlock(pixels, &(dest->color_block));
-    _bc4_encoder->EncodeBlock(pixels, &(dest->alpha_block));
+BC3Block BC3Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
+    auto output = BC3Block();
+    output.color_block = _bc1_encoder->EncodeBlock(pixels);
+    output.alpha_block = _bc4_encoder->EncodeBlock(pixels);
+    return output;
 }
 }  // namespace quicktex::s3tc

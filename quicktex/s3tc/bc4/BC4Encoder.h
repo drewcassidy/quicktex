@@ -19,26 +19,24 @@
 
 #pragma once
 
-#include <cassert>
 #include <cstdint>
 #include <stdexcept>
 
-#include "../../BlockEncoder.h"
-#include "../../BlockView.h"
-#include "../../ndebug.h"
+#include "../../ColorBlock.h"
+#include "../../Encoder.h"
+#include "../../Texture.h"
 #include "BC4Block.h"
 
 namespace quicktex::s3tc {
 
-class BC4Encoder : public BlockEncoderTemplate<BC4Block, 4, 4> {
+class BC4Encoder : public BlockEncoder<BlockTexture<BC4Block>> {
    public:
     BC4Encoder(const uint8_t channel) {
         if (channel >= 4) throw std::invalid_argument("Channel out of range");
         _channel = channel;
     }
 
-    void EncodeBlock(Color4x4 pixels, BC4Block *const dest) const override { EncodeBlock(pixels.GetChannel(_channel), dest); }
-    void EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug);
+    BC4Block EncodeBlock(const ColorBlock<4, 4> &pixels) const override;
 
     uint8_t GetChannel() const { return _channel; }
 

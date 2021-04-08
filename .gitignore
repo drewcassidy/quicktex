@@ -4,15 +4,21 @@ dist/
 build/
 *.egg-info
 *.pyc
+*.pyi
 
 #sphinx
 docs/_build/
 
+#mypy
+out
+
 # IDEs
 **/.idea
 
-# cmake
+# binaries
+*.so
 
+# cmake
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles

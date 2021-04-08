@@ -22,29 +22,28 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <utility>
 
-#include "../../BlockView.h"
-#include "../../ndebug.h"
+#include "../../Color.h"
+#include "../../ColorBlock.h"
+#include "../../util.h"
 #include "BC4Block.h"
 
-namespace quicktex::s3tc  {
-void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcept(ndebug) {
-    auto flattened = pixels.Flatten();
-    auto minmax = std::minmax_element(flattened.begin(), flattened.end());
+namespace quicktex::s3tc {
+BC4Block BC4Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
+    uint8_t min = UINT8_MAX;
+    uint8_t max = 0;
 
-    uint8_t min = *minmax.first;
-    uint8_t max = *minmax.second;
-
-    dest->high_alpha = min;
-    dest->low_alpha = max;
-
-    if (max == min) {
-        dest->SetSelectorBits(0);
-        return;
+    for (int i = 0; i < 16; i++) {
+        auto value = pixels.Get(i)[_channel];
+        min = std::min(min, value);
+        max = std::max(max, value);
     }
 
-    std::array<uint8_t, 16> selectors = {};
+    if (max == min) {
+        return BC4Block(min);  // solid block
+    }
+
+    auto selectors = BC4Block::SelectorArray();
     const static std::array<uint8_t, 8> Levels = {1U, 7U, 6U, 5U, 4U, 3U, 2U, 0U};  // selector value options in linear order
 
     // BC4 floors in its divisions, which we compensate for with the 4 bias.
@@ -58,16 +57,19 @@ void BC4Encoder::EncodeBlock(Byte4x4 pixels, BC4Block *const dest) const noexcep
     for (unsigned i = 0; i < 7; i++) thresholds[i] = delta * (1 + (2 * (int)i)) - bias;
 
     // iterate over all values and calculate selectors
-    for (unsigned i = 0; i < 16; i++) {
-        int value = flattened[i] * 14;  // multiply by demonimator
+    for (int y = 0; y < 4; y++) {
+        for (int x = 0; x < 4; x++) {
+            int value = (int)pixels.Get(x, y)[_channel] * 14;  // multiply by demonimator
 
-        // level = number of thresholds this value is greater than
-        unsigned level = 0;
-        for (unsigned c = 0; c < 7; c++) level += value >= thresholds[c];
+            // level = number of thresholds this value is greater than
+            unsigned level = 0;
+            for (unsigned c = 0; c < 7; c++) level += value >= thresholds[c];
 
-        selectors[i] = Levels[level];
+            selectors[(unsigned)y][(unsigned)x] = Levels[level];
+        }
     }
 
-    dest->PackSelectors(selectors);
+    return BC4Block(max, min, selectors);
 }
+
 }  // namespace quicktex::s3tc

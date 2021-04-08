@@ -20,103 +20,90 @@
 #pragma once
 
 #include <array>
-#include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <utility>
 
-#include "../../Color.h"
-#include "../../util.h"
-#include "../bc1/BC1Block.h"
+namespace quicktex::s3tc {
 
-namespace quicktex::s3tc  {
-
-#pragma pack(push, 1)
-class BC4Block {
+class alignas(8) BC4Block {
    public:
-    using UnpackedSelectors = std::array<std::array<uint8_t, 4>, 4>;
+    static constexpr size_t Width = 4;
+    static constexpr size_t Height = 4;
 
-    inline uint32_t GetLowAlpha() const { return low_alpha; }
-    inline uint32_t GetHighAlpha() const { return high_alpha; }
-    inline bool Is6Alpha() const { return GetLowAlpha() <= GetHighAlpha(); }
+    static constexpr size_t SelectorSize = 6;                       // size of selector array in bytes
+    static constexpr size_t SelectorBits = 3;                       // size of a selector in bits
+    static constexpr size_t SelectorMax = (1 << SelectorBits) - 1;  // maximum value of a selector
 
-    inline uint64_t GetSelectorBits() const {
-        auto packed = Pack<uint8_t, uint64_t, 8, 6>(selectors);
-        assert(packed <= SelectorBitsMax);
-        return packed;
+    using SelectorArray = std::array<std::array<uint8_t, Width>, Height>;
+    using AlphaPair = std::pair<uint8_t, uint8_t>;
+
+    uint8_t alpha0;  // first endpoint
+    uint8_t alpha1;  // second endpoint
+
+   private:
+    std::array<uint8_t, SelectorSize> _selectors;  // internal array of selector bytes
+
+   public:
+    // Constructors
+
+    /// Create a new BC4Block
+    constexpr BC4Block() {
+        static_assert(sizeof(BC4Block) == 8);
+        static_assert(sizeof(std::array<BC4Block, 10>) == 8 * 10);
+        static_assert(alignof(BC4Block) >= 8);
+        alpha0 = alpha1 = 0;
+        _selectors = {0, 0, 0, 0, 0, 0};
     }
 
-    void SetSelectorBits(uint64_t packed) {
-        assert(packed <= SelectorBitsMax);
-        selectors = Unpack<uint64_t, uint8_t, 8, 6>(packed);
+    /**
+     * Create a new BC4Block
+     * @param valpha0 first endpoint value
+     * @param valpha1 second endpoint value
+     * @param selectors the selectors as a 4x4 array of integers, between 0 and 7 inclusive.
+     */
+    BC4Block(uint8_t valpha0, uint8_t valpha1, const SelectorArray& selectors) {
+        alpha0 = valpha0;
+        alpha1 = valpha1;
+        SetSelectors(selectors);
     }
 
-    UnpackedSelectors UnpackSelectors() const {
-        UnpackedSelectors unpacked;
-        auto rows = Unpack<uint64_t, uint16_t, 12, 4>(GetSelectorBits());
-        for (unsigned i = 0; i < 4; i++) {
-            auto row = Unpack<uint16_t, uint8_t, SelectorBits, 4>(rows[i]);
-            unpacked[i] = row;
-        }
-
-        return unpacked;
+    /**
+     * Create a new solid BC4Block
+     * @param alpha first endpoint value
+     */
+    BC4Block(uint8_t alpha) {
+        alpha0 = alpha;
+        alpha1 = alpha;
+        _selectors.fill(0);
     }
 
-    void PackSelectors(const UnpackedSelectors& unpacked) {
-        std::array<uint16_t, 4> rows;
-        for (unsigned i = 0; i < 4; i++) { rows[i] = Pack<uint8_t, uint16_t, SelectorBits, 4>(unpacked[i]); }
-        auto packed = Pack<uint16_t, uint64_t, 12, 4>(rows);
-        SetSelectorBits(packed);
+    /// Get a alpha0 and alpha1 as a pair
+    AlphaPair GetAlphas() const { return AlphaPair(alpha0, alpha1); }
+
+    /// Set alpha0 and alpha1 as a pair
+    void SetAlphas(AlphaPair as) {
+        alpha0 = as.first;
+        alpha1 = as.second;
     }
 
-    void PackSelectors(const std::array<uint8_t, 16>& unpacked) {
-        auto packed = Pack<uint8_t, uint64_t, 3, 16>(unpacked);
-        SetSelectorBits(packed);
-    }
+    /// Get the block's selectors as a 4x4 array of integers between 0 and 7 inclusive.
+    SelectorArray GetSelectors() const;
 
-    inline uint32_t GetSelector(uint32_t x, uint32_t y, uint64_t selector_bits) const {
-        assert((x < 4U) && (y < 4U));
-        return (selector_bits >> (((y * 4) + x) * SelectorBits)) & (SelectorMask);
-    }
+    /// Get the block's selectors as a 4x4 array of integers between 0 and 7 inclusive.
+    void SetSelectors(const SelectorArray& unpacked);
 
-    static inline std::array<uint8_t, 8> GetValues6(uint32_t l, uint32_t h) {
-        return {static_cast<uint8_t>(l),
-                static_cast<uint8_t>(h),
-                static_cast<uint8_t>((l * 4 + h) / 5),
-                static_cast<uint8_t>((l * 3 + h * 2) / 5),
-                static_cast<uint8_t>((l * 2 + h * 3) / 5),
-                static_cast<uint8_t>((l + h * 4) / 5),
-                0,
-                255};
-    }
+    /// True if the block uses 6-value interpolation, i.e. alpha0 <= alpha1.
+    bool Is6Value() const { return alpha0 <= alpha1; }
 
-    static inline std::array<uint8_t, 8> GetValues8(uint32_t l, uint32_t h) {
-        return {static_cast<uint8_t>(l),
-                static_cast<uint8_t>(h),
-                static_cast<uint8_t>((l * 6 + h) / 7),
-                static_cast<uint8_t>((l * 5 + h * 2) / 7),
-                static_cast<uint8_t>((l * 4 + h * 3) / 7),
-                static_cast<uint8_t>((l * 3 + h * 4) / 7),
-                static_cast<uint8_t>((l * 2 + h * 5) / 7),
-                static_cast<uint8_t>((l + h * 6) / 7)};
-    }
+    /// The interpolated values of this block as an array of 8 integers.
+    std::array<uint8_t, 8> GetValues() const { return Is6Value() ? GetValues6() : GetValues8(); }
 
-    static inline std::array<uint8_t, 8> GetValues(uint32_t l, uint32_t h) {
-        if (l > h)
-            return GetValues8(l, h);
-        else
-            return GetValues6(l, h);
-    }
+    bool operator==(const BC4Block& other) const = default;
+    bool operator!=(const BC4Block& other) const = default;
 
-    constexpr static inline size_t EndpointSize = 1;
-    constexpr static inline size_t SelectorSize = 6;
-    constexpr static inline uint8_t SelectorBits = 3;
-    constexpr static inline uint8_t SelectorValues = 1 << SelectorBits;
-    constexpr static inline uint8_t SelectorMask = SelectorValues - 1;
-    constexpr static inline uint64_t SelectorBitsMax = (1ULL << (8U * SelectorSize)) - 1U;
-
-    uint8_t low_alpha;
-    uint8_t high_alpha;
-    std::array<uint8_t, SelectorSize> selectors;
+   private:
+    std::array<uint8_t, 8> GetValues6() const;
+    std::array<uint8_t, 8> GetValues8() const;
 };
-#pragma pack(pop)
 }  // namespace quicktex::s3tc
