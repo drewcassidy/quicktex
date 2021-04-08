@@ -56,5 +56,4 @@ jobs:
         run: python setup.py build --debug install
 
       - name: Test with nose
-        run: nosetests tests -d
-        working-directory: ./tests
+        run: python -I -m nose tests -d
