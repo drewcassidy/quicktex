@@ -139,6 +139,7 @@ class TestBC4Texture(unittest.TestCase):
 
 class TestBC4Encoder(unittest.TestCase):
     """Test BC4Encoder"""
+
     # 6-value blocks are not yet supported by the encoder so we only run one test
     @classmethod
     def setUpClass(cls):
@@ -180,4 +181,3 @@ class TestBC4Decoder(unittest.TestCase):
         img_hist = img_diff.histogram()
 
         self.assertEqual(16, img_hist[0], 'decoded block is incorrect')
-
