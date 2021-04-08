@@ -17,10 +17,10 @@ class TestBC4Block(unittest.TestCase):
 
     def test_size(self):
         """Test the size and dimensions of BC4Block"""
-        self.assertEqual(BC4Block.size, 8, 'incorrect block size')
+        self.assertEqual(BC4Block.nbytes, 8, 'incorrect block size')
         self.assertEqual(BC4Block.width, 4, 'incorrect block width')
         self.assertEqual(BC4Block.height, 4, 'incorrect block width')
-        self.assertEqual(BC4Block.dimensions, (4, 4), 'incorrect block dimensions')
+        self.assertEqual(BC4Block.size, (4, 4), 'incorrect block dimensions')
 
     def test_buffer(self):
         """Test the buffer protocol of BC4Block"""
@@ -30,7 +30,7 @@ class TestBC4Block(unittest.TestCase):
         self.assertFalse(mv.readonly, 'buffer is readonly')
         self.assertTrue(mv.c_contiguous, 'buffer is not contiguous')
         self.assertEqual(mv.ndim, 1, 'buffer is multidimensional')
-        self.assertEqual(mv.nbytes, BC4Block.size, 'buffer is the wrong size')
+        self.assertEqual(mv.nbytes, BC4Block.nbytes, 'buffer is the wrong size')
         self.assertEqual(mv.format, 'B', 'buffer has the wrong format')
 
         mv[:] = self.block_bytes
@@ -81,24 +81,24 @@ class TestBC4Block(unittest.TestCase):
 class TestBC4Texture(unittest.TestCase):
     def setUp(self):
         self.tex = BC4Texture(self.w, self.h)
-        self.size = self.wb * self.hb * BC4Block.size
+        self.nbytes = self.wb * self.hb * BC4Block.nbytes
 
     def test_size(self):
         """Test size of BC4Texture in bytes"""
-        self.assertEqual(self.tex.size, self.size, 'incorrect texture size')
-        self.assertEqual(len(self.tex.tobytes()), self.size, 'incorrect texture size from tobytes')
+        self.assertEqual(self.tex.nbytes, self.nbytes, 'incorrect texture size')
+        self.assertEqual(len(self.tex.tobytes()), self.nbytes, 'incorrect texture size from tobytes')
 
     def test_dimensions(self):
         """Test dimensions of BC4Texture in pixels"""
         self.assertEqual(self.tex.width, self.w, 'incorrect texture width')
         self.assertEqual(self.tex.height, self.h, 'incorrect texture height')
-        self.assertEqual(self.tex.dimensions, (self.w, self.h), 'incorrect texture dimensions')
+        self.assertEqual(self.tex.size, (self.w, self.h), 'incorrect texture dimensions')
 
     def test_dimensions_blocks(self):
         """Test dimensions of BC4Texture in blocks"""
         self.assertEqual(self.tex.width_blocks, self.wb, 'incorrect texture width_blocks')
         self.assertEqual(self.tex.height_blocks, self.hb, 'incorrect texture width_blocks')
-        self.assertEqual(self.tex.dimensions_blocks, (self.wb, self.hb), 'incorrect texture dimensions_blocks')
+        self.assertEqual(self.tex.size_blocks, (self.wb, self.hb), 'incorrect texture dimensions_blocks')
 
     def test_blocks(self):
         """Test getting and setting blocks to BC4Texture"""
@@ -110,9 +110,9 @@ class TestBC4Texture(unittest.TestCase):
         b = self.tex.tobytes()
         for x in range(self.wb):
             for y in range(self.hb):
-                index = (x + (y * self.wb)) * BC4Block.size
+                index = (x + (y * self.wb)) * BC4Block.nbytes
                 tb = self.tex[x, y]
-                fb = BC4Block.frombytes(b[index:index + BC4Block.size])
+                fb = BC4Block.frombytes(b[index:index + BC4Block.nbytes])
                 self.assertEqual(tb, blocks[y][x], 'incorrect block read from texture')
                 self.assertEqual(fb, blocks[y][x], 'incorrect block read from texture bytes')
 
@@ -129,7 +129,7 @@ class TestBC4Texture(unittest.TestCase):
 
         self.assertFalse(mv.readonly, 'buffer is readonly')
         self.assertTrue(mv.c_contiguous, 'buffer is not contiguous')
-        self.assertEqual(mv.nbytes, self.size, 'buffer is the wrong size')
+        self.assertEqual(mv.nbytes, self.nbytes, 'buffer is the wrong size')
         self.assertEqual(mv.format, 'B', 'buffer has the wrong format')
 
         data = b'\xF0\x10\x88\x86\x68\xAC\xCF\xFA' * self.wb * self.hb
@@ -149,7 +149,7 @@ class TestBC4Encoder(unittest.TestCase):
         """Test encoder output with 8 value test block"""
         out_tex = self.bc4_encoder.encode(BC4Blocks.eight_value.texture)
 
-        self.assertEqual(out_tex.dimensions_blocks, (1, 1), 'encoded texture has multiple blocks')
+        self.assertEqual(out_tex.size_blocks, (1, 1), 'encoded texture has multiple blocks')
 
         out_block = out_tex[0, 0]
 
@@ -174,7 +174,7 @@ class TestBC4Decoder(unittest.TestCase):
         in_tex[0, 0] = block
         out_tex = self.bc4_decoder.decode(in_tex)
 
-        self.assertEqual(out_tex.dimensions, (4, 4), 'decoded texture has incorrect dimensions')
+        self.assertEqual(out_tex.size, (4, 4), 'decoded texture has incorrect dimensions')
 
         out_img = Image.frombytes('RGBA', (4, 4), out_tex.tobytes())
         img_diff = ImageChops.difference(out_img, image).convert('L')

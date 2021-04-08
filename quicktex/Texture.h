@@ -41,13 +41,13 @@ class Texture {
 
     virtual int Width() const { return _width; }
     virtual int Height() const { return _height; }
-    virtual std::tuple<int, int> Dimensions() const { return std::tuple<int, int>(_width, _height); }
+    virtual std::tuple<int, int> Size() const { return std::tuple<int, int>(_width, _height); }
 
     /**
      * The texture's total size
      * @return The size of the texture in bytes.
      */
-    virtual size_t Size() const noexcept = 0;
+    virtual size_t NBytes() const noexcept = 0;
 
     virtual const uint8_t *Data() const noexcept = 0;
     virtual uint8_t *Data() noexcept = 0;
@@ -85,7 +85,7 @@ class RawTexture : public Texture {
         _pixels.at(x + (y * _width)) = val;
     }
 
-    size_t Size() const noexcept override { return static_cast<unsigned long>(Width() * Height()) * sizeof(Color); }
+    size_t NBytes() const noexcept override { return static_cast<unsigned long>(Width() * Height()) * sizeof(Color); }
 
     template <int N, int M> ColorBlock<N, M> GetBlock(int block_x, int block_y) const {
         if (block_x < 0 || (block_x + 1) * N > _width) throw std::out_of_range("x value out of range.");
@@ -178,7 +178,7 @@ template <typename B> class BlockTexture final : public Texture {
         _blocks.at(x + (y * _width_b)) = val;
     }
 
-    size_t Size() const noexcept override { return _blocks.size() * sizeof(B); }
+    size_t NBytes() const noexcept override { return _blocks.size() * sizeof(B); }
 
     const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_blocks.data()); }
     uint8_t *Data() noexcept override{ return reinterpret_cast<uint8_t *>(_blocks.data()); }

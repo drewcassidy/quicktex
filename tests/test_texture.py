@@ -17,10 +17,10 @@ class TestRawTexture(unittest.TestCase):
 
     def test_size(self):
         """Test byte size and image dimensions"""
-        self.assertEqual(self.tex.size, self.size, "incorrect texture byte size")
+        self.assertEqual(self.tex.nbytes, self.size, "incorrect texture byte size")
         self.assertEqual(self.tex.width, self.width, "incorrect texture width")
         self.assertEqual(self.tex.height, self.height, "incorrect texture height")
-        self.assertEqual(self.tex.dimensions, (self.width, self.height), "incorrect texture dimensions")
+        self.assertEqual(self.tex.size, (self.width, self.height), "incorrect texture dimensions")
 
     def test_pixels(self):
         """Test getting and setting pixel values"""

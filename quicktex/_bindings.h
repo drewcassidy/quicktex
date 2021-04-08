@@ -93,7 +93,7 @@ template <typename T> T BufferToTexture(py::buffer buf, int width, int height) {
 
     auto info = buf.request(false);
     auto output = T(width, height);
-    auto dst_size = output.Size();
+    auto dst_size = output.NBytes();
 
     if (info.format != py::format_descriptor<uint8_t>::format()) throw std::runtime_error("Incompatible format in python buffer: expected a byte array.");
     if (info.size < (ssize_t)dst_size) std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
@@ -184,9 +184,9 @@ template <typename B> py::class_<B> BindBlock(py::module_& m, const char* name) 
     block.def_readonly_static("width", &B::Width, "The width of the block in pixels.");
     block.def_readonly_static("height", &B::Height, "The height of the block in pixels.");
     block.def_property_readonly_static(
-        "dimensions", [](py::object) { return std::make_tuple(B::Width, B::Height); }, "The dimensions of the block in pixels.");
+        "size", [](py::object) { return std::make_tuple(B::Width, B::Height); }, "The dimensions of the block in pixels.");
     block.def_property_readonly_static(
-        "size", [](py::object) { return sizeof(B); }, "The size of the block in bytes.");
+        "nbytes", [](py::object) { return sizeof(B); }, "The size of the block in bytes.");
 
     block.def(py::self == py::self);
 
@@ -227,7 +227,7 @@ template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& 
 
     block_texture.def_property_readonly("width_blocks", &BTex::BlocksX, "The width of the texture in blocks.");
     block_texture.def_property_readonly("height_blocks", &BTex::BlocksY, "The height of the texture in blocks.");
-    block_texture.def_property_readonly("dimensions_blocks", &BTex::BlocksXY, "The dimensions of the texture in blocks.");
+    block_texture.def_property_readonly("size_blocks", &BTex::BlocksXY, "The dimensions of the texture in blocks.");
 
     DefSubscript2D(block_texture, &BTex::GetBlock, &BTex::SetBlock, &BTex::BlocksXY);
 
