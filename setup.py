@@ -119,7 +119,7 @@ setup(
     package_dir={'': '.'},
     package_data={'': ['py.typed'] + stubs},
     include_package_data=True,
-    install_requires=["Pillow", "click"],
+    install_requires=["ninja", "Pillow", "click"],
     extras_require={
         "tests": ["nose", "parameterized"],
         "docs": ["sphinx", "myst-parser", "sphinx-rtd-theme"],

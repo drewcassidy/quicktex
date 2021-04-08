@@ -18,6 +18,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      - with:
+          # Whether to checkout submodules: `true` to checkout submodules or `recursive` to
+          # recursively checkout submodules.
+          submodules: 'true'
+          lfs: 'true'
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
