@@ -27,11 +27,8 @@ def mip_sizes(dimensions: typing.Tuple[int, int], mip_count: typing.Optional[int
 
     for mip in range(mip_count):
         chain.append(dimensions)
-        dimensions = tuple([max(dim // 2, 1) for dim in dimensions])
-
         if all([dim == 1 for dim in dimensions]):
             break  # we've reached a 1x1 mip and can get no smaller
+        dimensions = tuple([max(dim // 2, 1) for dim in dimensions])
 
     return chain
-
-

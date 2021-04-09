@@ -5,10 +5,10 @@ import os
 import struct
 import typing
 import quicktex.image_utils
-import quicktex.s3tc.bc1
-import quicktex.s3tc.bc3
-import quicktex.s3tc.bc4
-import quicktex.s3tc.bc5
+import quicktex.s3tc.bc1 as bc1
+import quicktex.s3tc.bc3 as bc3
+import quicktex.s3tc.bc4 as bc4
+import quicktex.s3tc.bc5 as bc5
 from PIL import Image
 
 
@@ -22,10 +22,10 @@ class DDSFormat:
 
 
 dds_formats = [
-    DDSFormat('BC1', quicktex.s3tc.bc1.BC1Texture, quicktex.s3tc.bc1.BC1Encoder, quicktex.s3tc.bc1.BC1Decoder, 'DXT1'),
-    DDSFormat('BC3', quicktex.s3tc.bc3.BC3Texture, quicktex.s3tc.bc3.BC3Encoder, quicktex.s3tc.bc3.BC3Decoder, 'DXT5'),
-    DDSFormat('BC4', quicktex.s3tc.bc4.BC4Texture, quicktex.s3tc.bc4.BC4Encoder, quicktex.s3tc.bc4.BC4Decoder, 'ATI1'),
-    DDSFormat('BC5', quicktex.s3tc.bc5.BC5Texture, quicktex.s3tc.bc5.BC5Encoder, quicktex.s3tc.bc5.BC5Decoder, 'ATI2'),
+    DDSFormat('BC1', bc1.BC1Texture, bc1.BC1Encoder, bc1.BC1Decoder, 'DXT1'),
+    DDSFormat('BC3', bc3.BC3Texture, bc3.BC3Encoder, bc3.BC3Decoder, 'DXT5'),
+    DDSFormat('BC4', bc4.BC4Texture, bc4.BC4Encoder, bc4.BC4Decoder, 'ATI1'),
+    DDSFormat('BC5', bc5.BC5Texture, bc5.BC5Encoder, bc5.BC5Decoder, 'ATI2'),
 ]
 
 
@@ -194,16 +194,17 @@ def read(path: os.PathLike) -> DDSFile:
         dds = DDSFile()
 
         # READ HEADER
-        assert struct.unpack('<I', file.read(4)) == DDSFile.header_bytes, "Incorrect DDS header size."
+        header_bytes = struct.unpack('<I', file.read(4))[0]
+        assert header_bytes == DDSFile.header_bytes, "Incorrect DDS header size."
 
-        dds.flags = DDSFlags(struct.unpack('<I', file.read(4)))  # read flags enum
+        dds.flags = DDSFlags(struct.unpack('<I', file.read(4))[0])  # read flags enum
         dds.size = struct.unpack('<2I', file.read(8))[::-1]  # read dimensions
         dds.pitch, dds.depth, dds.mipmap_count = struct.unpack('<3I', file.read(12))
         file.read(44)  # skip 44 unused bytes of data
 
-        assert struct.unpack('<I', file.read(4)) == 32, "Incorrect pixel format size."
+        assert struct.unpack('<I', file.read(4))[0] == 32, "Incorrect pixel format size."
 
-        dds.pf_flags = PFFlags(struct.unpack('<I', file.read(4)))
+        dds.pf_flags = PFFlags(struct.unpack('<I', file.read(4))[0])
         dds.four_cc = file.read(4).decode()
         dds.pixel_size, *pixel_bitmasks = struct.unpack('<5I', file.read(20))
 
@@ -235,7 +236,7 @@ def read(path: os.PathLike) -> DDSFile:
             texture = dds.format.texture(*size)  # make a new blocktexture of the current mip size
             nbytes = file.readinto(texture)
 
-            assert nbytes == texture.size, 'Unexpected end of file'
+            assert nbytes == texture.nbytes, 'Unexpected end of file'
 
             dds.textures.append(texture)
 
