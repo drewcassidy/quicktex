@@ -5,35 +5,6 @@ import typing
 import math
 
 
-def pad(source: Image.Image, block_dimensions=(4, 4)) -> Image.Image:
-    """
-    Pad an image to be divisible by a specific block size. The input image is repeated into the unused areas so that bilinar filtering works correctly.
-
-    :param source: Input image to add padding to. This will not be modified.
-    :param block_dimensions: The size of a single block that the output must be divisible by.
-    :return: A new image with the specified padding added.
-    """
-
-    assert all([dim > 0 for dim in block_dimensions]), "Invalid block size"
-
-    padded_dimensions = tuple([
-        math.ceil(i_dim / b_dim) * b_dim
-        for i_dim in source.size
-        for b_dim in block_dimensions
-    ])
-
-    if padded_dimensions == source.size:
-        # no padding is necessary
-        return source
-
-    output = Image.new(source.mode, padded_dimensions)
-    for x in range(math.ceil(padded_dimensions[0] / source.width)):
-        for y in range(math.ceil(padded_dimensions[1] / source.height)):
-            output.paste(source, (x * source.width, y * source.height))
-
-    return output
-
-
 def mip_sizes(dimensions: typing.Tuple[int, int], mip_count: typing.Optional[int] = None) -> typing.List[typing.Tuple[int, int]]:
     """
     Create a chain of mipmap sizes for a given source source size, where each source is half the size of the one before.
@@ -62,3 +33,5 @@ def mip_sizes(dimensions: typing.Tuple[int, int], mip_count: typing.Optional[int
             break  # we've reached a 1x1 mip and can get no smaller
 
     return chain
+
+
