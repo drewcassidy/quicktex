@@ -5,12 +5,12 @@ from quicktex.cli.decode import decode
 
 @click.group()
 @click.version_option()
-def cli():
+def main():
     """Encode and Decode various image formats"""
 
 
-cli.add_command(encode)
-cli.add_command(decode)
+main.add_command(encode)
+main.add_command(decode)
 
 if __name__ == '__main__':
-    cli()
+    main()
