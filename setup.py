@@ -124,7 +124,7 @@ setup(
     },
     entry_points='''
         [console_scripts]
-        quicktex=quicktex.cli:cli
+        quicktex=quicktex.cli.quicktex:cli
     ''',
     zip_safe=False,
 )

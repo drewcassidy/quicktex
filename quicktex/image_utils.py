@@ -1,11 +1,11 @@
 """Various utilities for working with Pillow images"""
 
 from PIL import Image
-import typing
+from typing import List, Tuple, Optional
 import math
 
 
-def mip_sizes(dimensions: typing.Tuple[int, int], mip_count: typing.Optional[int] = None) -> typing.List[typing.Tuple[int, int]]:
+def mip_sizes(dimensions: Tuple[int, int], mip_count: Optional[int] = None) -> List[Tuple[int, int]]:
     """
     Create a chain of mipmap sizes for a given source source size, where each source is half the size of the one before.
     Note that the division by 2 rounds down. So a 63x63 texture has as its next lowest mipmap level 31x31. And so on.
