@@ -1,10 +1,8 @@
 import click
 import os.path
 import quicktex.dds as dds
-import quicktex.image_utils
-import quicktex.cli
+import quicktex.cli.common as common
 from PIL import Image
-from pathlib import Path
 
 
 @click.command()
@@ -12,7 +10,7 @@ from pathlib import Path
 @click.option('-r', '--remove', is_flag=True, help="Remove input images after converting.")
 @click.option('-s', '--suffix', type=str, default='', help="Suffix to append to output file(s). Ignored if output is a single file.")
 @click.option('-x', '--extension',
-              callback=quicktex.cli.validate_decoded_extension,
+              callback=common.validate_decoded_extension,
               type=str, default='.png', show_default=True,
               help="Extension to use for output. Ignored if output is a single file. Output filetype is deduced from this")
 @click.option('-o', '--output',
@@ -22,45 +20,22 @@ from pathlib import Path
 def decode(flip, remove, suffix, extension, output, filenames):
     """Decode DDS files to images."""
 
-    if len(filenames) < 1:
-        raise click.BadArgumentUsage('No input files were provided.')
+    path_pairs = common.path_pairs(filenames, output, suffix, extension)
 
-    # decode in place
-    def make_outpath(p):
-        return p.with_name(p.stem + suffix + extension)
+    with click.progressbar(path_pairs, show_eta=False, show_pos=True, item_show_func=lambda x: str(x[0]) if x else '') as bar:
+        for inpath, outpath in bar:
+            if inpath.suffix != '.dds':
+                raise click.BadArgumentUsage(f"Input file '{inpath}' is not a DDS file.")
 
-    if output:
-        outpath = Path(output)
-        if outpath.is_file():
-            # decode to a file
-            if len(filenames) > 1:
-                raise click.BadOptionUsage('output', 'Output is a single file, but multiple input files were provided.')
-            if outpath.suffix not in quicktex.cli.decoded_extensions:
-                raise click.BadOptionUsage('output', f'File has incorrect extension for decoded file. Valid extensions are:\n{quicktex.cli.decoded_extensions}')
-
-            # noinspection PyUnusedLocal
-            def make_outpath(p):
-                return outpath
-        else:
-            # decode to directory
-            def make_outpath(p):
-                return outpath / (p.stem + suffix + extension)
-
-    with click.progressbar(filenames, show_eta=False, show_pos=True, item_show_func=lambda x: str(x) if x else '') as bar:
-        for filename in bar:
-            filepath = Path(filename)
-            if filepath.suffix != '.dds':
-                raise click.BadArgumentUsage(f"Input file '{filename}' is not a DDS file")
-
-            image = dds.read(filepath).decode()
+            image = dds.read(inpath).decode()
 
             if flip:
                 image = image.transpose(Image.FLIP_TOP_BOTTOM)
 
-            image.save(make_outpath(filepath))
+            image.save(outpath)
 
             if remove:
-                os.remove(filepath)
+                os.remove(inpath)
 
 
 if __name__ == '__main__':
