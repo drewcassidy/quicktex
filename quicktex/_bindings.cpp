@@ -27,6 +27,9 @@
 #include "Texture.h"
 #include "_bindings.h"
 
+#define STRINGIFY(x) #x
+#define MACRO_STRINGIFY(x) STRINGIFY(x)
+
 namespace py = pybind11;
 
 namespace quicktex::bindings {
@@ -35,6 +38,12 @@ void InitS3TC(py::module_ &m);
 
 PYBIND11_MODULE(_quicktex, m) {
     m.doc() = "More Stuff";
+
+#ifdef VERSION_INFO
+    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
+#else
+    m.attr("__version__") = "dev";
+#endif
 
     py::options options;
 

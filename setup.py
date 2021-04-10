@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import sys
 import glob
@@ -7,13 +6,7 @@ import subprocess
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
-# Convert distutils Windows platform specifiers to CMake -A arguments
-PLAT_TO_CMAKE = {
-    "win32": "Win32",
-    "win-amd64": "x64",
-    "win-arm32": "ARM",
-    "win-arm64": "ARM64",
-}
+__version__ = '0.0.1'
 
 
 # A CMakeExtension needs a sourcedir instead of a file list.
@@ -43,6 +36,7 @@ class CMakeBuild(build_ext):
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(extdir),
             "-DPython_EXECUTABLE={}".format(sys.executable),
+            "-DQUICKTEX_VERSION_INFO={}".format(__version__),
             "-DCMAKE_BUILD_TYPE={}".format(cfg),  # not used on MSVC, but no harm
         ]
         build_args = []
@@ -64,11 +58,19 @@ class CMakeBuild(build_ext):
             # CMake allows an arch-in-generator style for backward compatibility
             contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
 
+            # Convert distutils Windows platform specifiers to CMake -A arguments
+            plat_to_cmake = {
+                "win32": "Win32",
+                "win-amd64": "x64",
+                "win-arm32": "ARM",
+                "win-arm64": "ARM64",
+            }
+
             # Specify the arch if using MSVC generator, but only if it doesn't
             # contain a backward-compatibility arch spec already in the
             # generator name.
             if not single_config and not contains_arch:
-                cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
+                cmake_args += ["-A", plat_to_cmake[self.plat_name]]
 
             # Multi-config generators have a different way to specify configs
             if not single_config:
@@ -104,19 +106,20 @@ stubs = [path.replace('quicktex/', '') for path in glob.glob('quicktex/**/*.pyi'
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="quicktex",
-    version="0.0.1",
+    version=__version__,
     author="Andrew Cassidy",
     author_email="drewcassidy@me.com",
     description="A fast block compression library for python",
     long_description="",
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     ext_modules=[CMakeExtension("_quicktex")],
     cmdclass={"build_ext": CMakeBuild},
     packages=find_packages('.'),
     package_dir={'': '.'},
     package_data={'': ['py.typed'] + stubs},
     include_package_data=True,
-    install_requires=["ninja", "Pillow", "click"],
+    setup_requires=["ninja"],
+    install_requires=["Pillow", "click"],
     extras_require={
         "tests": ["nose", "parameterized"],
         "docs": ["sphinx", "myst-parser", "sphinx-rtd-theme"],
