@@ -12,7 +12,7 @@ from PIL import Image
 
 @click.group()
 def encode():
-    """Decode DDS files to images of the given format."""
+    """Encode images to DDS files of the given format."""
 
 
 @click.command()

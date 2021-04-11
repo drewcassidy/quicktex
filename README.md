@@ -45,7 +45,7 @@ Options:
 
 Commands:
   decode  Decode DDS files to images.
-  encode  Decode DDS files to images of the given format.
+  encode  Encode images to DDS files of the given format.
 ```
 
 To decode DDS files to images, use the `decode` subdommand, along with a glob or a
