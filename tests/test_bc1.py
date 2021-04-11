@@ -182,11 +182,6 @@ class TestBC1Encoder(unittest.TestCase):
         else:
             self.assertFalse(out_block.is_3color, 'returned 3-color block in 4-color mode')
 
-    def test_image(self):
-        image = Image.open(os.path.join(image_path, 'Bun.png'))
-        rawtex = quicktex.RawTexture.frombytes(image.tobytes('raw', 'RGBA'), *image.size)
-        out_tex = self.bc1_encoder.encode(rawtex)
-
 
 class TestBC1Decoder(unittest.TestCase):
     """Test BC1Decoder"""
