@@ -1,8 +1,10 @@
 import unittest
 import nose
+import os.path
 from parameterized import parameterized, parameterized_class
+import quicktex
 from quicktex.s3tc.bc1 import BC1Block, BC1Texture, BC1Encoder, BC1Decoder
-from tests.images import BC1Blocks
+from tests.images import BC1Blocks, image_path
 from PIL import Image, ImageChops
 
 in_endpoints = ((253, 254, 255), (65, 70, 67))  # has some small changes that should encode the same
@@ -179,6 +181,11 @@ class TestBC1Encoder(unittest.TestCase):
             self.assertFalse(has_black and out_block.is_3color, 'returned 3color block with black pixels')
         else:
             self.assertFalse(out_block.is_3color, 'returned 3-color block in 4-color mode')
+
+    def test_image(self):
+        image = Image.open(os.path.join(image_path, 'Bun.png'))
+        rawtex = quicktex.RawTexture.frombytes(image.tobytes('raw', 'RGBA'), *image.size)
+        out_tex = self.bc1_encoder.encode(rawtex)
 
 
 class TestBC1Decoder(unittest.TestCase):

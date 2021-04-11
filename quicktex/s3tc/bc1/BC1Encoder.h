@@ -143,9 +143,9 @@ class BC1Encoder final : public BlockEncoder<BlockTexture<BC1Block>> {
     struct EncodeResults {
         Color low;
         Color high;
-        std::array<uint8_t, 16> selectors;
-        ColorMode color_mode;
-        bool solid;
+        std::array<uint8_t, 16> selectors = {0};
+        ColorMode color_mode = ColorMode::Incomplete;
+        bool solid = false;
         unsigned error = UINT_MAX;
     };
 

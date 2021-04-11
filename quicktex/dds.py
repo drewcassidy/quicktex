@@ -87,6 +87,19 @@ class DDSFlags(enum.IntFlag):
     TEXTURE = CAPS | HEIGHT | WIDTH | PIXEL_FORMAT
 
 
+class Caps0(enum.IntFlag):
+    """Flags to indicate surface complexity"""
+
+    COMPLEX = 0x8
+    """Optional; must be used on any file that contains more than one surface (a mipmap, a cubic environment map, or mipmapped volume texture)."""
+
+    MIPMAP = 0x400000
+    """Optional; should be used for a mipmap."""
+
+    TEXTURE = 0x1000
+    """Required"""
+
+
 @typing.final
 class DDSFile:
     """
@@ -134,7 +147,7 @@ class DDSFile:
         self.pixel_bitmasks: typing.Tuple[int, int, int, int] = (0, 0, 0, 0)
         """Tuple of bitmasks for each channel"""
 
-        self.caps: typing.Tuple[int, int, int, int] = (0, 0, 0, 0)
+        self.caps: typing.Tuple[Caps0, int, int, int] = (Caps0.TEXTURE, 0, 0, 0)
         """Specifies the complexity of the surfaces stored."""
 
         self.textures: typing.List = []
@@ -149,12 +162,6 @@ class DDSFile:
         :param path: string or path-like object to write to
         """
         with open(path, 'wb') as file:
-            self.size = self.textures[0].size
-            self.pitch = self.textures[0].nbytes
-            self.mipmap_count = len(self.textures)
-
-            assert quicktex.image_utils.mip_sizes(self.size, self.mipmap_count) == [tex.size for tex in self.textures], 'incorrect mipmap sizes'
-
             file.write(DDSFile.magic)
 
             # WRITE HEADER
@@ -241,3 +248,33 @@ def read(path: os.PathLike) -> DDSFile:
             dds.textures.append(texture)
 
         return dds
+
+
+def encode(image: Image.Image, encoder, four_cc: str, mip_count: typing.Optional[int] = None) -> DDSFile:
+    if image.mode != 'RGBA' or image.mode != 'RGBX':
+        mode = 'RGBA' if 'A' in image.mode else 'RGBX'
+        image = image.convert(mode)
+
+    sizes = quicktex.image_utils.mip_sizes(image.size, mip_count)
+    images = [image] + [image.resize(size, Image.BILINEAR) for size in sizes[1:]]
+    dds = DDSFile()
+
+    for i in images:
+        rawtex = quicktex.RawTexture.frombytes(i.tobytes('raw', mode), *i.size)
+        dds.textures.append(encoder.encode(rawtex))
+
+    dds.flags = DDSFlags.TEXTURE | DDSFlags.LINEAR_SIZE
+    caps0 = Caps0.TEXTURE
+
+    if len(images) > 1:
+        dds.flags |= DDSFlags.MIPMAPCOUNT
+        caps0 |= Caps0.MIPMAP | Caps0.COMPLEX
+
+    dds.caps = (caps0, 0, 0, 0)
+    dds.mipmap_count = len(images)
+    dds.pitch = dds.textures[0].nbytes
+    dds.size = dds.textures[0].size
+    dds.pf_flags = PFFlags.FOURCC
+    dds.four_cc = four_cc
+
+    return dds

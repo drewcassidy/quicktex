@@ -53,8 +53,8 @@ def path_pairs(inputs, output, suffix, extension):
             # decode to a file
             if len(inputs) > 1:
                 raise click.BadOptionUsage('output', 'Output is a single file, but multiple input files were provided.')
-            if outpath.suffix not in decoded_extensions:
-                raise click.BadOptionUsage('output', f'File has incorrect extension for decoded file. Valid extensions are:\n{decoded_extensions}')
+            # if outpath.suffix not in decoded_extensions:
+            #     raise click.BadOptionUsage('output', f'File has incorrect extension for decoded file. Valid extensions are:\n{decoded_extensions}')
 
             return [(inpath, outpath) for inpath in inpaths]
         else:

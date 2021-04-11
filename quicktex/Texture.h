@@ -88,8 +88,8 @@ class RawTexture : public Texture {
     size_t NBytes() const noexcept override { return static_cast<unsigned long>(Width() * Height()) * sizeof(Color); }
 
     template <int N, int M> ColorBlock<N, M> GetBlock(int block_x, int block_y) const {
-        if (block_x < 0 || (block_x + 1) * N > _width) throw std::out_of_range("x value out of range.");
-        if (block_y < 0 || (block_y + 1) * M > _height) throw std::out_of_range("y value out of range.");
+        if (block_x < 0) throw std::out_of_range("x value out of range.");
+        if (block_y < 0) throw std::out_of_range("y value out of range.");
 
         // coordinates in the image of the top-left pixel of the selected block
         ColorBlock<N, M> block;
@@ -181,7 +181,7 @@ template <typename B> class BlockTexture final : public Texture {
     size_t NBytes() const noexcept override { return _blocks.size() * sizeof(B); }
 
     const uint8_t *Data() const noexcept override { return reinterpret_cast<const uint8_t *>(_blocks.data()); }
-    uint8_t *Data() noexcept override{ return reinterpret_cast<uint8_t *>(_blocks.data()); }
+    uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_blocks.data()); }
 };
 
 }  // namespace quicktex

@@ -367,7 +367,7 @@ BC1Block BC1Encoder::WriteBlockSolid(Color color) const {
         min16 = result.low.Pack565Unscaled();
         max16 = result.high.Pack565Unscaled();
 
-        if (result.solid) {
+        if (result.color_mode == ColorMode::FourColor) {
             if (min16 == max16) {
                 // make sure this isnt accidentally a 3-color block
                 // so make max16 > min16 (l > h)
