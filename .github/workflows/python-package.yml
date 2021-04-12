@@ -109,6 +109,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v2
+        with:
+          # Whether to checkout submodules: `true` to checkout submodules or `recursive` to
+          # recursively checkout submodules.
+          submodules: 'true'
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
