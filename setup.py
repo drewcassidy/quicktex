@@ -6,8 +6,6 @@ import subprocess
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
-__version__ = '0.0.1'
-
 
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -20,6 +18,9 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
+        from setuptools_scm import get_version
+        version = get_version(root='.', relative_to=__file__)
+
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
         # required for auto-detection of auxiliary "native" libs
@@ -36,7 +37,7 @@ class CMakeBuild(build_ext):
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(extdir),
             "-DPython_EXECUTABLE={}".format(sys.executable),
-            "-DQUICKTEX_VERSION_INFO={}".format(__version__),
+            "-DQUICKTEX_VERSION_INFO={}".format(version),
             "-DCMAKE_BUILD_TYPE={}".format(cfg),  # not used on MSVC, but no harm
         ]
         build_args = []
@@ -106,7 +107,7 @@ stubs = [path.replace('quicktex/', '') for path in glob.glob('quicktex/**/*.pyi'
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="quicktex",
-    version=__version__,
+    use_scm_version=True,
     author="Andrew Cassidy",
     author_email="drewcassidy@me.com",
     description="A fast block compression library for python",
@@ -118,7 +119,7 @@ setup(
     package_dir={'': '.'},
     package_data={'': ['py.typed'] + stubs},
     include_package_data=True,
-    setup_requires=["ninja"],
+    setup_requires=["ninja", "setuptools_scm"],
     install_requires=["Pillow", "click"],
     extras_require={
         "tests": ["nose", "parameterized"],
@@ -130,4 +131,19 @@ setup(
         quicktex=quicktex.__main__:main
     ''',
     zip_safe=False,
+    license='GNU Lesser General Public License v3 (LGPLv3)',
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: C++'
+    ],
 )
