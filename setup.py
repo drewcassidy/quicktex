@@ -6,6 +6,11 @@ import subprocess
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
+project_path = os.path.dirname(os.path.realpath(__file__))
+
+with open(os.path.join(project_path, 'README.md')) as f:
+    readme = f.read()
+
 
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -111,7 +116,10 @@ setup(
     author="Andrew Cassidy",
     author_email="drewcassidy@me.com",
     description="A fast block compression library for python",
-    long_description="",
+    license='GNU Lesser General Public License v3 (LGPLv3)',
+    url='https://github.com/drewcassidy/quicktex',
+    long_description=readme,
+    long_description_content_type='text/markdown',
     python_requires=">=3.7",
     ext_modules=[CMakeExtension("_quicktex")],
     cmdclass={"build_ext": CMakeBuild},
@@ -130,7 +138,6 @@ setup(
         'console_scripts': ['quicktex = quicktex.__main__:main']
     },
     zip_safe=False,
-    license='GNU Lesser General Public License v3 (LGPLv3)',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
