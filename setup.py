@@ -126,10 +126,9 @@ setup(
         "docs": ["sphinx", "myst-parser", "sphinx-rtd-theme"],
         "stubs": ["pybind11-stubgen"],
     },
-    entry_points='''
-        [console_scripts]
-        quicktex=quicktex.__main__:main
-    ''',
+    entry_points={
+        'console_scripts': ['quicktex = quicktex.__main__:main']
+    },
     zip_safe=False,
     license='GNU Lesser General Public License v3 (LGPLv3)',
     classifiers=[
