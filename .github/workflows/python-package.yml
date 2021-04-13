@@ -61,7 +61,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     env:
-      MACOSX_DEPLOYMENT_TARGET: 10_15
+      MACOSX_DEPLOYMENT_TARGET: 10.15
 
     strategy:
       matrix:
