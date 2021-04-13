@@ -13,10 +13,10 @@ def test_images():
 
     images_path = os.path.join(tests_path, 'images')
 
-    assert os.path.isdir(images_path), 'images directory/submodule not present'
-    assert os.path.isfile(os.path.join(images_path, '__init__.py')), 'images __init__.py not present, is the submodule checked out?'
+    assert os.path.isdir(images_path), 'test images repo not present. run "git clone https://git.pileof.rocks/drewcassidy/quicktex-test-images.git tests/images" to download them'
+    assert os.path.isfile(os.path.join(images_path, '__init__.py')), 'images __init__.py not present, is the test image repo present?'
     bp_size = os.path.getsize(os.path.join(images_path, 'Boilerplate.png'))
-    assert bp_size == 955989, 'Boilerplate.png is the wrong size, is the submodule checked out with LFS enabled?'
+    assert bp_size == 955989, 'Boilerplate.png is the wrong size, is the test image repo checked out with LFS enabled?'
 
 
 def test_version():
