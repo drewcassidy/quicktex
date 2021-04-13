@@ -56,11 +56,6 @@ class CMakeBuild(build_ext):
             if not cmake_generator:
                 cmake_args += ["-GNinja"]
 
-            # If this is a CI build, make sure not to use any advanced CPU features
-            if bool(os.environ.get('CI', False)):
-                print('forcing use of base x86_64 instruction set for CI build')
-                cmake_args += ['-DCMAKE_CXX_FLAGS=-mtune=x86-64']
-
         else:
             # Single config generators are handled "normally"
             single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
