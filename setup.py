@@ -115,7 +115,6 @@ setup(
     author="Andrew Cassidy",
     author_email="drewcassidy@me.com",
     description="A fast block compression library for python",
-    license='GNU Lesser General Public License v3 (LGPLv3)',
     url='https://github.com/drewcassidy/quicktex',
     long_description=readme,
     long_description_content_type='text/markdown',

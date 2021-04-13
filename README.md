@@ -2,7 +2,7 @@
 A python library for using DDS files
 
 Quicktex is a python library and command line tool for encoding and decoding DDS files.
-It is based on the [RGBCX encoder](https://github.com/drewcassidy/bc7enc), which is currently
+It is based on the [RGBCX encoder](https://github.com/richgel999/bc7enc), which is currently
 one of the [highest quality S3TC encoders available](https://aras-p.info/blog/2020/12/08/Texture-Compression-in-2020/).
 Quicktex has a python front end, but the encoding and decoding is all done in C++ for speed
 comparable to the original library.
