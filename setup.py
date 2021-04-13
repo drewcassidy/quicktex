@@ -86,7 +86,8 @@ class CMakeBuild(build_ext):
 
             # If this is a CI build, make sure not to use any advanced CPU features
             if bool(os.environ.get('CI', False)):
-                cmake_args += ['-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON', '-DCMAKE_CXX_FLAGS=-mtune=x86_64']
+                cmake_args += ['-DCMAKE_CXX_FLAGS=-mtune=x86_64']
+                build_args += ['-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON']
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
