@@ -57,7 +57,6 @@ class CMakeBuild(build_ext):
                 cmake_args += ["-GNinja"]
 
         else:
-
             # Single config generators are handled "normally"
             single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
 
@@ -85,6 +84,10 @@ class CMakeBuild(build_ext):
                 ]
                 build_args += ["--config", cfg]
 
+            # If this is a CI build, make sure not to use any advanced CPU features
+            if bool(os.environ.get('CI', False)):
+                cmake_args += ['-DCMAKE_CXX_FLAGS=-mtune=x86_64']
+
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
         if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
@@ -101,7 +104,7 @@ class CMakeBuild(build_ext):
             ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp
         )
         subprocess.check_call(
-            ["cmake", "--build", ".", "--target", ext.name] + build_args, cwd=self.build_temp
+            ["cmake", "--verbose", "--build", ".", "--target", ext.name] + build_args, cwd=self.build_temp
         )
 
 
