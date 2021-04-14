@@ -125,7 +125,6 @@ setup(
     package_dir={'': '.'},
     package_data={'': ['py.typed'] + stubs},
     include_package_data=True,
-    setup_requires=["ninja", "setuptools_scm"],
     install_requires=["Pillow", "click"],
     extras_require={
         "tests": ["nose", "parameterized"],
