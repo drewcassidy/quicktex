@@ -47,13 +47,11 @@ class alignas(8) BC1Block {
     std::array<uint8_t, SelectorSize> _selectors;
 
    public:
-    /// Create a new BC1Block
-    constexpr BC1Block() {
+    /// Create a new BC1Blok
+    constexpr BC1Block() : _color0(), _color1(), _selectors() {
         static_assert(sizeof(BC1Block) == 8);
         static_assert(sizeof(std::array<BC1Block, 10>) == 8 * 10);
         static_assert(alignof(BC1Block) >= 8);
-        _color0 = _color1 = {0, 0};
-        _selectors = {0, 0, 0, 0};
     }
 
     /**

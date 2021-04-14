@@ -35,11 +35,10 @@ class alignas(8) BC5Block {
     BC4Block chan0_block;
     BC4Block chan1_block;
 
-    constexpr BC5Block() {
+    constexpr BC5Block() : chan0_block(BC4Block()), chan1_block(BC4Block()) {
         static_assert(sizeof(BC5Block) == 16);
         static_assert(sizeof(std::array<BC5Block, 10>) == 16 * 10);
         static_assert(alignof(BC5Block) >= 8);
-        chan0_block = chan1_block = BC4Block();
     }
 
     BC5Block(const BC4Block &chan0, const BC4Block &chan1) {
@@ -54,7 +53,7 @@ class alignas(8) BC5Block {
         chan1_block = pair.second;
     }
 
-    bool operator==(const BC5Block& other) const = default;
-    bool operator!=(const BC5Block& other) const = default;
+    bool operator==(const BC5Block &other) const = default;
+    bool operator!=(const BC5Block &other) const = default;
 };
 }  // namespace quicktex::s3tc

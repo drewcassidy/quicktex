@@ -48,12 +48,10 @@ class alignas(8) BC4Block {
     // Constructors
 
     /// Create a new BC4Block
-    constexpr BC4Block() {
+    constexpr BC4Block() : alpha0(0), alpha1(0), _selectors() {
         static_assert(sizeof(BC4Block) == 8);
         static_assert(sizeof(std::array<BC4Block, 10>) == 8 * 10);
         static_assert(alignof(BC4Block) >= 8);
-        alpha0 = alpha1 = 0;
-        _selectors = {0, 0, 0, 0, 0, 0};
     }
 
     /**

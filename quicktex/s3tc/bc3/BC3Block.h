@@ -36,12 +36,10 @@ class alignas(8) BC3Block {
     BC4Block alpha_block;
     BC1Block color_block;
 
-    constexpr BC3Block() {
+    constexpr BC3Block() : alpha_block(BC4Block()), color_block(BC1Block()) {
         static_assert(sizeof(BC3Block) == 16);
         static_assert(sizeof(std::array<BC3Block, 10>) == 16 * 10);
         static_assert(alignof(BC3Block) >= 8);
-        alpha_block = BC4Block();
-        color_block = BC1Block();
     }
 
     BC3Block(const BC4Block &alpha, const BC1Block &color) {
@@ -56,7 +54,7 @@ class alignas(8) BC3Block {
         color_block = blocks.second;
     }
 
-    bool operator==(const BC3Block& other) const = default;
-    bool operator!=(const BC3Block& other) const = default;
+    bool operator==(const BC3Block &other) const = default;
+    bool operator!=(const BC3Block &other) const = default;
 };
 }  // namespace quicktex::s3tc
