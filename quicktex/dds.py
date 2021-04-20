@@ -166,7 +166,7 @@ class DDSFile:
 
             # WRITE HEADER
             file.write(struct.pack('<7I44x', DDSFile.header_bytes, int(self.flags), self.size[1], self.size[0], self.pitch, self.depth, self.mipmap_count))
-            file.write(struct.pack('<2I4s5I', 32, int(self.flags), bytes(self.four_cc, 'ascii'), self.pixel_size, *self.pixel_bitmasks))
+            file.write(struct.pack('<2I4s5I', 32, int(self.pfflags), bytes(self.four_cc, 'ascii'), self.pixel_size, *self.pixel_bitmasks))
             file.write(struct.pack('<4I4x', *self.caps))
 
             assert file.tell() == 4 + DDSFile.header_bytes, 'error writing file: incorrect header size'

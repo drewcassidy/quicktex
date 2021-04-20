@@ -19,7 +19,7 @@ def mip_sizes(dimensions: Tuple[int, int], mip_count: Optional[int] = None) -> L
     """
     assert all([dim > 0 for dim in dimensions]), "Invalid source dimensions"
     if not mip_count:
-        mip_count = math.ceil(math.log2(max(dimensions)))  # maximum possible number of mips for a given source
+        mip_count = math.ceil(math.log2(max(dimensions)) + 1)  # maximum possible number of mips for a given source
 
     assert mip_count > 0, "mip_count must be greater than 0"
 
