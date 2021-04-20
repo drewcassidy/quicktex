@@ -121,7 +121,7 @@ setup(
     python_requires=">=3.7",
     ext_modules=[CMakeExtension("_quicktex")],
     cmdclass={"build_ext": CMakeBuild},
-    packages=['quicktex'],
+    packages=find_packages(where='.', include=['quicktex*']),
     package_dir={'': '.'},
     package_data={'': ['py.typed'] + stubs},
     include_package_data=True,
