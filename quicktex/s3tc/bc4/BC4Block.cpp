@@ -19,8 +19,8 @@
 
 #include "BC4Block.h"
 
-#include <stdexcept>
 #include <algorithm>
+#include <stdexcept>
 
 #include "../../util.h"
 
@@ -63,4 +63,7 @@ std::array<uint8_t, 8> BC4Block::GetValues8() const {
             static_cast<uint8_t>((alpha0 * 2 + alpha1 * 5) / 7),
             static_cast<uint8_t>((alpha0 + alpha1 * 6) / 7)};
 }
+
+bool BC4Block::operator==(const BC4Block& Rhs) const { return alpha0 == Rhs.alpha0 && alpha1 == Rhs.alpha1 && _selectors == Rhs._selectors; }
+bool BC4Block::operator!=(const BC4Block& Rhs) const { return !(Rhs == *this); }
 }  // namespace quicktex::s3tc

@@ -51,7 +51,8 @@ class Color {
     static Color Min(const Color &A, const Color &B);
     static Color Max(const Color &A, const Color &B);
 
-    bool operator==(const Color &Rhs) const { return r == Rhs.r && g == Rhs.g && b == Rhs.b && a == Rhs.a; }
+    bool operator==(const Color &Rhs) const;
+    bool operator!=(const Color &Rhs) const;
 
     uint8_t operator[](size_t index) const {
         assert(index < 4);

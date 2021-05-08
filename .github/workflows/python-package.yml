@@ -25,12 +25,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Set linux compiler
-        if: runner.os == 'Linux'
-        run: |
-          echo "CC=gcc-10" >> $GITHUB_ENV
-          echo "CXX=g++-10" >> $GITHUB_ENV
-
       - name: Install libomp
         if: runner.os == 'macOS'
         # openMP isnt part of core apple clang for some reason?
@@ -81,12 +75,6 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Set linux compiler
-        if: runner.os == 'Linux'
-        run: |
-          echo "CC=gcc-10" >> $GITHUB_ENV
-          echo "CXX=g++-10" >> $GITHUB_ENV
 
       - name: Install libomp
         if: runner.os == 'macOS'

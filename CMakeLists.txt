@@ -59,8 +59,8 @@ if (OpenMP_CXX_FOUND)
 endif ()
 
 # Set module features, like C/C++ standards
-target_compile_features(_quicktex PUBLIC cxx_std_20 c_std_11)
-target_compile_features(test_quicktex PUBLIC cxx_std_20 c_std_11)
+target_compile_features(_quicktex PUBLIC cxx_std_17 c_std_11)
+target_compile_features(test_quicktex PUBLIC cxx_std_17 c_std_11)
 
 set_project_warnings(_quicktex)
 set_project_warnings(test_quicktex)

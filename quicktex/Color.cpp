@@ -122,4 +122,7 @@ uint16_t Color::Pack565Unscaled() const { return Pack565Unscaled(r, g, b); }
 Color Color::ScaleTo565() const { return Color(scale8To5(r), scale8To6(g), scale8To5(b)); }
 Color Color::ScaleFrom565() const { return Color(scale5To8(r), scale6To8(g), scale5To8(b)); }
 
+bool Color::operator==(const Color &Rhs) const { return r == Rhs.r && g == Rhs.g && b == Rhs.b && a == Rhs.a; }
+bool Color::operator!=(const Color &Rhs) const { return !(Rhs == *this); }
+
 }  // namespace quicktex

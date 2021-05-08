@@ -41,4 +41,7 @@ void BC1Block::SetSelectors(const BC1Block::SelectorArray& unpacked) {
     _selectors = MapArray(unpacked, Pack<uint8_t, uint8_t, SelectorBits, Width>);
 }
 
+bool BC1Block::operator==(const BC1Block& Rhs) const { return _color0 == Rhs._color0 && _color1 == Rhs._color1 && _selectors == Rhs._selectors; }
+bool BC1Block::operator!=(const BC1Block& Rhs) const { return !(Rhs == *this); }
+
 }  // namespace quicktex::s3tc
