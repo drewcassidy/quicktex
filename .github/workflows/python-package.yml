@@ -37,7 +37,7 @@ jobs:
         run: python -m build --sdist
 
       - name: Check metadata
-        run: pytmon -m twine check dist/*
+        run: python -m twine check dist/*
 
       - name: Upload SDist
         uses: actions/upload-artifact@v2
