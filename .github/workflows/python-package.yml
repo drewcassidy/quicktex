@@ -6,12 +6,9 @@ name: Python Package
 on: [ push, pull_request ]
 
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python-version: [ 3.7, 3.8, 3.9 ]
-        os: [ macos-latest, windows-latest, ubuntu-latest ]
+  build-sdist:
+    name: Build SDist
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -20,23 +17,14 @@ jobs:
           # recursively checkout submodules.
           submodules: 'true'
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install libomp
-        if: runner.os == 'macOS'
-        # openMP isnt part of core apple clang for some reason?
-        run: brew install libomp
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install flake8
-
-      - name: Install test images
-        run: git clone https://git.pileof.rocks/drewcassidy/quicktex-test-images.git tests/images
+          python -m pip install setuptools twine build
 
       - name: Lint with flake8
         run: |
@@ -45,15 +33,19 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: Compile and install
-        run: python -m pip install -e .[tests]
+      - name: Build SDist
+        run: python -m build --sdist
 
-      - name: Test with nose
-        run: nosetests tests -d
+      - name: Check metadata
+        run: pytmon -m twine check dist/*
 
-  build:
-    needs: test
-    if: github.event_name == 'push'
+      - name: Upload SDist
+        uses: actions/upload-artifact@v2
+        with:
+          path: dist/*.tar.gz
+
+  build-wheels:
+    name: Build Wheels for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -71,22 +63,27 @@ jobs:
         # openMP isnt part of core apple clang for some reason?
         run: brew install libomp
 
+      - name: Install test images
+        run: git clone https://git.pileof.rocks/drewcassidy/quicktex-test-images.git tests/images
+
       - name: Build wheels
         uses: joerick/cibuildwheel@v1.11.0
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.15"
-          CIBW_BUILD: "{cp,pp}{37,38,39}-*"
+          CIBW_BUILD: "cp{37,38,39}-*"
           CIBW_SKIP: "*-win32 *-manylinux_i686"
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014"
+          CIBW_TEST_COMMAND: nosetests tests -d
+          CIBW_TEST_EXTRAS: "tests"
 
-      - name: Upload wheel as artifact
+      - name: Upload Wheels
         uses: actions/upload-artifact@v2
         with:
-          name: dist
           path: ./wheelhouse/*.whl
 
   publish:
-    needs: build
+    name: Publish to PyPI and Github
+    needs: [build-wheels, build-sdist]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
 
@@ -99,25 +96,42 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v2
-
-      - name: List artifacts
-        run: ls -l dist
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install setuptools wheel twine build
+          python -m pip install yaclog
 
-      - name: Build a source tarball
-        run: python -m build --sdist --outdir dist/
+      - name: Get version name and body
+        run: |
+          echo "VERSION_TILE=Version $(yaclog show -n)" >> $GITHUB_ENV
+          echo "$(yaclog show -mb)" >> RELEASE.md
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
+
+      - name: List artifacts
+        run: ls -l dist
 
       - name: Publish to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Publish to Github
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          name: ${{ env.VERSION_TITLE }}
+          body_path: RELEASE.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
