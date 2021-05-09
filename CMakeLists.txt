@@ -5,7 +5,7 @@ include(tools/CompilerWarnings.cmake)
 project(quicktex)
 
 # Find dependencies
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
+find_package(Python COMPONENTS Interpreter Development)
 find_package(OpenMP)
 add_subdirectory(extern/pybind11)
 
