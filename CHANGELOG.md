@@ -1,4 +1,4 @@
-Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file
 
@@ -6,4 +6,9 @@ All notable changes to this project will be documented in this file
 
 ### Added
 
-- begin publishing to PyPI
+- Began publishing to PyPI
+
+### Changed
+
+- Rewrote CI workflow to include ManyLinux2014 builds
+- Reverted project to C++17 for better compiler compatibility
