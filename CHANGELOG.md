@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file
 
+## Unreleased
+
+### Fixed
+
+- Fixed alpha premultiplication when generating mipmaps
+
+
 ## 0.1.0 - 2021-05-10
 
 ### Added

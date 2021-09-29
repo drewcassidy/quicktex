@@ -256,7 +256,7 @@ def encode(image: Image.Image, encoder, four_cc: str, mip_count: typing.Optional
         image = image.convert(mode)
 
     sizes = quicktex.image_utils.mip_sizes(image.size, mip_count)
-    images = [image] + [image.resize(size, Image.BILINEAR) for size in sizes[1:]]
+    images = [image] + [quicktex.image_utils.resize_no_premultiply(image, size) for size in sizes[1:]]
     dds = DDSFile()
 
     for i in images:
