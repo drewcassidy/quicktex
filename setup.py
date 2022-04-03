@@ -117,44 +117,10 @@ stubs = [path.replace('quicktex/', '') for path in glob.glob('quicktex/**/*.pyi'
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
-    name="quicktex",
     use_scm_version=True,
-    author="Andrew Cassidy",
-    author_email="drewcassidy@me.com",
-    description="A fast block compression library for python",
-    url='https://github.com/drewcassidy/quicktex',
-    long_description=readme,
-    long_description_content_type='text/markdown',
-    python_requires=">=3.7",
     ext_modules=[CMakeExtension("_quicktex")],
     cmdclass={"build_ext": CMakeBuild},
     packages=find_packages(where='.', include=['quicktex*']),
     package_dir={'': '.'},
     package_data={'': ['py.typed'] + stubs},
-    include_package_data=True,
-    install_requires=["Pillow", "click"],
-    extras_require={
-        "tests": ["nose", "parameterized"],
-        "docs": ["sphinx", "myst-parser", "sphinx-rtd-theme"],
-        "stubs": ["pybind11-stubgen"],
-    },
-    entry_points={
-        'console_scripts': ['quicktex = quicktex.__main__:main']
-    },
-    zip_safe=False,
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        "Topic :: Multimedia :: Graphics :: Graphics Conversion",
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: C++'
-    ],
 )
