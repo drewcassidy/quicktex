@@ -67,7 +67,7 @@ jobs:
         run: git clone https://git.pileof.rocks/drewcassidy/quicktex-test-images.git tests/images
 
       - name: Build wheels
-        uses: joerick/cibuildwheel@v1.11.0
+        uses: joerick/cibuildwheel@v2.4.0
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.15"
           CIBW_BUILD: "cp{37,38,39,310}-*"
