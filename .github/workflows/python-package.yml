@@ -92,6 +92,7 @@ jobs:
           CIBW_MANYLINUX_AARCH64_IMAGE: "manylinux_2_24"
           CIBW_TEST_EXTRAS: "tests"
           CIBW_TEST_COMMAND: nosetests {project}/tests -d
+          CIBW_TEST_SKIP: "*-macosx_arm64"
 
       - name: Upload Wheels
         uses: actions/upload-artifact@v2
