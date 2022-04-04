@@ -1,16 +1,12 @@
 import os
 import re
 import sys
-import glob
 import subprocess
 
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
 project_path = os.path.dirname(os.path.realpath(__file__))
-
-with open(os.path.join(project_path, 'README.md')) as f:
-    readme = f.read()
 
 
 # A CMakeExtension needs a sourcedir instead of a file list.
@@ -111,16 +107,10 @@ class CMakeBuild(build_ext):
         )
 
 
-# Find stub files
-stubs = [path.replace('quicktex/', '') for path in glob.glob('quicktex/**/*.pyi', recursive=True)]
-
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     use_scm_version=True,
     ext_modules=[CMakeExtension("_quicktex")],
     cmdclass={"build_ext": CMakeBuild},
-    packages=find_packages(where='.', include=['quicktex*']),
-    package_dir={'': '.'},
-    package_data={'': ['py.typed'] + stubs},
 )

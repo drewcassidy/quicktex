@@ -49,5 +49,8 @@ quicktex = "quicktex.__main__:main"
 
 [tool.setuptools]
 zip-safe = false
+packages = { find = { include = ["quicktex*"] } } # only include quicktex and not tests
+package-data = { '*' = ['py.typed', '*.pyi'] } # include stubs
+package-dir = { '' = '.' } # without this line, C++ source files get included in the bdist
 
 [tool.setuptools_scm]
