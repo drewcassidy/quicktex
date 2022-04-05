@@ -4,10 +4,22 @@ include(tools/CompilerWarnings.cmake)
 
 project(quicktex)
 
+if (SKBUILD)
+    # Scikit-Build does not add your site-packages to the search path
+    # automatically, so we need to add it _or_ the pybind11 specific directory
+    # here.
+    execute_process(
+            COMMAND "${PYTHON_EXECUTABLE}" -c
+            "import pybind11; print(pybind11.get_cmake_dir())"
+            OUTPUT_VARIABLE _tmp_dir
+            OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
+    list(APPEND CMAKE_PREFIX_PATH "${_tmp_dir}")
+endif ()
+
 # Find dependencies
 find_package(Python COMPONENTS Interpreter Development)
+find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenMP)
-add_subdirectory(extern/pybind11)
 
 # Collect source files
 file(GLOB SOURCE_FILES
@@ -73,3 +85,5 @@ if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++ -fsanitize=undefined")
     set(PROJECT_WARNINGS ${CLANG_WARNINGS})
 endif ()
+
+install(TARGETS _quicktex LIBRARY DESTINATION quicktex)
