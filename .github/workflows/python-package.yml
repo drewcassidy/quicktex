@@ -72,7 +72,7 @@ jobs:
           platforms: arm64
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.3.1
+        uses: pypa/cibuildwheel@v2.4.0
         env:
           # these options are all specific to running in the CI. other options are in pyproject.toml
           MACOSX_DEPLOYMENT_TARGET: "10.15"
