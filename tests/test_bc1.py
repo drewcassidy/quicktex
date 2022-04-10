@@ -1,9 +1,7 @@
 import unittest
-import os.path
 from parameterized import parameterized, parameterized_class
-import quicktex
 from quicktex.s3tc.bc1 import BC1Block, BC1Texture, BC1Encoder, BC1Decoder
-from tests.images import BC1Blocks, image_path
+from .images import BC1Blocks
 from PIL import Image, ImageChops
 
 in_endpoints = ((253, 254, 255), (65, 70, 67))  # has some small changes that should encode the same

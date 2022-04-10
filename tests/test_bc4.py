@@ -1,7 +1,7 @@
 import unittest
 from parameterized import parameterized, parameterized_class
 from quicktex.s3tc.bc4 import BC4Block, BC4Texture, BC4Encoder, BC4Decoder
-from tests.images import BC4Blocks
+from .images import BC4Blocks
 from PIL import Image, ImageChops
 
 

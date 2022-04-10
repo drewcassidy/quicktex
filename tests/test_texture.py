@@ -1,6 +1,6 @@
 import unittest
 import os.path
-from tests.images import image_path
+from .images import image_path
 from quicktex import RawTexture
 from PIL import Image
 
