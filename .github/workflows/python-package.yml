@@ -77,9 +77,6 @@ jobs:
         with:
           platforms: arm64
 
-      - name: Install test images
-        run: git clone https://git.pileof.rocks/drewcassidy/quicktex-test-images.git tests/images
-
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.3.1
         env:
