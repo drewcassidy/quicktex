@@ -96,9 +96,9 @@ template <typename T> T BufferToTexture(py::buffer buf, int width, int height) {
     auto dst_size = output.NBytes();
 
     if (info.format != py::format_descriptor<uint8_t>::format()) throw std::runtime_error("Incompatible format in python buffer: expected a byte array.");
-    if (info.size < (ssize_t)dst_size) std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
+    if (info.size < (Py_ssize_t)dst_size) std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
     if (info.ndim == 1) {
-        if (info.shape[0] < (ssize_t)dst_size) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer has incorrect length.");
+        if (info.shape[0] < (Py_ssize_t)dst_size) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer has incorrect length.");
         if (info.strides[0] != 1) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer is not contiguous.");
     } else {
         throw std::runtime_error("Incompatible format in python buffer: Incorrect number of dimensions.");
@@ -115,9 +115,9 @@ template <typename T> T BufferToPOD(py::buffer buf) {
     auto info = buf.request(false);
 
     if (info.format != py::format_descriptor<uint8_t>::format()) throw std::runtime_error("Incompatible format in python buffer: expected a byte array.");
-    if (info.size < (ssize_t)sizeof(T)) std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
+    if (info.size < (Py_ssize_t)sizeof(T)) std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
     if (info.ndim == 1) {
-        if (info.shape[0] < (ssize_t)sizeof(T)) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer has incorrect length.");
+        if (info.shape[0] < (Py_ssize_t)sizeof(T)) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer has incorrect length.");
         if (info.strides[0] != 1) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer is not contiguous.");
     } else {
         throw std::runtime_error("Incompatible format in python buffer: Incorrect number of dimensions.");
