@@ -1,5 +1,4 @@
 import unittest
-import nose
 import os.path
 from parameterized import parameterized, parameterized_class
 import quicktex
@@ -108,9 +107,9 @@ class TestBC1Texture(unittest.TestCase):
         self.assertEqual(self.tex[-1, -1], self.tex[self.wb - 1, self.hb - 1], 'incorrect negative subscripting')
 
         with self.assertRaises(IndexError):
-            thing = self.tex[self.wb, self.hb]
+            _ = self.tex[self.wb, self.hb]
         with self.assertRaises(IndexError):
-            thing = self.tex[-1 - self.wb, -1 - self.hb]
+            _ = self.tex[-1 - self.wb, -1 - self.hb]
 
     def test_buffer(self):
         """Test the buffer protocol of BC1Texture"""
@@ -158,7 +157,8 @@ class TestBC1Encoder(unittest.TestCase):
 
         out_block = out_tex[0, 0]
 
-        if self.color_mode != BC1Encoder.ColorMode.FourColor:  # we only care about the selectors if we are in 3 color mode
+        if self.color_mode != BC1Encoder.ColorMode.FourColor:
+            # we only care about the selectors if we are in 3 color mode
             self.assertTrue(out_block.is_3color, 'returned 4-color block for 3 color test block')
             self.assertEqual(out_block, BC1Blocks.three_color.block, 'encoded block is incorrect')
         else:
@@ -173,7 +173,8 @@ class TestBC1Encoder(unittest.TestCase):
         out_block = out_tex[0, 0]
         has_black = 3 in [j for row in out_block.selectors for j in row]
 
-        if self.color_mode == BC1Encoder.ColorMode.ThreeColorBlack:  # we only care about the selectors if we are in 3 color black mode
+        if self.color_mode == BC1Encoder.ColorMode.ThreeColorBlack:
+            # we only care about the selectors if we are in 3 color black mode
             self.assertTrue(out_block.is_3color, 'returned 4-color block for 3 color test block with black')
             self.assertTrue(has_black, 'block does not have black pixels as expected')
             self.assertEqual(out_block, BC1Blocks.three_color_black.block, "encoded block is incorrect")
@@ -207,7 +208,3 @@ class TestBC1Decoder(unittest.TestCase):
         img_diff = ImageChops.difference(out_img, image).convert('L')
         img_hist = img_diff.histogram()
         self.assertEqual(16, img_hist[0], 'decoded block is incorrect')
-
-
-if __name__ == '__main__':
-    nose.main()

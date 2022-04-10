@@ -37,13 +37,13 @@ dependencies = ["Pillow", "click"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-tests = ["nose", "parameterized"]
+tests = ["parameterized"]
 docs = ["sphinx", "myst-parser", "sphinx-rtd-theme"]
 stubs = ["pybind11-stubgen"]
 
 [project.urls]
-repository = "https://github.com/drewcassidy/quicktex"
-changelog = "https://github.com/drewcassidy/quicktex/blob/main/CHANGELOG.md"
+Source = "https://github.com/drewcassidy/quicktex"
+Changelog = "https://github.com/drewcassidy/quicktex/blob/main/CHANGELOG.md"
 
 [project.scripts]
 quicktex = "quicktex.__main__:main"
@@ -53,5 +53,12 @@ zip-safe = false
 packages = { find = { include = ["quicktex*"] } } # only include quicktex and not tests
 package-data = { '*' = ['py.typed', '*.pyi'] } # include stubs
 package-dir = { '' = '.' } # without this line, C++ source files get included in the bdist
+
+[tool.cibuildwheel]
+build = "cp{37,38,39,310}-*"
+test-command = "python -m unittest --verbose
+test-extras = ["tests"]
+manylinux-x86_64-image = "manylinux2014"
+manylinux-aarch64-image = "manylinux2014"
 
 [tool.setuptools_scm]

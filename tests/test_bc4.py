@@ -1,12 +1,8 @@
 import unittest
-import nose
 from parameterized import parameterized, parameterized_class
 from quicktex.s3tc.bc4 import BC4Block, BC4Texture, BC4Encoder, BC4Decoder
 from tests.images import BC4Blocks
 from PIL import Image, ImageChops
-
-if __name__ == '__main__':
-    nose.main()
 
 
 class TestBC4Block(unittest.TestCase):
@@ -119,9 +115,9 @@ class TestBC4Texture(unittest.TestCase):
         self.assertEqual(self.tex[-1, -1], self.tex[self.wb - 1, self.hb - 1], 'incorrect negative subscripting')
 
         with self.assertRaises(IndexError):
-            thing = self.tex[self.wb, self.hb]
+            _ = self.tex[self.wb, self.hb]
         with self.assertRaises(IndexError):
-            thing = self.tex[-1 - self.wb, -1 - self.hb]
+            _ = self.tex[-1 - self.wb, -1 - self.hb]
 
     def test_buffer(self):
         """Test the buffer protocol of BC4Texture"""

@@ -1,5 +1,4 @@
 import unittest
-import nose
 import os.path
 from tests.images import image_path
 from quicktex import RawTexture
@@ -57,7 +56,3 @@ class TestRawTexture(unittest.TestCase):
         """Test the frombytes factory function"""
         bytetex = RawTexture.frombytes(self.boilerplate_bytes, *self.boilerplate.size)
         self.assertEqual(self.boilerplate_bytes, bytetex.tobytes(), 'Incorrect bytes after writing to buffer')
-
-
-if __name__ == '__main__':
-    nose.main()

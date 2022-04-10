@@ -12,9 +12,6 @@ docs/_build/
 #mypy
 out
 
-# Test images
-tests/images/
-
 # IDEs
 **/.idea
 
