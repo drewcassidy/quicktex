@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import subprocess
+import pybind11
 
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
@@ -38,9 +39,12 @@ class CMakeBuild(build_ext):
         # Set Python_EXECUTABLE instead if you use PYBIND11_FINDPYTHON
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(extdir),
+            "-Dpybind11_DIR={}".format(pybind11.get_cmake_dir()),
             "-DPython_EXECUTABLE={}".format(sys.executable),
             "-DQUICKTEX_VERSION_INFO={}".format(version),
             "-DCMAKE_BUILD_TYPE={}".format(cfg),  # not used on MSVC, but no harm
+            # clear cached make program binary, see https://github.com/pypa/setuptools/issues/2912
+            "-U", "CMAKE_MAKE_PROGRAM",
         ]
         build_args = []
 

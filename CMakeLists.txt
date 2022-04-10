@@ -6,8 +6,8 @@ project(quicktex)
 
 # Find dependencies
 find_package(Python COMPONENTS Interpreter Development)
+find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenMP)
-add_subdirectory(extern/pybind11)
 
 # Collect source files
 file(GLOB SOURCE_FILES
