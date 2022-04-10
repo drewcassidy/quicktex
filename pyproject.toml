@@ -56,7 +56,7 @@ package-dir = { '' = '.' } # without this line, C++ source files get included in
 
 [tool.cibuildwheel]
 build = "cp{37,38,39,310}-*"
-skip = ["*musl*"]
+skip = ["*cp37-musllinux*", "*musllinux_aarch64*"]
 test-command = "python -m unittest --verbose"
 test-extras = ["tests"]
 manylinux-x86_64-image = "manylinux2014"
