@@ -40,7 +40,7 @@ class CMakeBuild(build_ext):
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(extdir),
             "-Dpybind11_DIR={}".format(pybind11.get_cmake_dir()),
-            "-DPython_EXECUTABLE={}".format(sys.executable),
+            "-DPython_ROOT_DIR={}".format(os.path.dirname(sys.executable)),
             "-DQUICKTEX_VERSION_INFO={}".format(version),
             "-DCMAKE_BUILD_TYPE={}".format(cfg),  # not used on MSVC, but no harm
             # clear cached make program binary, see https://github.com/pypa/setuptools/issues/2912
