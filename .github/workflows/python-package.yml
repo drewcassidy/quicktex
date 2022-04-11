@@ -50,7 +50,7 @@ jobs:
     strategy:
       matrix:
         #os: [ macos-latest, windows-latest, ubuntu-latest ]
-        os: [ macos-latest, windows-latest ]
+        os: [ macos-11, windows-latest ]
 
     steps:
       - uses: actions/checkout@v3
@@ -62,7 +62,12 @@ jobs:
       - name: Install libomp
         if: runner.os == 'macOS'
         # openMP isnt part of core apple clang for some reason?
-        run: brew install libomp
+        # libomp is in homebrew, which works for end users but its not a fat binary
+        # so we have to install it manually
+        # compiled dylibs courtesy of https://mac.r-project.org/openmp/ and mirrored on my own server
+        run: |
+          wget https://pileof.rocks/openmp-13.0.0-darwin21-Release.tar.gz
+          sudo tar fvxz openmp-*.tar.gz -C /
 
       - name: Install QEMU
         # install QEMU if building for arm linux
