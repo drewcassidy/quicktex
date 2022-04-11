@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.18)
 include(CheckIPOSupported)
 include(tools/CompilerWarnings.cmake)
 
 project(quicktex)
 
 # Find dependencies
-find_package(Python COMPONENTS Interpreter Development)
+find_package(Python COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenMP)
 
