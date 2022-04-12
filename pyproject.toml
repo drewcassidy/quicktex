@@ -66,7 +66,7 @@ archs = ["x86_64", "universal2"] # build fat binaries, or x86-64 for python 3.7
 skip = ["cp{38,39,31*}-macosx_x86_64"] # skip x86-only builds where fat binaries are supported
 
 [tool.cibuildwheel.windows]
-archs = ["x86_64"] # arm64 windows builds not yet supported
+archs = ["auto64"] # arm64 windows builds not yet supported
 test-command = "cd /d {project} && python -m unittest --verbose" # windows why is this flag required
 
 [tool.cibuildwheel.linux]
