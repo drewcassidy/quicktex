@@ -45,11 +45,15 @@ jobs:
           path: dist/*.tar.gz
 
   build-wheels:
-    name: Build Wheels for ${{ matrix.os }}
+    name: Build Wheels on ${{ matrix.os }}-${{ matrix.arch[0] }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ macos-11, windows-latest, ubuntu-latest ]
+        arch: [ [ x86_64, AMD64, x86_64 ] ] #[mac, windows, linux] arch names
+        include:
+          - os: ubuntu-latest
+            arch: [ arm64, arm64, aarch64 ]
 
     steps:
       - uses: actions/checkout@v3
@@ -71,19 +75,15 @@ jobs:
       - name: Install QEMU
         # install QEMU if building for arm linux
         uses: docker/setup-qemu-action@v1
-        if: runner.os == 'Linux'
+        if: matrix.arch == aarch64
         with:
           platforms: arm64
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.4.0
         env:
-          # these options are all specific to running in the CI. other options are in pyproject.toml
           MACOSX_DEPLOYMENT_TARGET: "10.15"
-          CIBW_ARCHS_MACOS: "x86_64 universal2"
-          CIBW_ARCHS_LINUX: "x86_64 aarch64"
-          CIBW_ARCHS_WINDOWS: "auto64"
-          CIBW_TEST_SKIP: "*-macosx_arm64 *-macosx_universal2:arm64"
+          CIBW_ARCHS_LINUX: ${{ matrix.arch[2] }}
 
       - name: Upload Wheels
         uses: actions/upload-artifact@v3

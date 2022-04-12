@@ -13,7 +13,6 @@ build-backend = "setuptools.build_meta"
 name = "quicktex"
 description = "A fast block compression library for python"
 readme = "README.md"
-license = { file = "LICENSE.md" }
 authors = [{ name = "Andrew Cassidy", email = "drewcassidy@me.com" }]
 
 classifiers = [
@@ -54,16 +53,23 @@ packages = { find = { include = ["quicktex*"] } } # only include quicktex and no
 package-data = { '*' = ['py.typed', '*.pyi'] } # include stubs
 package-dir = { '' = '.' } # without this line, C++ source files get included in the bdist
 
+[tool.setuptools_scm]
+
 [tool.cibuildwheel]
-build = "cp{37,38,39,31*}-*"
-skip = ["*cp37-musllinux*", "*musllinux_aarch64*", "cp{38,39,31*}-macosx_x86_64"]
+build = "cp*" # only build wheels for cpython.
 build-frontend = "build"
 test-command = "cd {project} && python -m unittest --verbose"
 test-extras = ["tests"]
-manylinux-x86_64-image = "manylinux2014"
-manylinux-aarch64-image = "manylinux2014"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "universal2"] # build fat binaries, or x86-64 for python 3.7
+skip = ["cp{38,39,31*}-macosx_x86_64"] # skip x86-only builds where fat binaries are supported
 
 [tool.cibuildwheel.windows]
-test-command = "cd /d {project} && python -m unittest --verbose"
+archs = ["x86_64"] # arm64 windows builds not yet supported
+test-command = "cd /d {project} && python -m unittest --verbose" # windows why is this flag required
 
-[tool.setuptools_scm]
+[tool.cibuildwheel.linux]
+skip = ["cp37-musllinux*", "*musllinux_aarch64*"] # skip targets without available Pillow wheels
+manylinux-x86_64-image = "manylinux2014"
+manylinux-aarch64-image = "manylinux2014"
