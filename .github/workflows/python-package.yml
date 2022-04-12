@@ -75,7 +75,7 @@ jobs:
       - name: Install QEMU
         # install QEMU if building for arm linux
         uses: docker/setup-qemu-action@v1
-        if: matrix.arch == 'aarch64'
+        if: runner.os == 'linux' && matrix.arch[2] == 'aarch64'
         with:
           platforms: arm64
 
