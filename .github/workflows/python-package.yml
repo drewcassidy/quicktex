@@ -13,9 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          # Whether to checkout submodules: `true` to checkout submodules or `recursive` to
-          # recursively checkout submodules.
-          submodules: 'true'
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v3.1.1
@@ -58,9 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          # Whether to checkout submodules: `true` to checkout submodules or `recursive` to
-          # recursively checkout submodules.
-          submodules: 'true'
+          fetch-depth: 0
 
       - name: Install libomp
         if: runner.os == 'macOS'
@@ -97,11 +93,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          # Whether to checkout submodules: `true` to checkout submodules or `recursive` to
-          # recursively checkout submodules.
-          submodules: 'true'
+      - uses: actions/checkout@v3 # just need the changelog
 
       - name: Set up Python
         uses: actions/setup-python@v3.1.1

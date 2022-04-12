@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file
 
+## Unreleased
+
+### Fixed
+
+- Fixed quicktex not compiling for python 3.10 on Windows
+
+### Changed
+
+- Reworked CI job, adding wheels for ARM macOS, ARM Linux, and x86 musl Linux.
+- Added a more useful error message when importing quicktex on macOS when libomp.dylib isnt installed
+
+
 ## 0.1.2 - 2022-03-27
 
 ### Fixed
