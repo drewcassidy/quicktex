@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file
 
-## Unreleased
+## 0.1.3 - 2022-04-13
 
 ### Fixed
 
@@ -11,7 +11,8 @@ All notable changes to this project will be documented in this file
 ### Changed
 
 - Reworked CI job, adding wheels for ARM macOS, ARM Linux, and x86 musl Linux.
-- Added a more useful error message when importing quicktex on macOS when libomp.dylib isnt installed
+- Added wheels for python 3.10
+- Added a more useful error message when importing quicktex on macOS when libomp.dylib isn't installed
 
 
 ## 0.1.2 - 2022-03-27
