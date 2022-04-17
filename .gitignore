@@ -5,6 +5,8 @@ build/
 *.egg-info
 *.pyc
 *.pyi
+*.whl
+*.tar.gz
 
 #sphinx
 docs/_build/
