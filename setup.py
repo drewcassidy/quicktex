@@ -22,6 +22,7 @@ class CMakeExtension(Extension):
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
         from setuptools_scm import get_version
+
         version = get_version(root='.', relative_to=__file__)
 
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
@@ -45,7 +46,8 @@ class CMakeBuild(build_ext):
             "-DQUICKTEX_VERSION_INFO={}".format(version),
             "-DCMAKE_BUILD_TYPE={}".format(cfg),  # not used on MSVC, but no harm
             # clear cached make program binary, see https://github.com/pypa/setuptools/issues/2912
-            "-U", "CMAKE_MAKE_PROGRAM",
+            "-U",
+            "CMAKE_MAKE_PROGRAM",
         ]
         build_args = []
 
@@ -81,9 +83,7 @@ class CMakeBuild(build_ext):
 
             # Multi-config generators have a different way to specify configs
             if not single_config:
-                cmake_args += [
-                    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)
-                ]
+                cmake_args += ["-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)]
                 build_args += ["--config", cfg]
 
         if sys.platform.startswith("darwin"):
@@ -104,12 +104,8 @@ class CMakeBuild(build_ext):
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
 
-        subprocess.check_call(
-            ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp
-        )
-        subprocess.check_call(
-            ["cmake", "--build", ".", "--target", ext.name] + build_args, cwd=self.build_temp
-        )
+        subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp)
+        subprocess.check_call(["cmake", "--build", ".", "--target", ext.name] + build_args, cwd=self.build_temp)
 
 
 # The information here can also be placed in setup.cfg - better separation of

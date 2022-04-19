@@ -58,12 +58,8 @@ class TestBC1Block(unittest.TestCase):
 
 
 @parameterized_class(
-    ("name", "w", "h", "wb", "hb"), [
-        ("8x8", 8, 8, 2, 2),
-        ("9x9", 9, 9, 3, 3),
-        ("7x7", 7, 7, 2, 2),
-        ("7x9", 7, 9, 2, 3)
-    ])
+    ("name", "w", "h", "wb", "hb"), [("8x8", 8, 8, 2, 2), ("9x9", 9, 9, 3, 3), ("7x7", 7, 7, 2, 2), ("7x9", 7, 9, 2, 3)]
+)
 class TestBC1Texture(unittest.TestCase):
     def setUp(self):
         self.tex = BC1Texture(self.w, self.h)
@@ -98,7 +94,7 @@ class TestBC1Texture(unittest.TestCase):
             for y in range(self.hb):
                 index = (x + (y * self.wb)) * BC1Block.nbytes
                 tb = self.tex[x, y]
-                fb = BC1Block.frombytes(b[index:index + BC1Block.nbytes])
+                fb = BC1Block.frombytes(b[index : index + BC1Block.nbytes])
                 self.assertEqual(tb, blocks[y][x], 'incorrect block read from texture')
                 self.assertEqual(fb, blocks[y][x], 'incorrect block read from texture bytes')
 
@@ -124,11 +120,13 @@ class TestBC1Texture(unittest.TestCase):
 
 
 @parameterized_class(
-    ("name", "color_mode"), [
+    ("name", "color_mode"),
+    [
         ("4Color", BC1Encoder.ColorMode.FourColor),
         ("3Color", BC1Encoder.ColorMode.ThreeColor),
         ("3Color_Black", BC1Encoder.ColorMode.ThreeColorBlack),
-    ])
+    ],
+)
 class TestBC1Encoder(unittest.TestCase):
     """Test BC1Encoder"""
 
@@ -189,11 +187,13 @@ class TestBC1Decoder(unittest.TestCase):
     def setUpClass(cls):
         cls.bc1_decoder = BC1Decoder()
 
-    @parameterized.expand([
-        ("4color", BC1Blocks.greyscale.block, BC1Blocks.greyscale.image),
-        ("3color", BC1Blocks.three_color.block, BC1Blocks.three_color.image),
-        ("3color_black", BC1Blocks.three_color_black.block, BC1Blocks.three_color_black.image)
-    ])
+    @parameterized.expand(
+        [
+            ("4color", BC1Blocks.greyscale.block, BC1Blocks.greyscale.image),
+            ("3color", BC1Blocks.three_color.block, BC1Blocks.three_color.image),
+            ("3color_black", BC1Blocks.three_color_black.block, BC1Blocks.three_color_black.image),
+        ]
+    )
     def test_block(self, _, block, image):
         """Test decoder output for a single block"""
         in_tex = BC1Texture(4, 4)

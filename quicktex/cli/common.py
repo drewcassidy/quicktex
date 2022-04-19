@@ -1,7 +1,8 @@
-from PIL import Image
-from typing import List
 import pathlib
+from typing import List
+
 import click
+from PIL import Image
 
 
 def get_decoded_extensions(feature: str = 'open') -> List[str]:

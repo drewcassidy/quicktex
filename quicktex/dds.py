@@ -4,12 +4,14 @@ import enum
 import os
 import struct
 import typing
+
+from PIL import Image
+
 import quicktex.image_utils
 import quicktex.s3tc.bc1 as bc1
 import quicktex.s3tc.bc3 as bc3
 import quicktex.s3tc.bc4 as bc4
 import quicktex.s3tc.bc5 as bc5
-from PIL import Image
 
 
 class DDSFormat:
@@ -165,8 +167,28 @@ class DDSFile:
             file.write(DDSFile.magic)
 
             # WRITE HEADER
-            file.write(struct.pack('<7I44x', DDSFile.header_bytes, int(self.flags), self.size[1], self.size[0], self.pitch, self.depth, self.mipmap_count))
-            file.write(struct.pack('<2I4s5I', 32, int(self.pf_flags), bytes(self.four_cc, 'ascii'), self.pixel_size, *self.pixel_bitmasks))
+            file.write(
+                struct.pack(
+                    '<7I44x',
+                    DDSFile.header_bytes,
+                    int(self.flags),
+                    self.size[1],
+                    self.size[0],
+                    self.pitch,
+                    self.depth,
+                    self.mipmap_count,
+                )
+            )
+            file.write(
+                struct.pack(
+                    '<2I4s5I',
+                    32,
+                    int(self.pf_flags),
+                    bytes(self.four_cc, 'ascii'),
+                    self.pixel_size,
+                    *self.pixel_bitmasks,
+                )
+            )
             file.write(struct.pack('<4I4x', *self.caps))
 
             assert file.tell() == 4 + DDSFile.header_bytes, 'error writing file: incorrect header size'

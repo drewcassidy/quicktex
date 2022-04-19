@@ -1,8 +1,9 @@
 """Various utilities for working with Pillow images"""
 
-from PIL import Image
-from typing import List, Tuple, Optional
 import math
+from typing import List, Tuple, Optional
+
+from PIL import Image
 
 
 def mip_sizes(dimensions: Tuple[int, int], mip_count: Optional[int] = None) -> List[Tuple[int, int]]:

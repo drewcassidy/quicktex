@@ -70,5 +70,5 @@ autodoc_default_options = {
 # should be linked to in this documentation.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'PIL': ('https://pillow.readthedocs.io/en/stable/', None)
+    'PIL': ('https://pillow.readthedocs.io/en/stable/', None),
 }

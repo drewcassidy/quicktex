@@ -7,6 +7,7 @@ from PIL import Image, ImageChops
 
 class TestBC4Block(unittest.TestCase):
     """Tests for the BC1Block class"""
+
     block_bytes = b'\xF0\x10\x88\x86\x68\xAC\xCF\xFA'
     selectors = [[0, 1, 2, 3]] * 2 + [[4, 5, 6, 7]] * 2
     endpoints = (240, 16)
@@ -68,12 +69,8 @@ class TestBC4Block(unittest.TestCase):
 
 
 @parameterized_class(
-    ("name", "w", "h", "wb", "hb"), [
-        ("8x8", 8, 8, 2, 2),
-        ("9x9", 9, 9, 3, 3),
-        ("7x7", 7, 7, 2, 2),
-        ("7x9", 7, 9, 2, 3)
-    ])
+    ("name", "w", "h", "wb", "hb"), [("8x8", 8, 8, 2, 2), ("9x9", 9, 9, 3, 3), ("7x7", 7, 7, 2, 2), ("7x9", 7, 9, 2, 3)]
+)
 class TestBC4Texture(unittest.TestCase):
     def setUp(self):
         self.tex = BC4Texture(self.w, self.h)
@@ -108,7 +105,7 @@ class TestBC4Texture(unittest.TestCase):
             for y in range(self.hb):
                 index = (x + (y * self.wb)) * BC4Block.nbytes
                 tb = self.tex[x, y]
-                fb = BC4Block.frombytes(b[index:index + BC4Block.nbytes])
+                fb = BC4Block.frombytes(b[index : index + BC4Block.nbytes])
                 self.assertEqual(tb, blocks[y][x], 'incorrect block read from texture')
                 self.assertEqual(fb, blocks[y][x], 'incorrect block read from texture bytes')
 
@@ -160,10 +157,12 @@ class TestBC4Decoder(unittest.TestCase):
     def setUpClass(cls):
         cls.bc4_decoder = BC4Decoder(0)
 
-    @parameterized.expand([
-        ("8value", BC4Blocks.eight_value.block, BC4Blocks.eight_value.image),
-        ("6value", BC4Blocks.six_value.block, BC4Blocks.six_value.image),
-    ])
+    @parameterized.expand(
+        [
+            ("8value", BC4Blocks.eight_value.block, BC4Blocks.eight_value.image),
+            ("6value", BC4Blocks.six_value.block, BC4Blocks.six_value.image),
+        ]
+    )
     def test_block(self, _, block, image):
         """Test decoder output for a single block"""
         in_tex = BC4Texture(4, 4)

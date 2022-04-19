@@ -1,6 +1,7 @@
 import click
-from quicktex.cli.encode import encode
+
 from quicktex.cli.decode import decode
+from quicktex.cli.encode import encode
 
 
 @click.group()

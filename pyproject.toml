@@ -73,3 +73,8 @@ test-command = "cd /d {project} && python -m unittest --verbose" # windows why i
 skip = ["cp37-musllinux*", "*musllinux_aarch64*"] # skip targets without available Pillow wheels
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
+
+[tool.black]
+line-length = 120 # 80-column is stupid
+target-version = ['py37', 'py38', 'py39', 'py310']
+skip-string-normalization = true
