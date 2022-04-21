@@ -13,12 +13,13 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('..'))
+from datetime import date
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'Quicktex'
-copyright = '2021, Andrew Cassidy'
+copyright = f'{date.today().year}, Andrew Cassidy'
 author = 'Andrew Cassidy'
 
 # -- General configuration ---------------------------------------------------
@@ -28,10 +29,13 @@ author = 'Andrew Cassidy'
 # ones.
 extensions = [
     'myst_parser',
+    'sphinx_click',
     'sphinx_rtd_theme',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
 ]
+
+myst_heading_anchors = 2
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

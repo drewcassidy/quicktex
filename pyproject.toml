@@ -37,7 +37,12 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 tests = ["parameterized"]
-docs = ["sphinx", "myst-parser", "sphinx-rtd-theme"]
+docs = [
+    "Sphinx >= 3.5",
+    "sphinx-click >= 2.7",
+    "sphinx-rtd-theme",
+    "myst-parser >= 0.14",
+]
 stubs = ["pybind11-stubgen"]
 
 [project.urls]
