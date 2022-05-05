@@ -14,6 +14,7 @@ maxdepth: 2
 caption: Contents
 ---
 
+handbook/index
 reference/index
 ```
 
