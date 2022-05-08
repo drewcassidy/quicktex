@@ -5,7 +5,14 @@ include(tools/CompilerWarnings.cmake)
 project(quicktex)
 
 # Find dependencies
-find_package(Python COMPONENTS Interpreter Development.Module)
+if (DEFINED QUICKTEX_MODULE_ONLY)
+    # Not all python installs include the headers necessary for embedding. If we are only building the module,
+    # we can ignore the embed headers
+    find_package(Python COMPONENTS Interpreter Development.Module)
+else ()
+    find_package(Python COMPONENTS Interpreter Development)
+endif ()
+
 find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenMP)
 

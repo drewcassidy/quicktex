@@ -1,9 +1,9 @@
 import os
 import re
-import sys
 import subprocess
-import pybind11
+import sys
 
+import pybind11
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
@@ -43,7 +43,8 @@ class CMakeBuild(build_ext):
             "-Dpybind11_DIR={}".format(pybind11.get_cmake_dir()),
             "-DPython_EXECUTABLE={}".format(sys.executable),
             "-DPython_ROOT_DIR={}".format(os.path.dirname(sys.executable)),
-            "-DQUICKTEX_VERSION_INFO={}".format(version),
+            "-DQUICKTEX_VERSION_INFO={}".format(version),  # include version info in module
+            "-DQUICKTEX_MODULE_ONLY=TRUE",  # only build the module, not the wrapper
             "-DCMAKE_BUILD_TYPE={}".format(cfg),  # not used on MSVC, but no harm
             # clear cached make program binary, see https://github.com/pypa/setuptools/issues/2912
             "-U",
@@ -68,12 +69,7 @@ class CMakeBuild(build_ext):
             contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
 
             # Convert distutils Windows platform specifiers to CMake -A arguments
-            plat_to_cmake = {
-                "win32": "Win32",
-                "win-amd64": "x64",
-                "win-arm32": "ARM",
-                "win-arm64": "ARM64",
-            }
+            plat_to_cmake = {"win32": "Win32", "win-amd64": "x64", "win-arm32": "ARM", "win-arm64": "ARM64"}
 
             # Specify the arch if using MSVC generator, but only if it doesn't
             # contain a backward-compatibility arch spec already in the
@@ -110,8 +106,4 @@ class CMakeBuild(build_ext):
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
-setup(
-    use_scm_version=True,
-    ext_modules=[CMakeExtension("_quicktex")],
-    cmdclass={"build_ext": CMakeBuild},
-)
+setup(use_scm_version=True, ext_modules=[CMakeExtension("_quicktex")], cmdclass={"build_ext": CMakeBuild})
