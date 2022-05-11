@@ -1,18 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
-include(CheckIPOSupported)
 include(tools/CompilerWarnings.cmake)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(quicktex)
 
 # Find dependencies
-if (DEFINED QUICKTEX_MODULE_ONLY)
-    # Not all python installs include the headers necessary for embedding. If we are only building the module,
-    # we can ignore the embed headers
-    find_package(Python COMPONENTS Interpreter Development.Module)
-else ()
-    find_package(Python COMPONENTS Interpreter Development)
-endif ()
-
+find_package(Python COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenMP)
 
@@ -37,8 +30,6 @@ file(GLOB HEADER_FILES
         "quicktex/s3tc/interpolator/*.h"
         )
 
-file(GLOB TEST_FILES "tests/*.cpp")
-
 file(GLOB_RECURSE PYTHON_FILES "src/**/*.py")
 
 # Organize source files together for some IDEs
@@ -49,34 +40,24 @@ pybind11_add_module(_quicktex
         ${SOURCE_FILES}
         ${HEADER_FILES})
 
-add_executable(test_quicktex
-        ${SOURCE_FILES}
-        ${HEADER_FILES}
-        ${TEST_FILES})
-
-target_link_libraries(test_quicktex PRIVATE pybind11::embed)
-
-target_compile_definitions(test_quicktex PRIVATE -DCUSTOM_SYS_PATH="${CMAKE_HOME_DIRECTORY}/env/lib/python3.9/site-packages")
+# Set Quicktex version info
 target_compile_definitions(_quicktex PRIVATE VERSION_INFO=${QUICKTEX_VERSION_INFO})
 
 # enable openMP if available
 if (OpenMP_CXX_FOUND)
     target_link_libraries(_quicktex PUBLIC OpenMP::OpenMP_CXX)
-    target_link_libraries(test_quicktex PUBLIC OpenMP::OpenMP_CXX)
 endif ()
 
 # Set module features, like C/C++ standards
 target_compile_features(_quicktex PUBLIC cxx_std_17 c_std_11)
-target_compile_features(test_quicktex PUBLIC cxx_std_17 c_std_11)
 
+# Set compiler warnings
 set_project_warnings(_quicktex)
-set_project_warnings(test_quicktex)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
-
+# Clang-specific
 if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++ -fsanitize=undefined")
     set(PROJECT_WARNINGS ${CLANG_WARNINGS})
 endif ()
