@@ -1,5 +1,5 @@
 /*  Quicktex Texture Compression Library
-    Copyright (C) 2021 Andrew Cassidy <drewcassidy@me.com>
+    Copyright (C) 2021-2022 Andrew Cassidy <drewcassidy@me.com>
     Partially derived from rgbcx.h written by Richard Geldreich 2020 <richgel99@gmail.com>
     and licenced under the public domain
 
