@@ -1,1 +1,2 @@
-graft extern
+graft external
+global-exclude *.afdesign # this is currently the vast majority of the repo size
