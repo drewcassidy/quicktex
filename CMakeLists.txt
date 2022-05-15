@@ -2,12 +2,17 @@ cmake_minimum_required(VERSION 3.18)
 include(tools/CompilerWarnings.cmake)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
+set(HWY_ENABLE_INSTALL OFF)
+set(HWY_ENABLE_EXAMPLES OFF)
+option(BUILD_TESTING "" OFF)
+
 project(quicktex)
 
 # Find dependencies
 find_package(Python COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenMP)
+add_subdirectory(external/highway)
 
 # Collect source files
 file(GLOB SOURCE_FILES
