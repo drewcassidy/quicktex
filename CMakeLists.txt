@@ -17,6 +17,7 @@ add_subdirectory(external/highway)
 # Collect source files
 file(GLOB SOURCE_FILES
         "quicktex/*.cpp"
+        "quicktex/tests/*.cpp"
         "quicktex/s3tc/*.cpp"
         "quicktex/s3tc/bc1/*.cpp"
         "quicktex/s3tc/bc3/*.cpp"
@@ -27,6 +28,7 @@ file(GLOB SOURCE_FILES
 
 file(GLOB HEADER_FILES
         "quicktex/*.h"
+        "quicktex/tests/*.h"
         "quicktex/s3tc/*.h"
         "quicktex/s3tc/bc1/*.h"
         "quicktex/s3tc/bc3/*.h"
@@ -52,6 +54,8 @@ target_compile_definitions(_quicktex PRIVATE VERSION_INFO=${QUICKTEX_VERSION_INF
 if (OpenMP_CXX_FOUND)
     target_link_libraries(_quicktex PUBLIC OpenMP::OpenMP_CXX)
 endif ()
+
+target_link_libraries(_quicktex PUBLIC hwy)
 
 # Set module features, like C/C++ standards
 target_compile_features(_quicktex PUBLIC cxx_std_17 c_std_11)

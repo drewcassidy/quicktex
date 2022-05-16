@@ -37,6 +37,7 @@
 #include "../../Vector4Int.h"
 #include "../../bitwiseEnums.h"
 #include "../../util.h"
+#include "../../VecUtil.h"
 #include "Histogram.h"
 #include "OrderTable.h"
 #include "SingleColorTable.h"

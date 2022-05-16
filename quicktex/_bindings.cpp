@@ -35,6 +35,7 @@ namespace py = pybind11;
 namespace quicktex::bindings {
 
 void InitS3TC(py::module_ &m);
+void InitCTests(py::module_ &m);
 
 PYBIND11_MODULE(_quicktex, m) {
     m.doc() = "More Stuff";
@@ -69,6 +70,7 @@ PYBIND11_MODULE(_quicktex, m) {
     DefSubscript2D(raw_texture, &RawTexture::GetPixel, &RawTexture::SetPixel, &RawTexture::Size);
 
     InitS3TC(m);
+    InitCTests(m);
 }
 
 }  // namespace quicktex::bindings
