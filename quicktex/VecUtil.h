@@ -18,9 +18,7 @@
  */
 
 #pragma once
-
 #include <hwy/highway.h>
-
 namespace hn = hwy::HWY_NAMESPACE;
 
 #if HWY_TARGET == HWY_NEON
@@ -52,6 +50,11 @@ inline int32_t WideningSumS16(const Vec_s16 v) {
 #if HWY_TARGET == HWY_SCALAR
     // In Scalar mode this is a no-op, since there's only one lane
     return (int32_t)v.raw;
+#elif HWY_TARGET == HWY_EMU128
+    // In emulated 128-bit mode, do the addition serially
+    int acc = 0;
+    for (unsigned i = 0; i < hn::MaxLanes(TagS16); i++) { acc += v.raw[i]; }
+    return acc;
 #elif HWY_TARGET == HWY_NEON
     static_assert(hn::MaxLanes(TagS16) == 8);
     static_assert(hn::MaxLanes(TagS32) == 4);
@@ -66,7 +69,7 @@ inline int32_t WideningSumS16(const Vec_s16 v) {
     static_assert(hn::MaxLanes(TagS32) == 8);
 
     // Pairwise widening sum with multiply by 1, then sum all N/2 widened lanes
-    auto paired = Vec_s32(_mm256_madd_epi16(v.raw, __mm256_set1_epi16(1)));
+    auto paired = Vec_s32{_mm256_madd_epi16(v.raw, __mm256_set1_epi16(1))};
     auto sums = SumOfLanes(paired);
     return hn::GetLane(sums);
 #else
@@ -74,7 +77,7 @@ inline int32_t WideningSumS16(const Vec_s16 v) {
     static_assert(hn::MaxLanes(TagS32) == 4);
 
     // Pairwise widening sum with multiply by 1, then sum all N/2 widened lanes
-    auto paired = Vec_s32(_mm_madd_epi16(v.raw, _mm_set1_epi16(1)));
+    auto paired = Vec_s32{_mm_madd_epi16(v.raw, _mm_set1_epi16(1))};
     auto sums = SumOfLanes(paired);
     return hn::GetLane(sums);
 #endif
