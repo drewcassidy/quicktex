@@ -1,4 +1,12 @@
 cmake_minimum_required(VERSION 3.18)
+
+if(MSVC AND ENV{CC} MATCHES ".*clang-cl.*")
+    set(CMAKE_GENERATOR_TOOLSET "ClangCL")
+    set(CLANG_CL TRUE)
+else()
+    set(CLANG_CL FALSE)
+endif()
+
 include(tools/CompilerWarnings.cmake)
 include(tools/CPUFeatures.cmake)
 set(CMAKE_VERBOSE_MAKEFILE ON)

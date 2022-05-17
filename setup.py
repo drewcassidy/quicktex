@@ -66,8 +66,8 @@ class CMakeBuild(build_ext):
                 cmake_args += ["-GNinja"]
 
         else:
-            if 'CC' in os.environ and 'clang-cl' in os.environ['CC']:
-                cmake_args += ["-T", 'ClangCL']  # https://stackoverflow.com/a/64189112/7645957
+            # if 'CC' in os.environ and 'clang-cl' in os.environ['CC']:
+            #     cmake_args += ["-T", 'ClangCL']  # https://stackoverflow.com/a/64189112/7645957
 
             # Single config generators are handled "normally"
             single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
