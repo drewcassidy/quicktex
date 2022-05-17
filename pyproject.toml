@@ -66,7 +66,7 @@ build = "cp*" # only build wheels for cpython.
 build-frontend = "build"
 test-command = "cd {project} && python -m unittest --verbose"
 test-extras = ["tests"]
-test_skip = "*-macosx_arm64 *-macosx_universal2:arm64" # skip testing on arm because CIBW doesnt support it
+test-skip = "*-macosx_arm64 *-macosx_universal2:arm64" # skip testing on arm macOS because CIBW doesnt support it
 environment = { QUICKTEX_HWY_MODE = "SSE4"} # SSE4 has a 99% market share and was released under the Bush administration
 
 [tool.cibuildwheel.macos]
