@@ -67,21 +67,24 @@ build-frontend = "build"
 test-command = "cd {project} && python -m unittest --verbose"
 test-extras = ["tests"]
 test-skip = "*-macosx_arm64 *-macosx_universal2:arm64" # skip testing on arm macOS because CIBW doesnt support it
-environment = { QUICKTEX_HWY_MODE = "SSE4"} # SSE4 has a 99% market share and was released under the Bush administration
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "universal2"] # build fat binaries, or x86-64 for python 3.7
 skip = ["cp{38,39,31*}-macosx_x86_64"] # skip x86-only builds where fat binaries are supported
+environment = { QUICKTEX_HWY_MODE = "SSE4" } # SSE4 has a 99% market share and was released under the Bush administration
 
 [tool.cibuildwheel.windows]
 archs = ["auto64"] # arm64 windows builds not yet supported
 test-command = "cd /d {project} && python -m unittest --verbose" # windows why is this flag required
-environment = { CC = "clang", CXX = "clang" } # MSVC is really bad
+# MSVC compiled wheels will just have to be serial ops until distutil supports clang-cl
+# https://github.com/python/cpython/pull/18371
+environment = { CXX = "clang-cl.exe", CC = "clang-cl.exe" }
 
 [tool.cibuildwheel.linux]
 skip = ["cp37-musllinux*", "*musllinux_aarch64*"] # skip targets without available Pillow wheels
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
+environment = { QUICKTEX_HWY_MODE = "SSE4" } # SSE4 has a 99% market share and was released under the Bush administration
 
 [tool.black]
 line-length = 120 # 80-column is stupid
