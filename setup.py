@@ -46,7 +46,6 @@ class CMakeBuild(build_ext):
             "-DPython_EXECUTABLE={}".format(sys.executable),
             "-DPython_ROOT_DIR={}".format(os.path.dirname(sys.executable)),
             "-DQUICKTEX_VERSION_INFO={}".format(version),  # include version info in module
-            "-DQUICKTEX_MODULE_ONLY=TRUE",  # only build the module, not the wrapper
             "-DCMAKE_BUILD_TYPE={}".format(cfg),  # not used on MSVC, but no harm
             # clear cached make program binary, see https://github.com/pypa/setuptools/issues/2912
             "-U",
@@ -67,6 +66,9 @@ class CMakeBuild(build_ext):
                 cmake_args += ["-GNinja"]
 
         else:
+            if 'CC' in os.environ and 'clang-cl' in os.environ['CC']:
+                cmake_args += ['ClangCL']  # https://stackoverflow.com/a/64189112/7645957
+
             # Single config generators are handled "normally"
             single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
 
