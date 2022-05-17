@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 include(tools/CompilerWarnings.cmake)
+include(tools/CPUFeatures.cmake)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(HWY_ENABLE_INSTALL OFF)
@@ -62,11 +63,18 @@ target_compile_features(_quicktex PUBLIC cxx_std_17 c_std_11)
 
 # Set compiler warnings
 set_project_warnings(_quicktex)
+set_simd_flags(_quicktex)
 
 # Clang-specific
 if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++ -fsanitize=undefined")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
     set(PROJECT_WARNINGS ${CLANG_WARNINGS})
 endif ()
+
+message("RELEASE FLAGS=${CMAKE_CXX_FLAGS}")
+
+message("DEBUG FLAGS=${CMAKE_CXX_FLAGS_DEBUG}")
+
+

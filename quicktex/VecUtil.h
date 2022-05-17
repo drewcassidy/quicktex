@@ -69,7 +69,7 @@ inline int32_t WideningSumS16(const Vec_s16 v) {
     static_assert(hn::MaxLanes(TagS32) == 8);
 
     // Pairwise widening sum with multiply by 1, then sum all N/2 widened lanes
-    auto paired = Vec_s32{_mm256_madd_epi16(v.raw, __mm256_set1_epi16(1))};
+    auto paired = Vec_s32{_mm256_madd_epi16(v.raw, _mm256_set1_epi16(1))};
     auto sums = SumOfLanes(paired);
     return hn::GetLane(sums);
 #else
