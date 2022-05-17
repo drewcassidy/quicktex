@@ -66,14 +66,17 @@ build = "cp*" # only build wheels for cpython.
 build-frontend = "build"
 test-command = "cd {project} && python -m unittest --verbose"
 test-extras = ["tests"]
+environment = { QUICKTEX_HWY_MODE = "SSE4"} # SSE4 has a 99% market share and was released under the Bush administration
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "universal2"] # build fat binaries, or x86-64 for python 3.7
 skip = ["cp{38,39,31*}-macosx_x86_64"] # skip x86-only builds where fat binaries are supported
+test_skip = "*-macosx_arm64 *-macosx_universal2:arm64" # skip testing on arm because CIBW doesnt support it
 
 [tool.cibuildwheel.windows]
 archs = ["auto64"] # arm64 windows builds not yet supported
 test-command = "cd /d {project} && python -m unittest --verbose" # windows why is this flag required
+environment = { CC = "clang", CXX = "clang" } # MSVC is really bad
 
 [tool.cibuildwheel.linux]
 skip = ["cp37-musllinux*", "*musllinux_aarch64*"] # skip targets without available Pillow wheels
