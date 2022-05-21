@@ -19,8 +19,6 @@
 
 #include "TestSIMD.h"
 
-#include <hwy/highway.h>
-
 #include <array>
 #include <cassert>
 #include <cstdint>
@@ -28,38 +26,6 @@
 
 #include "../VecUtil.h"
 
-namespace hn = hwy::HWY_NAMESPACE;
-
 namespace quicktex::tests {
 
-void TestWidenSumS16() {
-    const hn::ScalableTag<int16_t> tag;
-    const auto vec_size = hn::MaxLanes(tag);
-    std::array<int16_t, vec_size> buffer;
-
-    std::iota(buffer.begin(), buffer.end(), 1);
-    auto v = hn::Load(tag, &buffer[0]);
-    auto sum = WideningSumS16(v);
-    assert(sum == vec_size / 2 * (vec_size + 1));  // Gauss formula
-
-    buffer.fill(1);
-    v = hn::Load(tag, &buffer[0]);
-    sum = WideningSumS16(v);
-    assert(sum == vec_size);
-
-    buffer.fill(0);
-    v = hn::Load(tag, &buffer[0]);
-    sum= WideningSumS16(v);
-    assert(sum == 0);
-
-    buffer.fill(std::numeric_limits<int16_t>::max());
-    v = hn::Load(tag, &buffer[0]);
-    sum= WideningSumS16(v);
-    assert(sum == std::numeric_limits<int16_t>::max() * (int)vec_size);
-
-    buffer.fill(std::numeric_limits<int16_t>::min());
-    v = hn::Load(tag, &buffer[0]);
-    sum= WideningSumS16(v);
-    assert(sum == std::numeric_limits<int16_t>::min() * (int)vec_size);
-}
 }  // namespace quicktex::tests

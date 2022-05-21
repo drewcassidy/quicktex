@@ -21,6 +21,4 @@
 
 namespace quicktex::tests {
 
-void TestWidenSumS16();
-
 } // namespace quicktex::tests
