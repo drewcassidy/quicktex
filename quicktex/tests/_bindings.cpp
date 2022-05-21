@@ -39,6 +39,6 @@ using namespace quicktex::tests;
 void InitCTests(py::module_ &quicktex) {
     py::module_ ctests = quicktex.def_submodule("_ctests", "Internal tests for C-level functions");
 
-    ctests.def("test_WidenSumS16", &TestWidenSumS16);
+//    ctests.def("test_WidenSumS16", &TestWidenSumS16);
 }
 }  // namespace quicktex::bindings

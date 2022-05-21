@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 include(tools/CompilerWarnings.cmake)
-include(tools/CPUFeatures.cmake)
+include(tools/SIMDFlags.cmake)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(quicktex)
@@ -9,6 +9,8 @@ project(quicktex)
 find_package(Python COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenMP)
+
+add_subdirectory(external/xsimd)
 
 # Collect source files
 file(GLOB SOURCE_FILES
@@ -51,7 +53,7 @@ if (OpenMP_CXX_FOUND)
     target_link_libraries(_quicktex PUBLIC OpenMP::OpenMP_CXX)
 endif ()
 
-target_link_libraries(_quicktex PUBLIC hwy)
+target_link_libraries(_quicktex PUBLIC xsimd)
 
 # Set module features, like C/C++ standards
 target_compile_features(_quicktex PUBLIC cxx_std_17 c_std_11)
