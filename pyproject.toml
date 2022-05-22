@@ -36,7 +36,7 @@ dependencies = ["Pillow", "click"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-tests = ["parameterized"]
+tests = ["parameterized", "pytest"]
 docs = [
     "Sphinx >= 3.5",
     "sphinx-click >= 2.7",
@@ -64,7 +64,7 @@ package-dir = { '' = '.' } # without this line, C++ source files get included in
 [tool.cibuildwheel]
 build = "cp*" # only build wheels for cpython.
 build-frontend = "build"
-test-command = "cd {project} && python -m unittest --verbose"
+test-command = "pytest {project}/tests --verbose"
 test-extras = ["tests"]
 
 [tool.cibuildwheel.macos]
@@ -73,7 +73,6 @@ skip = ["cp{38,39,31*}-macosx_x86_64"] # skip x86-only builds where fat binaries
 
 [tool.cibuildwheel.windows]
 archs = ["auto64"] # arm64 windows builds not yet supported
-test-command = "cd /d {project} && python -m unittest --verbose" # windows why is this flag required
 
 [tool.cibuildwheel.linux]
 skip = ["cp37-musllinux*", "*musllinux_aarch64*"] # skip targets without available Pillow wheels
