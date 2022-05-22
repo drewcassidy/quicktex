@@ -25,43 +25,53 @@
 
 #include "util.h"
 
-namespace quicktex {
-template <class A, class T> inline next_size_t<T> widening_hadd(xsimd::batch<T, A> const& arg) {
-    using b_type = xsimd::batch<T, A>;
-    using r_type = next_size_t<T>;
-    const auto len = b_type::size;
+template <typename T> using requires_arch = xsimd::kernel::requires_arch<T>;
 
-    std::array<T, len> buff;
-    r_type sum = 0;
+namespace quicktex::simd {
 
-    arg.store(&buff[0]);
-    for (unsigned i = 0; i < len; i++) { sum += static_cast<r_type>(buff[i]); }
-
-    return sum;
-}
+namespace kernel {
 
 #if XSIMD_WITH_NEON64
-template <> inline int32_t widening_hadd(xsimd::batch<int16_t, xsimd::neon64> const& arg) {
-    // Pairwise widening sum, then sum all N/2 widened lanes
-    xsimd::batch<int32_t, xsimd::neon64> paired = vpaddlq_s16(arg);
-    return xsimd::hadd(paired);
+template <class A> inline int32_t whadd(xsimd::batch<int16_t, A> const& arg, requires_arch<xsimd::neon64>) {
+    return vaddlvq_s16(arg);
 }
 #endif
 
 #if XSIMD_WITH_SSE2
-template <> inline int32_t widening_hadd(xsimd::batch<int16_t, xsimd::sse2> const& arg) {
+template <class A> inline int32_t whadd(xsimd::batch<int16_t, A> const& arg, requires_arch<xsimd::sse2>) {
     // Pairwise widening sum with multiply by 1, then sum all N/2 widened lanes
-    xsimd::batch<int32_t, xsimd::sse2> paired = _mm_madd_epi16(arg, _mm_set1_epi16(1));
+    xsimd::batch<int32_t, A> paired = _mm_madd_epi16(arg, _mm_set1_epi16(1));
     return xsimd::hadd(paired);
 }
 #endif
 
 #if XSIMD_WITH_AVX2
-template <> inline int32_t widening_hadd(xsimd::batch<int16_t, xsimd::avx2> const& arg) {
+template <class A> inline int32_t whadd(xsimd::batch<int16_t, A> const& arg, requires_arch<xsimd::avx2>) {
     // Pairwise widening sum with multiply by 1, then sum all N/2 widened lanes
-    xsimd::batch<int32_t, xsimd::avx2> paired = _mm256_madd_epi16(arg, _mm256_set1_epi16(1));
+    xsimd::batch<int32_t, A> paired = _mm256_madd_epi16(arg, _mm256_set1_epi16(1));
     return xsimd::hadd(paired);
 }
 #endif
 
-}  // namespace quicktex
+template <class A, class T>
+inline next_size_t<T> whadd(xsimd::batch<T, A> const& arg, requires_arch<xsimd::generic>) {
+    // Generic implementation that should work everywhere
+    using b_type = xsimd::batch<T, A>;
+    using r_type = next_size_t<T>;
+    const auto len = b_type::size;
+
+    alignas(A::alignment()) T buffer[len];
+    r_type sum = 0;
+
+    arg.store_aligned(buffer);
+    for (T val : buffer) { sum += static_cast<r_type>(val); }
+
+    return sum;
+}
+}  // namespace kernel
+
+template <class A, class T> inline next_size_t<T> whadd(xsimd::batch<T, A> const& arg) {
+    return kernel::whadd(arg, A{});
+}
+
+}  // namespace quicktex::simd
