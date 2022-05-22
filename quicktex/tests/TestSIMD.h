@@ -21,4 +21,6 @@
 
 namespace quicktex::tests {
 
+void test_widening_hadd();
+
 } // namespace quicktex::tests

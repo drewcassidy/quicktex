@@ -24,8 +24,39 @@
 #include <cstdint>
 #include <numeric>
 
+#include <xsimd/xsimd.hpp>
 #include "../VecUtil.h"
 
 namespace quicktex::tests {
 
+void test_widening_hadd() {
+    const auto vec_size = xsimd::batch<int16_t>::size;
+    std::array<int16_t, vec_size> buffer;
+
+    std::iota(buffer.begin(), buffer.end(), 1);
+    auto v = xsimd::load(&buffer[0]);
+    auto sum = widening_hadd(v);
+    assert(sum == vec_size / 2 * (vec_size + 1));  // Gauss formula
+
+    buffer.fill(1);
+    v = xsimd::load(&buffer[0]);
+    sum = widening_hadd(v);
+    assert(sum == vec_size);
+
+    buffer.fill(0);
+    v = xsimd::load(&buffer[0]);
+    sum = widening_hadd(v);
+    assert(sum == 0);
+
+    buffer.fill(std::numeric_limits<int16_t>::max());
+    v = xsimd::load(&buffer[0]);
+    sum = widening_hadd(v);
+    assert(sum == std::numeric_limits<int16_t>::max() * (int)vec_size);
+
+    buffer.fill(std::numeric_limits<int16_t>::min());
+    v = xsimd::load(&buffer[0]);
+    sum = widening_hadd(v);
+    assert(sum == std::numeric_limits<int16_t>::min() * (int)vec_size);
+
+}
 }  // namespace quicktex::tests

@@ -176,3 +176,11 @@ template <typename... Args> std::string Format(const char *str, const Args &...a
 
     return output;
 }
+
+template <class > struct next_size;
+template <class T> using next_size_t = typename next_size<T>::type;
+template <class T> struct Tag { using type = T; };
+
+template <> struct next_size<int_least8_t>  : Tag<int_least16_t> { };
+template <> struct next_size<int_least16_t> : Tag<int_least32_t> { };
+template <> struct next_size<int_least32_t> : Tag<int_least64_t> { };

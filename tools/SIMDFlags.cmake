@@ -36,10 +36,14 @@ function(set_simd_flags target_name)
         if (simd_mode STREQUAL "AUTO")
             if (MSVC)
                 #MSVC has no -march=native equivalent. womp
-            elseif (!ARM)
+            elseif (NOT ARM)
                 # setting -march=native on an M1 causes Clang to freak out,
                 # and arm64 is pretty samey instruction set wise (arm9 and SVE2 notwithstanding)
-                target_compile_options(${target_name} PUBLIC -march=native)
+
+                # Currently AVX512 will cause problems with buffer overruns,
+                # and I dont have good test hardware for it anyways
+
+                target_compile_options(${target_name} PUBLIC -march=native -mno-avx512f)
             endif ()
         elseif (simd_mode STREQUAL "SSSE3")
             if (MSVC)
