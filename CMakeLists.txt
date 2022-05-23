@@ -72,7 +72,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
 endif ()
 
 if (MSCV)
-    target_compile_options(_quicktex 'WINDOWS_LEAN_AND_MEAN') # prevent windows macros from stepping on everything
+    target_compile_options(_quicktex '/DWIN32_LEAN_AND_MEAN=1' '/DNOMINMAX=1') # prevent windows macros from stepping on everything
 endif()
 
 message("RELEASE FLAGS=${CMAKE_CXX_FLAGS}")
