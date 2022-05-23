@@ -1,13 +1,9 @@
 """Test if everything is installed correctly"""
 
-import unittest
-import os.path
 import quicktex
 
-tests_path = os.path.dirname(os.path.realpath(__file__))
 
-
-class TestInstall(unittest.TestCase):
+class TestInstall:
     def test_version(self):
         """Test if the extension module version matches what setuptools returns"""
         try:
