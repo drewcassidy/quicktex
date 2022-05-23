@@ -58,7 +58,7 @@ template <size_t N> class OrderTable {
     static bool Generate() {
         static_assert(N == 4 || N == 3);
 
-        table_mutex.lock();
+        std::scoped_lock{table_mutex};
         if (!generated) {
             hashes = new std::array<Hash, HashCount>();
             factors = new std::array<Vector4, OrderCount>();
@@ -85,8 +85,6 @@ template <size_t N> class OrderTable {
 
             generated = true;
         }
-        table_mutex.unlock();
-
         assert(generated);
         return true;
     }
