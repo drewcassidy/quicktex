@@ -11,11 +11,12 @@ find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenMP)
 
 add_subdirectory(external/xsimd)
+include_directories(external/utest)
 
 # Collect source files
 file(GLOB SOURCE_FILES
         "quicktex/*.cpp"
-        "quicktex/tests/*.cpp"
+        "quicktex/ctests/*.cpp"
         "quicktex/s3tc/*.cpp"
         "quicktex/s3tc/bc1/*.cpp"
         "quicktex/s3tc/bc3/*.cpp"
@@ -26,7 +27,7 @@ file(GLOB SOURCE_FILES
 
 file(GLOB HEADER_FILES
         "quicktex/*.h"
-        "quicktex/tests/*.h"
+        "quicktex/ctests/*.h"
         "quicktex/s3tc/*.h"
         "quicktex/s3tc/bc1/*.h"
         "quicktex/s3tc/bc3/*.h"

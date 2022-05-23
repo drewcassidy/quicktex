@@ -20,6 +20,7 @@
 #include "_bindings.h"
 
 #include <pybind11/pybind11.h>
+#include <utest.h>
 
 #include "Color.h"
 #include "Decoder.h"
@@ -30,12 +31,13 @@
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
 
+UTEST_STATE();
+
 namespace py = pybind11;
 
 namespace quicktex::bindings {
 
 void InitS3TC(py::module_ &m);
-void InitCTests(py::module_ &m);
 
 PYBIND11_MODULE(_quicktex, m) {
     m.doc() = "More Stuff";
@@ -58,7 +60,8 @@ PYBIND11_MODULE(_quicktex, m) {
     texture.def_property_readonly("height", &Texture::Height);
 
     texture.def_buffer([](Texture &t) { return py::buffer_info(t.Data(), t.NBytes()); });
-    texture.def("tobytes", [](const Texture &t) { return py::bytes(reinterpret_cast<const char *>(t.Data()), t.NBytes()); });
+    texture.def("tobytes",
+                [](const Texture &t) { return py::bytes(reinterpret_cast<const char *>(t.Data()), t.NBytes()); });
 
     // RawTexture
 
@@ -70,7 +73,9 @@ PYBIND11_MODULE(_quicktex, m) {
     DefSubscript2D(raw_texture, &RawTexture::GetPixel, &RawTexture::SetPixel, &RawTexture::Size);
 
     InitS3TC(m);
-    InitCTests(m);
+
+    // CTests
+    m.def("_run_ctests", []() { return utest_main(0, NULL); });
 }
 
 }  // namespace quicktex::bindings

@@ -181,6 +181,10 @@ template <class > struct next_size;
 template <class T> using next_size_t = typename next_size<T>::type;
 template <class T> struct Tag { using type = T; };
 
-template <> struct next_size<int_least8_t>  : Tag<int_least16_t> { };
-template <> struct next_size<int_least16_t> : Tag<int_least32_t> { };
-template <> struct next_size<int_least32_t> : Tag<int_least64_t> { };
+template <> struct next_size<int8_t>  : Tag<int16_t> { };
+template <> struct next_size<int16_t> : Tag<int32_t> { };
+template <> struct next_size<int32_t> : Tag<int64_t> { };
+
+template <> struct next_size<uint8_t>  : Tag<uint16_t> { };
+template <> struct next_size<uint16_t> : Tag<uint32_t> { };
+template <> struct next_size<uint32_t> : Tag<uint64_t> { };

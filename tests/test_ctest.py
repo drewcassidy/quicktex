@@ -1,8 +1,5 @@
-import unittest
-
-import _quicktex._ctests as c
+from _quicktex import _run_ctests
 
 
-class TestCTest(unittest.TestCase):
-    def test_WidenSumS16(self):
-        c.test_WidenSumS16()
+def test_ctests():
+    _run_ctests()
