@@ -71,8 +71,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
     set(PROJECT_WARNINGS ${CLANG_WARNINGS})
 endif ()
 
-if (MSCV)
-    target_compile_options(_quicktex '/DUTEST_USE_OLD_QPC=1') # prevent windows macros from stepping on everything
+if (MSVC)
+    target_compile_options(_quicktex '/DWIN32_LEAN_AND_MEAN=1' '/DNOMINMAX=1') # prevent windows macros from stepping on everything
 endif()
 
 message("RELEASE FLAGS=${CMAKE_CXX_FLAGS}")
