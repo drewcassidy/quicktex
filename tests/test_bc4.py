@@ -1,178 +1,179 @@
-import unittest
-from parameterized import parameterized, parameterized_class
-from quicktex.s3tc.bc4 import BC4Block, BC4Texture, BC4Encoder, BC4Decoder
-from .images import BC4Blocks
+import math
+
+import pytest
 from PIL import Image, ImageChops
 
+from quicktex.s3tc.bc4 import BC4Block, BC4Texture, BC4Encoder, BC4Decoder
+from .images import BC4Blocks
 
-class TestBC4Block(unittest.TestCase):
+block_bytes = b'\xF0\x10\x88\x86\x68\xAC\xCF\xFA'
+selectors = [[0, 1, 2, 3]] * 2 + [[4, 5, 6, 7]] * 2
+endpoints = (240, 16)
+
+
+class TestBC4Block:
     """Tests for the BC1Block class"""
-
-    block_bytes = b'\xF0\x10\x88\x86\x68\xAC\xCF\xFA'
-    selectors = [[0, 1, 2, 3]] * 2 + [[4, 5, 6, 7]] * 2
-    endpoints = (240, 16)
 
     def test_size(self):
         """Test the size and dimensions of BC4Block"""
-        self.assertEqual(BC4Block.nbytes, 8, 'incorrect block size')
-        self.assertEqual(BC4Block.width, 4, 'incorrect block width')
-        self.assertEqual(BC4Block.height, 4, 'incorrect block width')
-        self.assertEqual(BC4Block.size, (4, 4), 'incorrect block dimensions')
+        assert BC4Block.nbytes == 8
+        assert BC4Block.width == 4
+        assert BC4Block.height == 4
+        assert BC4Block.size == (4, 4)
 
     def test_buffer(self):
         """Test the buffer protocol of BC4Block"""
         block = BC4Block()
         mv = memoryview(block)
+        mv[:] = block_bytes
 
-        self.assertFalse(mv.readonly, 'buffer is readonly')
-        self.assertTrue(mv.c_contiguous, 'buffer is not contiguous')
-        self.assertEqual(mv.ndim, 1, 'buffer is multidimensional')
-        self.assertEqual(mv.nbytes, BC4Block.nbytes, 'buffer is the wrong size')
-        self.assertEqual(mv.format, 'B', 'buffer has the wrong format')
-
-        mv[:] = self.block_bytes
-        self.assertEqual(mv.tobytes(), self.block_bytes, 'incorrect buffer data')
+        assert not mv.readonly
+        assert mv.c_contiguous
+        assert mv.ndim == 1
+        assert mv.nbytes == 8
+        assert mv.format == 'B'
+        assert mv.tobytes() == block_bytes
+        assert mv.tobytes() == block.tobytes()
 
     def test_constructor(self):
         """Test constructing a block out of endpoints and selectors"""
-        block = BC4Block(*self.endpoints, self.selectors)
-        self.assertEqual(block.tobytes(), self.block_bytes, 'incorrect block bytes')
-        self.assertEqual(block.selectors, self.selectors, 'incorrect selectors')
-        self.assertEqual(block.endpoints, self.endpoints, 'incorrect endpoints')
+        block = BC4Block(*endpoints, selectors)
+        assert block.tobytes() == block_bytes
+        assert block.selectors == selectors
+        assert block.endpoints == endpoints
 
     def test_frombytes(self):
         """Test constructing a block out of raw data"""
-        block = BC4Block.frombytes(self.block_bytes)
-        self.assertEqual(block.tobytes(), self.block_bytes, 'incorrect block bytes')
-        self.assertEqual(block.selectors, self.selectors, 'incorrect selectors')
-        self.assertEqual(block.endpoints, self.endpoints, 'incorrect endpoints')
+        block = BC4Block.frombytes(block_bytes)
+        assert block.tobytes() == block_bytes
+        assert block.selectors == selectors
+        assert block.endpoints == endpoints
 
     def test_eq(self):
         """Test equality between two identical blocks"""
-        block1 = BC4Block.frombytes(self.block_bytes)
-        block2 = BC4Block.frombytes(self.block_bytes)
-        self.assertEqual(block1, block2, 'identical blocks not equal')
+        block1 = BC4Block.frombytes(block_bytes)
+        block2 = BC4Block.frombytes(block_bytes)
+        assert block1 == block2
 
     def test_values_6(self):
         """Test values of a 6-value block"""
         block = BC4Block(8, 248, [[0] * 4] * 4)
 
-        self.assertEqual(block.values, [8, 248, 56, 104, 152, 200, 0, 255], 'incorrect values')
-        self.assertTrue(block.is_6value, 'incorrect is_6value')
+        assert block.values == [8, 248, 56, 104, 152, 200, 0, 255]
+        assert block.is_6value
 
     def test_values_8(self):
         """Test values of an 8-value block"""
         block = BC4Block(240, 16, [[0] * 4] * 4)
 
-        self.assertEqual(block.values, [240, 16, 208, 176, 144, 112, 80, 48], 'incorrect values')
-        self.assertFalse(block.is_6value, 'incorrect is_6value')
+        assert block.values == [240, 16, 208, 176, 144, 112, 80, 48]
+        assert not block.is_6value
 
 
-@parameterized_class(
-    ("name", "w", "h", "wb", "hb"), [("8x8", 8, 8, 2, 2), ("9x9", 9, 9, 3, 3), ("7x7", 7, 7, 2, 2), ("7x9", 7, 9, 2, 3)]
-)
-class TestBC4Texture(unittest.TestCase):
-    def setUp(self):
-        self.tex = BC4Texture(self.w, self.h)
-        self.nbytes = self.wb * self.hb * BC4Block.nbytes
+# noinspection PyMethodMayBeStatic
+@pytest.mark.parametrize('w', [7, 8, 9])
+@pytest.mark.parametrize('h', [7, 8, 9])
+class TestBC4Texture:
+    def test_dimensions(self, w, h):
+        """Test dimensions of BC4Texture in pixels, blocks, and bytes"""
+        tex = BC4Texture(w, h)
+        wb = math.ceil(w / 4)
+        hb = math.ceil(h / 4)
 
-    def test_size(self):
-        """Test size of BC4Texture in bytes"""
-        self.assertEqual(self.tex.nbytes, self.nbytes, 'incorrect texture size')
-        self.assertEqual(len(self.tex.tobytes()), self.nbytes, 'incorrect texture size from tobytes')
+        assert tex.nbytes == BC4Block.nbytes * wb * hb  # block width x block height
+        assert len(tex.tobytes()) == tex.nbytes
 
-    def test_dimensions(self):
-        """Test dimensions of BC4Texture in pixels"""
-        self.assertEqual(self.tex.width, self.w, 'incorrect texture width')
-        self.assertEqual(self.tex.height, self.h, 'incorrect texture height')
-        self.assertEqual(self.tex.size, (self.w, self.h), 'incorrect texture dimensions')
+        assert tex.width == w
+        assert tex.height == h
+        assert tex.size == (w, h)
 
-    def test_dimensions_blocks(self):
-        """Test dimensions of BC4Texture in blocks"""
-        self.assertEqual(self.tex.width_blocks, self.wb, 'incorrect texture width_blocks')
-        self.assertEqual(self.tex.height_blocks, self.hb, 'incorrect texture width_blocks')
-        self.assertEqual(self.tex.size_blocks, (self.wb, self.hb), 'incorrect texture dimensions_blocks')
+        assert tex.width_blocks == wb
+        assert tex.height_blocks == hb
+        assert tex.size_blocks == (wb, hb)
 
-    def test_blocks(self):
+    def test_blocks(self, w, h):
         """Test getting and setting blocks to BC4Texture"""
-        blocks = [[BC4Block.frombytes(bytes([x, y] + [0] * 6)) for x in range(self.wb)] for y in range(self.hb)]
-        for x in range(self.wb):
-            for y in range(self.hb):
-                self.tex[x, y] = blocks[y][x]
+        tex = BC4Texture(w, h)
 
-        b = self.tex.tobytes()
-        for x in range(self.wb):
-            for y in range(self.hb):
-                index = (x + (y * self.wb)) * BC4Block.nbytes
-                tb = self.tex[x, y]
+        # generate garbage blocks with the x and y index in the first 2 bytes
+        blocks = [
+            [BC4Block.frombytes(bytes([x, y] + [0] * 6)) for x in range(tex.width_blocks)]
+            for y in range(tex.height_blocks)
+        ]
+        # assign those blocks to the texture
+        for x in range(tex.width_blocks):
+            for y in range(tex.height_blocks):
+                tex[x, y] = blocks[y][x]
+
+        # get the blocks and analyze
+        b = tex.tobytes()
+        for x in range(tex.width_blocks):
+            for y in range(tex.height_blocks):
+                index = (x + (y * tex.width_blocks)) * BC4Block.nbytes
+                tb = tex[x, y]
                 fb = BC4Block.frombytes(b[index : index + BC4Block.nbytes])
-                self.assertEqual(tb, blocks[y][x], 'incorrect block read from texture')
-                self.assertEqual(fb, blocks[y][x], 'incorrect block read from texture bytes')
+                assert tb == blocks[y][x]
+                assert fb == blocks[y][x]
 
-        self.assertEqual(self.tex[-1, -1], self.tex[self.wb - 1, self.hb - 1], 'incorrect negative subscripting')
+    def text_subscript(self, w, h):
+        """Test BC4Texture subscripting for blocks"""
+        tex = BC4Texture(w, h)
 
-        with self.assertRaises(IndexError):
-            _ = self.tex[self.wb, self.hb]
-        with self.assertRaises(IndexError):
-            _ = self.tex[-1 - self.wb, -1 - self.hb]
+        # ensure negative wraparound works
+        assert tex[-1, -1] == tex[tex.width_blocks - 1, tex.height_blocks - 1]
 
-    def test_buffer(self):
-        """Test the buffer protocol of BC4Texture"""
-        mv = memoryview(self.tex)
+        with pytest.raises(IndexError):
+            _ = tex[tex.width_blocks, tex.height_blocks]
+        with pytest.raises(IndexError):
+            _ = tex[-1 - tex.width_blocks, -1 - tex.height_blocks]
 
-        self.assertFalse(mv.readonly, 'buffer is readonly')
-        self.assertTrue(mv.c_contiguous, 'buffer is not contiguous')
-        self.assertEqual(mv.nbytes, self.nbytes, 'buffer is the wrong size')
-        self.assertEqual(mv.format, 'B', 'buffer has the wrong format')
+    def test_buffer(self, w, h):
+        """Test the buffer protocol of BC1Texture"""
+        tex = BC4Texture(w, h)
+        mv = memoryview(tex)
 
-        data = b'\xF0\x10\x88\x86\x68\xAC\xCF\xFA' * self.wb * self.hb
+        data = block_bytes * tex.width_blocks * tex.height_blocks
         mv[:] = data
-        self.assertEqual(mv.tobytes(), data, 'incorrect buffer data')
+
+        assert not mv.readonly
+        assert mv.c_contiguous
+        assert mv.nbytes == tex.nbytes
+        assert mv.format == 'B'
+        assert mv.tobytes() == data
 
 
-class TestBC4Encoder(unittest.TestCase):
+class TestBC4Encoder:
     """Test BC4Encoder"""
-
-    # 6-value blocks are not yet supported by the encoder so we only run one test
-    @classmethod
-    def setUpClass(cls):
-        cls.bc4_encoder = BC4Encoder(0)
 
     def test_block(self):
         """Test encoder output with 8 value test block"""
-        out_tex = self.bc4_encoder.encode(BC4Blocks.eight_value.texture)
-
-        self.assertEqual(out_tex.size_blocks, (1, 1), 'encoded texture has multiple blocks')
-
+        encoder = BC4Encoder(0)
+        out_tex = encoder.encode(BC4Blocks.eight_value.texture)
         out_block = out_tex[0, 0]
 
-        self.assertFalse(out_block.is_6value, 'returned 6value mode')
-        self.assertEqual(out_block, BC4Blocks.eight_value.block, 'encoded block is incorrect')
+        assert out_tex.size_blocks == (1, 1)
+
+        assert not out_block.is_6value
+        assert out_block == BC4Blocks.eight_value.block
 
 
-class TestBC4Decoder(unittest.TestCase):
+@pytest.mark.parametrize('texture', [BC4Blocks.eight_value, BC4Blocks.six_value])
+class TestBC4Decoder:
     """Test BC4Decoder"""
 
-    @classmethod
-    def setUpClass(cls):
-        cls.bc4_decoder = BC4Decoder(0)
-
-    @parameterized.expand(
-        [
-            ("8value", BC4Blocks.eight_value.block, BC4Blocks.eight_value.image),
-            ("6value", BC4Blocks.six_value.block, BC4Blocks.six_value.image),
-        ]
-    )
-    def test_block(self, _, block, image):
+    def test_block(self, texture):
         """Test decoder output for a single block"""
+        block = texture.block
+        image = texture.image
+        decoder = BC4Decoder(0)
         in_tex = BC4Texture(4, 4)
         in_tex[0, 0] = block
-        out_tex = self.bc4_decoder.decode(in_tex)
+        out_tex = decoder.decode(in_tex)
 
-        self.assertEqual(out_tex.size, (4, 4), 'decoded texture has incorrect dimensions')
+        assert out_tex.size == (4, 4)
 
         out_img = Image.frombytes('RGBA', (4, 4), out_tex.tobytes())
         img_diff = ImageChops.difference(out_img, image).convert('L')
         img_hist = img_diff.histogram()
 
-        self.assertEqual(16, img_hist[0], 'decoded block is incorrect')
+        assert img_hist[0] == 16

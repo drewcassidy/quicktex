@@ -36,7 +36,7 @@ dependencies = ["Pillow", "click"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-tests = ["parameterized"]
+tests = ["parameterized", "pytest"]
 docs = [
     "Sphinx >= 3.5",
     "sphinx-click >= 2.7",
@@ -64,7 +64,7 @@ package-dir = { '' = '.' } # without this line, C++ source files get included in
 [tool.cibuildwheel]
 build = "cp*" # only build wheels for cpython.
 build-frontend = "build"
-test-command = "cd {project} && python -m unittest --verbose"
+test-command = "pytest {project}/tests --verbose"
 test-extras = ["tests"]
 test-skip = "*-macosx_arm64 *-macosx_universal2:arm64" # skip testing on arm macOS because CIBW doesnt support it
 
@@ -75,10 +75,6 @@ environment = { QUICKTEX_HWY_MODE = "SSE4" } # SSE4 has a 99% market share and w
 
 [tool.cibuildwheel.windows]
 archs = ["auto64"] # arm64 windows builds not yet supported
-test-command = "cd /d {project} && python -m unittest --verbose" # windows why is this flag required
-# MSVC compiled wheels will just have to be serial ops until distutil supports clang-cl
-# https://github.com/python/cpython/pull/18371
-environment = { QUICKTEX_HWY_MODE = "SSE4", CXX = "clang-cl.exe", CC = "clang-cl.exe" }
 
 [tool.cibuildwheel.linux]
 skip = ["cp37-musllinux*", "*musllinux_aarch64*"] # skip targets without available Pillow wheels
