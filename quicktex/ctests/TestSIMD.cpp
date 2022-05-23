@@ -62,25 +62,21 @@ template <typename T> constexpr auto make_arrays() {
     return arrays;
 }
 
-template <typename T, size_t N> long int sumArray(std::array<T, N> const &arg) {
-    return std::accumulate(arg.begin(), arg.end(), (long)0);
-}
-
-#define UTEST_WHADD(TYPE)                            \
-    UTEST(simd, whadd_##TYPE) {                      \
-        for (auto arr : make_arrays<TYPE>()) {       \
-            auto v = xsimd::load_unaligned(&arr[0]); \
-            auto vsum = simd::whadd(v);              \
-            auto ssum = sumArray(arr);               \
-            ASSERT_EQ(vsum, ssum);                   \
-        }                                            \
+#define UTEST_WHADD(TYPE)                                                                           \
+    UTEST(simd, whadd_##TYPE) {                                                                     \
+        for (auto arr : make_arrays<TYPE>()) {                                                      \
+            auto v = xsimd::load_unaligned(&arr[0]);                                                \
+            auto vsum = simd::whadd(v);                                                             \
+            auto ssum = std::accumulate(arr.begin(), arr.end(), static_cast<next_size_t<TYPE>>(0)); \
+            ASSERT_EQ(vsum, ssum);                                                                  \
+        }                                                                                           \
     }
 
-UTEST_WHADD(int8_t);
-UTEST_WHADD(uint8_t);
-UTEST_WHADD(int16_t);
-UTEST_WHADD(uint16_t);
-UTEST_WHADD(int32_t);
-UTEST_WHADD(uint32_t);
+UTEST_WHADD(int8_t)
+UTEST_WHADD(uint8_t)
+UTEST_WHADD(int16_t)
+UTEST_WHADD(uint16_t)
+UTEST_WHADD(int32_t)
+UTEST_WHADD(uint32_t)
 
 }  // namespace quicktex::tests

@@ -71,6 +71,10 @@ if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
     set(PROJECT_WARNINGS ${CLANG_WARNINGS})
 endif ()
 
+if (MSCV)
+    target_compile_options(_quicktex 'WINDOWS_LEAN_AND_MEAN') # prevent windows macros from stepping on everything
+endif()
+
 message("RELEASE FLAGS=${CMAKE_CXX_FLAGS}")
 
 message("DEBUG FLAGS=${CMAKE_CXX_FLAGS_DEBUG}")
