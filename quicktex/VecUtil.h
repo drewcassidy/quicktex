@@ -32,8 +32,28 @@ namespace quicktex::simd {
 namespace kernel {
 
 #if XSIMD_WITH_NEON64
+template <class A> inline int16_t whadd(xsimd::batch<int8_t, A> const& arg, requires_arch<xsimd::neon64>) {
+    return vaddlvq_s8(arg);
+}
+
 template <class A> inline int32_t whadd(xsimd::batch<int16_t, A> const& arg, requires_arch<xsimd::neon64>) {
     return vaddlvq_s16(arg);
+}
+
+template <class A> inline int64_t whadd(xsimd::batch<int32_t, A> const& arg, requires_arch<xsimd::neon64>) {
+    return vaddlvq_s32(arg);
+}
+
+template <class A> inline uint16_t whadd(xsimd::batch<uint8_t, A> const& arg, requires_arch<xsimd::neon64>) {
+    return vaddlvq_u8(arg);
+}
+
+template <class A> inline uint32_t whadd(xsimd::batch<uint16_t, A> const& arg, requires_arch<xsimd::neon64>) {
+    return vaddlvq_u16(arg);
+}
+
+template <class A> inline uint64_t whadd(xsimd::batch<uint32_t, A> const& arg, requires_arch<xsimd::neon64>) {
+    return vaddlvq_u32(arg);
 }
 #endif
 
@@ -53,8 +73,7 @@ template <class A> inline int32_t whadd(xsimd::batch<int16_t, A> const& arg, req
 }
 #endif
 
-template <class A, class T>
-inline next_size_t<T> whadd(xsimd::batch<T, A> const& arg, requires_arch<xsimd::generic>) {
+template <class A, class T> inline next_size_t<T> whadd(xsimd::batch<T, A> const& arg, requires_arch<xsimd::generic>) {
     // Generic implementation that should work everywhere
     using b_type = xsimd::batch<T, A>;
     using r_type = next_size_t<T>;
