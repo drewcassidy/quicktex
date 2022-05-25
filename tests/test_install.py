@@ -1,9 +1,11 @@
 """Test if everything is installed correctly"""
+import pytest
 
 import quicktex
 
 
 class TestInstall:
+    @pytest.mark.skipif(quicktex._debug_build, reason="Debug builds dont have valid version strings")
     def test_version(self):
         """Test if the extension module version matches what setuptools returns"""
         try:
@@ -16,4 +18,4 @@ class TestInstall:
 
         version = metadata.version('quicktex')
 
-        assert version == quicktex.__version__, 'incorrect version string from extension module'
+        assert version == quicktex.__version__

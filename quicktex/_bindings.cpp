@@ -48,6 +48,12 @@ PYBIND11_MODULE(_quicktex, m) {
     m.attr("__version__") = "dev";
 #endif
 
+#ifdef NDEBUG
+    m.attr("_debug_build") = false;
+#else
+    m.attr("_debug_build") = true;
+#endif
+
     py::options options;
 
     // Texture
