@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file
 
+## Unreleased
+
+### Fixed
+
+- Fixed LeastSquares endpoint mode producint incorrect results
+
+
 ## 0.1.3 - 2022-04-13
 
 ### Fixed

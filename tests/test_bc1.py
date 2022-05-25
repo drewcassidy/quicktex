@@ -138,9 +138,10 @@ class TestBC1Texture:
 class TestBC1Encoder:
     """Test BC1Encoder"""
 
-    def test_block_4color(self, color_mode):
+    @pytest.mark.parametrize('level', range(18))
+    def test_block_4color(self, level, color_mode):
         """Test encoder output with 4 color greyscale test block"""
-        encoder = BC1Encoder(color_mode=color_mode)
+        encoder = BC1Encoder(level, color_mode)
         out_tex = encoder.encode(BC1Blocks.greyscale.texture)
         out_block = out_tex[0, 0]
 
@@ -149,9 +150,10 @@ class TestBC1Encoder:
         assert not out_block.is_3color
         assert out_block == BC1Blocks.greyscale.block
 
-    def test_block_3color(self, color_mode):
+    @pytest.mark.parametrize('level', range(2, 18))  # lowest 2 levels can be improved, but right now choke on this test
+    def test_block_3color(self, level, color_mode):
         """Test encoder output with 3 color test block"""
-        encoder = BC1Encoder(color_mode=color_mode)
+        encoder = BC1Encoder(level, color_mode)
         out_tex = encoder.encode(BC1Blocks.three_color.texture)
         out_block = out_tex[0, 0]
 
@@ -164,9 +166,10 @@ class TestBC1Encoder:
         else:
             assert not out_block.is_3color
 
-    def test_block_3color_black(self, color_mode):
+    @pytest.mark.parametrize('level', range(2, 18))  # lowest 2 levels can be improved, but right now choke on this test
+    def test_block_3color_black(self, level, color_mode):
         """Test encoder output with 3 color test block with black pixels"""
-        encoder = BC1Encoder(color_mode=color_mode)
+        encoder = BC1Encoder(level, color_mode)
         out_tex = encoder.encode(BC1Blocks.three_color_black.texture)
         out_block = out_tex[0, 0]
 
