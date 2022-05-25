@@ -63,14 +63,6 @@ target_compile_features(_quicktex PUBLIC cxx_std_17 c_std_11)
 set_project_warnings(_quicktex)
 set_simd_flags(_quicktex)
 
-# Clang-specific
-if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
-    set(PROJECT_WARNINGS ${CLANG_WARNINGS})
-endif ()
-
 if (MSVC)
     target_compile_options(_quicktex PUBLIC /DWIN32_LEAN_AND_MEAN=1 /DNOMINMAX=1) # prevent windows macros from stepping on everything
 endif()

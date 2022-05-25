@@ -37,6 +37,7 @@ function(set_project_warnings project_name)
             /w14928 # illegal copy-initialization; more than one user-defined
             # conversion has been implicitly applied
             /permissive- # standards conformance mode for MSVC compiler.
+            /wd4701 # uninitialized variable checker is trigger-happy
             )
 
     set(CLANG_WARNINGS
@@ -52,7 +53,7 @@ function(set_project_warnings project_name)
             -Wunused         # warn on anything being unused
             -Woverloaded-virtual # warn if you overload (not override) a virtual
             # function
-#            -Wpedantic   # warn if non-standard C++ is used
+            # -Wpedantic   # warn if non-standard C++ is used
             #-Wconversion # warn on type conversions that may lose data
             #-Wsign-conversion  # warn on sign conversions
             -Wnull-dereference # warn if a null dereference is detected
@@ -74,7 +75,7 @@ function(set_project_warnings project_name)
             -Wduplicated-branches # warn if if / else branches have duplicated code
             -Wlogical-op   # warn about logical operations being used where bitwise were
             # probably wanted
-            -Wuseless-cast # warn if you perform a cast to the same type
+            # -Wuseless-cast # warn if you perform a cast to the same type
             )
 
     if (MSVC)
