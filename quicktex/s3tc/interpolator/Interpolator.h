@@ -22,7 +22,7 @@
 #include <cstdint>  // for uint8_t, uint16_t
 #include <memory>   // for unique_ptr
 
-#include "../../Color.h"  // for Color
+#include "../../OldColor.h"  // for Color
 
 namespace quicktex::s3tc {
 
@@ -97,7 +97,7 @@ class Interpolator {
      * @param allow_3color if true, a different interpolation mode will be used if high >= low
      * @return an array of 4 Color values, with indices matching BC1 selectors
      */
-    std::array<Color, 4> Interpolate565BC1(uint16_t low, uint16_t high, bool allow_3color = true) const;
+    std::array<OldColor, 4> Interpolate565BC1(uint16_t low, uint16_t high, bool allow_3color = true) const;
 
     /**
      * Generates the 4 colors for a BC1 block from the given
@@ -106,7 +106,7 @@ class Interpolator {
      * @param use_3color if the 3-color interpolation mode should be used
      * @return an array of 4 Color values, with indices matching BC1 selectors
      */
-    virtual std::array<Color, 4> InterpolateBC1(Color low, Color high, bool use_3color) const;
+    virtual std::array<OldColor, 4> InterpolateBC1(OldColor low, OldColor high, bool use_3color) const;
 
     /**
      * Gets the type of an interpolator
@@ -126,12 +126,12 @@ class Interpolator {
     }
 
    private:
-    Color InterpolateColor24(const Color &c0, const Color &c1) const {
-        return Color(Interpolate8(c0.r, c1.r), Interpolate8(c0.g, c1.g), Interpolate8(c0.b, c1.b));
+    OldColor InterpolateColor24(const OldColor &c0, const OldColor &c1) const {
+        return OldColor(Interpolate8(c0.r, c1.r), Interpolate8(c0.g, c1.g), Interpolate8(c0.b, c1.b));
     }
 
-    Color InterpolateHalfColor24(const Color &c0, const Color &c1) const {
-        return Color(InterpolateHalf8(c0.r, c1.r), InterpolateHalf8(c0.g, c1.g), InterpolateHalf8(c0.b, c1.b));
+    OldColor InterpolateHalfColor24(const OldColor &c0, const OldColor &c1) const {
+        return OldColor(InterpolateHalf8(c0.r, c1.r), InterpolateHalf8(c0.g, c1.g), InterpolateHalf8(c0.b, c1.b));
     }
 };
 
@@ -152,18 +152,18 @@ class InterpolatorNvidia final : public Interpolator {
     virtual uint8_t InterpolateHalf5(uint8_t v0, uint8_t v1) const override;
     virtual uint8_t InterpolateHalf6(uint8_t v0, uint8_t v1) const override;
 
-    virtual std::array<Color, 4> InterpolateBC1(Color low, Color high, bool use_3color) const override;
+    virtual std::array<OldColor, 4> InterpolateBC1(OldColor low, OldColor high, bool use_3color) const override;
 
     virtual Type GetType() const noexcept override { return Type::Nvidia; }
     virtual bool CanInterpolate8Bit() const noexcept override { return false; }
 
    private:
-    Color InterpolateColor565(const Color &c0, const Color &c1) const {
-        return Color(Interpolate5(c0.r, c1.r), Interpolate6(c0.g, c1.g), Interpolate5(c0.b, c1.b));
+    OldColor InterpolateColor565(const OldColor &c0, const OldColor &c1) const {
+        return OldColor(Interpolate5(c0.r, c1.r), Interpolate6(c0.g, c1.g), Interpolate5(c0.b, c1.b));
     }
 
-    Color InterpolateHalfColor565(const Color &c0, const Color &c1) const {
-        return Color(InterpolateHalf5(c0.r, c1.r), InterpolateHalf6(c0.g, c1.g), InterpolateHalf5(c0.b, c1.b));
+    OldColor InterpolateHalfColor565(const OldColor &c0, const OldColor &c1) const {
+        return OldColor(InterpolateHalf5(c0.r, c1.r), InterpolateHalf6(c0.g, c1.g), InterpolateHalf5(c0.b, c1.b));
     }
 };
 

@@ -24,8 +24,8 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include "../../OldColor.h"
 #include "../../util.h"
-#include "../../Color.h"
 
 namespace quicktex::s3tc {
 
@@ -50,20 +50,20 @@ uint8_t Interpolator::Interpolate6(uint8_t v0, uint8_t v1) const { return Interp
 uint8_t Interpolator::InterpolateHalf5(uint8_t v0, uint8_t v1) const { return InterpolateHalf8(scale5To8(v0), scale5To8(v1)); }
 uint8_t Interpolator::InterpolateHalf6(uint8_t v0, uint8_t v1) const { return InterpolateHalf8(scale6To8(v0), scale6To8(v1)); }
 
-std::array<Color, 4> Interpolator::Interpolate565BC1(uint16_t low, uint16_t high, bool allow_3color) const {
+std::array<OldColor, 4> Interpolator::Interpolate565BC1(uint16_t low, uint16_t high, bool allow_3color) const {
     bool use_3color = allow_3color && (high >= low);
-    return InterpolateBC1(Color::Unpack565Unscaled(low), Color::Unpack565Unscaled(high), use_3color);
+    return InterpolateBC1(OldColor::Unpack565Unscaled(low), OldColor::Unpack565Unscaled(high), use_3color);
 }
 
-std::array<Color, 4> Interpolator::InterpolateBC1(Color low, Color high, bool use_3color) const {
-    auto colors = std::array<Color, 4>();
+std::array<OldColor, 4> Interpolator::InterpolateBC1(OldColor low, OldColor high, bool use_3color) const {
+    auto colors = std::array<OldColor, 4>();
     colors[0] = low.ScaleFrom565();
     colors[1] = high.ScaleFrom565();
 
     if (use_3color) {
         // 3-color mode
         colors[2] = InterpolateHalfColor24(colors[0], colors[1]);
-        colors[3] = Color(0, 0, 0, 0);  // transparent black
+        colors[3] = OldColor(0, 0, 0, 0);  // transparent black
     } else {
         // 4-color mode
         colors[2] = InterpolateColor24(colors[0], colors[1]);
@@ -108,9 +108,9 @@ uint8_t InterpolatorNvidia::InterpolateHalf6(uint8_t v0, uint8_t v1) const {
     return static_cast<uint8_t>((256 * v0 + gdiff / 4 + 128 + gdiff * 128) >> 8);
 }
 
-std::array<Color, 4> InterpolatorNvidia::InterpolateBC1(Color low, Color high, bool use_3color) const {
+std::array<OldColor, 4> InterpolatorNvidia::InterpolateBC1(OldColor low, OldColor high, bool use_3color) const {
     // Nvidia is special and interpolation cant be done with 8-bit values, so we need to override the default behavior
-    std::array<Color, 4> colors;
+    std::array<OldColor, 4> colors;
     colors[0] = low.ScaleFrom565();
     colors[1] = high.ScaleFrom565();
 
@@ -121,7 +121,7 @@ std::array<Color, 4> InterpolatorNvidia::InterpolateBC1(Color low, Color high, b
     } else {
         // 3-color mode
         colors[2] = InterpolateHalfColor565(low, high);
-        colors[3] = Color(0, 0, 0, 0);  // transparent black
+        colors[3] = OldColor(0, 0, 0, 0);  // transparent black
     }
 
     return colors;

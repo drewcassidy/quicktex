@@ -26,9 +26,9 @@
 #include <memory>
 #include <tuple>
 
-#include "../../Color.h"
 #include "../../ColorBlock.h"
 #include "../../Encoder.h"
+#include "../../OldColor.h"
 #include "../../Texture.h"
 #include "../interpolator/Interpolator.h"
 #include "BC1Block.h"
@@ -141,8 +141,8 @@ class BC1Encoder final : public BlockEncoder<BlockTexture<BC1Block>> {
 
     // Unpacked BC1 block with metadata
     struct EncodeResults {
-        Color low;
-        Color high;
+        OldColor low;
+        OldColor high;
         std::array<uint8_t, 16> selectors = {0};
         ColorMode color_mode = ColorMode::Incomplete;
         bool solid = false;
@@ -169,12 +169,12 @@ class BC1Encoder final : public BlockEncoder<BlockTexture<BC1Block>> {
     unsigned _orderings4;
     unsigned _orderings3;
 
-    BC1Block WriteBlockSolid(Color color) const;
+    BC1Block WriteBlockSolid(OldColor color) const;
     BC1Block WriteBlock(EncodeResults &result) const;
 
     void FindEndpoints(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, EndpointMode endpoint_mode, bool ignore_black = false) const;
-    void FindEndpointsSingleColor(EncodeResults &result, Color color, bool is_3color = false) const;
-    void FindEndpointsSingleColor(EncodeResults &result, const CBlock &pixels, Color color, bool is_3color) const;
+    void FindEndpointsSingleColor(EncodeResults &result, OldColor color, bool is_3color = false) const;
+    void FindEndpointsSingleColor(EncodeResults &result, const CBlock &pixels, OldColor color, bool is_3color) const;
 
     template <ColorMode M> void FindSelectors(EncodeResults &result, const CBlock &pixels, ErrorMode error_mode) const;
 

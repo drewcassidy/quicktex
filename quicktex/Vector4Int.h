@@ -22,7 +22,7 @@
 #include <array>
 #include <functional>
 
-#include "Color.h"
+#include "OldColor.h"
 #include "Vector4.h"
 
 namespace quicktex {
@@ -45,11 +45,11 @@ class Vector4Int {
         _c[3] = scalar;
     }
 
-    Vector4Int(const Color &c) : Vector4Int(c.r, c.g, c.b, c.a) {}
+    Vector4Int(const OldColor &c) : Vector4Int(c.r, c.g, c.b, c.a) {}
 
-    static Vector4Int FromColor(const Color &c) { return Vector4Int(c); }
+    static Vector4Int FromColor(const OldColor &c) { return Vector4Int(c); }
 
-    static Vector4Int FromColorRGB(const Color &c) { return Vector4Int(c.r, c.g, c.b); }
+    static Vector4Int FromColorRGB(const OldColor &c) { return Vector4Int(c.r, c.g, c.b); }
 
     static int Dot(const Vector4Int &lhs, const Vector4Int &rhs) {
         int sum = 0;

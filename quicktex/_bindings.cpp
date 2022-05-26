@@ -22,9 +22,9 @@
 #include <pybind11/pybind11.h>
 #include <utest.h>
 
-#include "Color.h"
 #include "Decoder.h"
 #include "Encoder.h"
+#include "OldColor.h"
 #include "Texture.h"
 #include "_bindings.h"
 

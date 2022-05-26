@@ -28,17 +28,17 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "Color.h"
 #include "ColorBlock.h"
+#include "OldColor.h"
 #include "Texture.h"
 #include "util.h"
 
 namespace pybind11::detail {
 using namespace quicktex;
 /// Type caster for color class to allow it to be converted to and from a python tuple
-template <> struct type_caster<Color> {
+template <> struct type_caster<OldColor> {
    public:
-    PYBIND11_TYPE_CASTER(Color, _("Color"));
+    PYBIND11_TYPE_CASTER(OldColor, _("Color"));
 
     bool load(handle src, bool) {
         PyObject* source = src.ptr();
@@ -70,7 +70,7 @@ template <> struct type_caster<Color> {
         return !PyErr_Occurred();
     }
 
-    static handle cast(Color src, return_value_policy, handle) {
+    static handle cast(OldColor src, return_value_policy, handle) {
         PyObject* val = PyTuple_New(4);
 
         for (int i = 0; i < 4; i++) {

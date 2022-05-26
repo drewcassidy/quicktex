@@ -30,8 +30,8 @@
 #include <type_traits>
 #include <vector>
 
-#include "Color.h"
 #include "ColorBlock.h"
+#include "OldColor.h"
 
 namespace quicktex {
 
@@ -73,19 +73,19 @@ class RawTexture : public Texture {
      */
     RawTexture(int width, int height) : Base(width, height), _pixels(_width * _height) {}
 
-    Color GetPixel(int x, int y) const {
+    OldColor GetPixel(int x, int y) const {
         if (x < 0 || x >= _width) throw std::invalid_argument("x value out of range.");
         if (y < 0 || y >= _height) throw std::invalid_argument("y value out of range.");
         return _pixels.at(x + (y * _width));
     }
 
-    void SetPixel(int x, int y, Color val) {
+    void SetPixel(int x, int y, OldColor val) {
         if (x < 0 || x >= _width) throw std::invalid_argument("x value out of range.");
         if (y < 0 || y >= _height) throw std::invalid_argument("y value out of range.");
         _pixels.at(x + (y * _width)) = val;
     }
 
-    size_t NBytes() const noexcept override { return static_cast<unsigned long>(Width() * Height()) * sizeof(Color); }
+    size_t NBytes() const noexcept override { return static_cast<unsigned long>(Width() * Height()) * sizeof(OldColor); }
 
     template <int N, int M> ColorBlock<N, M> GetBlock(int block_x, int block_y) const {
         if (block_x < 0) throw std::out_of_range("x value out of range.");
@@ -138,7 +138,7 @@ class RawTexture : public Texture {
     virtual uint8_t *Data() noexcept override { return reinterpret_cast<uint8_t *>(_pixels.data()); }
 
    protected:
-    std::vector<Color> _pixels;
+    std::vector<OldColor> _pixels;
 };
 
 template <typename B> class BlockTexture final : public Texture {

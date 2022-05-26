@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <utility>
 
-#include "../../Color.h"
+#include "../../OldColor.h"
 
 namespace quicktex::s3tc {
 
@@ -39,7 +39,7 @@ class alignas(8) BC1Block {
     static constexpr uint8_t SelectorMax = (1 << SelectorBits) - 1;  // maximum value of a selector
 
     using SelectorArray = std::array<std::array<uint8_t, Width>, Height>;
-    using ColorPair = std::pair<Color, Color>;
+    using ColorPair = std::pair<OldColor, OldColor>;
 
    private:
     std::array<uint8_t, EndpointSize> _color0;
@@ -60,7 +60,7 @@ class alignas(8) BC1Block {
      * @param color1 second endpoint color
      * @param selectors the selectors as a 4x4 list of integers, between 0 and 3 inclusive.
      */
-    BC1Block(Color color0, Color color1, const SelectorArray& selectors) {
+    BC1Block(OldColor color0, OldColor color1, const SelectorArray& selectors) {
         SetColor0(color0);
         SetColor1(color1);
         SetSelectors(selectors);
@@ -96,12 +96,12 @@ class alignas(8) BC1Block {
     void SetColor0Raw(uint16_t c);
     void SetColor1Raw(uint16_t c);
 
-    Color GetColor0() const { return Color::Unpack565(GetColor0Raw()); }
-    Color GetColor1() const { return Color::Unpack565(GetColor1Raw()); }
+    OldColor GetColor0() const { return OldColor::Unpack565(GetColor0Raw()); }
+    OldColor GetColor1() const { return OldColor::Unpack565(GetColor1Raw()); }
     ColorPair GetColors() const { return {GetColor0(), GetColor1()}; }
 
-    void SetColor0(Color c) { SetColor0Raw(c.Pack565()); }
-    void SetColor1(Color c) { SetColor1Raw(c.Pack565()); }
+    void SetColor0(OldColor c) { SetColor0Raw(c.Pack565()); }
+    void SetColor1(OldColor c) { SetColor1Raw(c.Pack565()); }
     void SetColors(ColorPair cs) {
         SetColor0(cs.first);
         SetColor1(cs.second);

@@ -50,7 +50,7 @@ void InitBC1(py::module_ &s3tc) {
     bc1_block.doc() = "A single BC1 block.";
 
     bc1_block.def(py::init<>());
-    bc1_block.def(py::init<Color, Color, BC1Block::SelectorArray>(), "color0"_a, "color1"_a, "selectors"_a, R"doc(
+    bc1_block.def(py::init<OldColor, OldColor, BC1Block::SelectorArray>(), "color0"_a, "color1"_a, "selectors"_a, R"doc(
         Create a new BC1Block with the specified endpoints and selectors
 
         :param color0: The first endpoint

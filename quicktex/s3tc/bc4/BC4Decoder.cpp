@@ -22,8 +22,8 @@
 #include <array>    // for array
 #include <cassert>  // for assert
 
-#include "../../Color.h"
 #include "../../ColorBlock.h"
+#include "../../OldColor.h"
 #include "BC4Block.h"
 
 namespace quicktex::s3tc {

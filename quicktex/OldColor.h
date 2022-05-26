@@ -27,32 +27,32 @@ class Vector4;
 class Vector4Int;
 
 #pragma pack(push, 1)
-class Color {
+class OldColor {
    public:
     uint8_t r;
     uint8_t g;
     uint8_t b;
     uint8_t a;
 
-    constexpr Color() : Color(0, 0, 0, 0xFF) {}
+    constexpr OldColor() : OldColor(0, 0, 0, 0xFF) {}
 
-    constexpr Color(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va = 0xFF) : r(vr), g(vg), b(vb), a(va) {}
+    constexpr OldColor(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va = 0xFF) : r(vr), g(vg), b(vb), a(va) {}
 
-    Color(Vector4Int v);
+    OldColor(Vector4Int v);
 
     static uint16_t Pack565Unscaled(uint8_t r, uint8_t g, uint8_t b);
     static uint16_t Pack565(uint8_t r, uint8_t g, uint8_t b);
 
-    static Color Unpack565Unscaled(uint16_t Packed);
-    static Color Unpack565(uint16_t Packed);
+    static OldColor Unpack565Unscaled(uint16_t Packed);
+    static OldColor Unpack565(uint16_t Packed);
 
-    static Color PreciseRound565(Vector4 &v);
+    static OldColor PreciseRound565(Vector4 &v);
 
-    static Color Min(const Color &A, const Color &B);
-    static Color Max(const Color &A, const Color &B);
+    static OldColor Min(const OldColor &A, const OldColor &B);
+    static OldColor Max(const OldColor &A, const OldColor &B);
 
-    bool operator==(const Color &Rhs) const;
-    bool operator!=(const Color &Rhs) const;
+    bool operator==(const OldColor &Rhs) const;
+    bool operator!=(const OldColor &Rhs) const;
 
     uint8_t operator[](size_t index) const {
         assert(index < 4);
@@ -65,16 +65,16 @@ class Color {
 
     operator Vector4() const;
     operator Vector4Int() const;
-    friend Vector4Int operator-(const Color &lhs, const Color &rhs);
+    friend Vector4Int operator-(const OldColor &lhs, const OldColor &rhs);
 
     void SetRGB(uint8_t vr, uint8_t vg, uint8_t vb);
-    void SetRGB(const Color &other) { SetRGB(other.r, other.g, other.b); }
+    void SetRGB(const OldColor &other) { SetRGB(other.r, other.g, other.b); }
 
     uint16_t Pack565() const;
     uint16_t Pack565Unscaled() const;
 
-    Color ScaleTo565() const;
-    Color ScaleFrom565() const;
+    OldColor ScaleTo565() const;
+    OldColor ScaleFrom565() const;
 
     size_t MinChannelRGB();
     size_t MaxChannelRGB();

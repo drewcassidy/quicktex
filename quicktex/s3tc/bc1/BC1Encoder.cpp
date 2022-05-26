@@ -29,9 +29,9 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "../../Color.h"
 #include "../../ColorBlock.h"
 #include "../../Matrix4x4.h"
+#include "../../OldColor.h"
 #include "../../Texture.h"
 #include "../../VecUtil.h"
 #include "../../Vector4.h"
@@ -358,7 +358,7 @@ BC1Block BC1Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
 }
 
 // Private methods
-BC1Block BC1Encoder::WriteBlockSolid(Color color) const {
+BC1Block BC1Encoder::WriteBlockSolid(OldColor color) const {
     uint8_t mask = 0xAA;  // 2222
     uint16_t min16, max16;
 
@@ -456,7 +456,7 @@ BC1Block BC1Encoder::WriteBlock(EncodeResults &result) const {
     return BC1Block(ep0, ep1, selectors);
 }
 
-void BC1Encoder::FindEndpointsSingleColor(EncodeResults &result, Color color, bool is_3color) const {
+void BC1Encoder::FindEndpointsSingleColor(EncodeResults &result, OldColor color, bool is_3color) const {
     auto &match5 = is_3color ? _single_match5_half : _single_match5;
     auto &match6 = is_3color ? _single_match6_half : _single_match6;
 
@@ -466,14 +466,14 @@ void BC1Encoder::FindEndpointsSingleColor(EncodeResults &result, Color color, bo
 
     result.color_mode = is_3color ? ColorMode::ThreeColor : ColorMode::FourColor;
     result.error = match_r.error + match_g.error + match_b.error;
-    result.low = Color(match_r.low, match_g.low, match_b.low);
-    result.high = Color(match_r.high, match_g.high, match_b.high);
+    result.low = OldColor(match_r.low, match_g.low, match_b.low);
+    result.high = OldColor(match_r.high, match_g.high, match_b.high);
     // selectors decided when writing, no point deciding them now
 }
 
-void BC1Encoder::FindEndpointsSingleColor(EncodeResults &result, const CBlock &pixels, Color color,
+void BC1Encoder::FindEndpointsSingleColor(EncodeResults &result, const CBlock &pixels, OldColor color,
                                           bool is_3color) const {
-    std::array<Color, 4> colors = _interpolator->InterpolateBC1(result.low, result.high, is_3color);
+    std::array<OldColor, 4> colors = _interpolator->InterpolateBC1(result.low, result.high, is_3color);
     Vector4Int result_vector = (Vector4Int)colors[2];
 
     FindEndpointsSingleColor(result, color, is_3color);
@@ -498,7 +498,7 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
             uint8_t fr5 = (uint8_t)scale8To5(fr);
             uint8_t fr6 = (uint8_t)scale8To6(fr);
 
-            result.low = Color(fr5, fr6, fr5);
+            result.low = OldColor(fr5, fr6, fr5);
             result.high = result.low;
         } else {
             uint8_t lr5 = scale8To5(metrics.min.r);
@@ -507,12 +507,13 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
             uint8_t hr5 = scale8To5(metrics.max.r);
             uint8_t hr6 = scale8To6(metrics.max.r);
 
-            result.low = Color(lr5, lr6, lr5);
-            result.high = Color(hr5, hr6, hr5);
+            result.low = OldColor(lr5, lr6, lr5);
+            result.high = OldColor(hr5, hr6, hr5);
         }
     } else if (endpoint_mode == EndpointMode::LeastSquares) {
         //  2D Least Squares approach from Humus's example, with added inset and optimal rounding.
-        Color diff = Color(metrics.max.r - metrics.min.r, metrics.max.g - metrics.min.g, metrics.max.b - metrics.min.b);
+        OldColor diff =
+            OldColor(metrics.max.r - metrics.min.r, metrics.max.g - metrics.min.g, metrics.max.b - metrics.min.b);
         Vector4 l = {0, 0, 0};
         Vector4 h = {0, 0, 0};
 
@@ -567,8 +568,8 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
             h[c] = ((h[c] - inset) / 255.0f);
         }
 
-        result.low = Color::PreciseRound565(l);
-        result.high = Color::PreciseRound565(h);
+        result.low = OldColor::PreciseRound565(l);
+        result.high = OldColor::PreciseRound565(h);
     } else if (endpoint_mode == EndpointMode::BoundingBox) {
         // Algorithm from icbc.h compress_dxt1_fast()
         Vector4 l, h;
@@ -595,13 +596,13 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
         if (icov_xz < 0) std::swap(l[0], h[0]);
         if (icov_yz < 0) std::swap(l[1], h[1]);
 
-        result.low = Color::PreciseRound565(l);
-        result.high = Color::PreciseRound565(h);
+        result.low = OldColor::PreciseRound565(l);
+        result.high = OldColor::PreciseRound565(h);
     } else if (endpoint_mode == EndpointMode::BoundingBoxInt) {
         // Algorithm from icbc.h compress_dxt1_fast(), but converted to integer.
         // TODO: handle constant blue channel better
 
-        Color min, max;
+        OldColor min, max;
 
         // rescale and inset values
         for (unsigned c = 0; c < 3; c++) {
@@ -706,7 +707,7 @@ void BC1Encoder::FindSelectors(EncodeResults &result, const CBlock &pixels, Erro
 
     const int color_count = (unsigned)M & 0x0F;
 
-    std::array<Color, 4> colors = _interpolator->InterpolateBC1(result.low, result.high, color_count == 3);
+    std::array<OldColor, 4> colors = _interpolator->InterpolateBC1(result.low, result.high, color_count == 3);
     std::array<Vector4Int, 4> color_vectors;
 
     if (color_count == 4) {
@@ -816,7 +817,7 @@ bool BC1Encoder::RefineEndpointsLS(EncodeResults &result, const CBlock &pixels, 
     Vector4 matrix = Vector4(0);
 
     for (int i = 0; i < 16; i++) {
-        const Color color = pixels.Get(i);
+        const OldColor color = pixels.Get(i);
         const uint8_t sel = result.selectors[i];
 
         if ((bool)(M & ColorMode::ThreeColorBlack) && color.IsBlack()) continue;
@@ -847,8 +848,8 @@ bool BC1Encoder::RefineEndpointsLS(EncodeResults &result, const CBlock &pixels, 
     Vector4 high = (matrix[2] * q00) + (matrix[3] * q10);
 
     result.color_mode = M;
-    result.low = Color::PreciseRound565(low);
-    result.high = Color::PreciseRound565(high);
+    result.low = OldColor::PreciseRound565(low);
+    result.high = OldColor::PreciseRound565(high);
     return true;
 }
 
@@ -875,8 +876,8 @@ void BC1Encoder::RefineEndpointsLS(EncodeResults &result, std::array<Vector4, 17
     Vector4 high = (matrix[2] * q00) + (matrix[3] * q10);
 
     result.color_mode = M;
-    result.low = Color::PreciseRound565(low);
-    result.high = Color::PreciseRound565(high);
+    result.low = OldColor::PreciseRound565(low);
+    result.high = OldColor::PreciseRound565(high);
 }
 
 template <BC1Encoder::ColorMode M>

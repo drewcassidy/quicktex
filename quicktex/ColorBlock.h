@@ -25,7 +25,7 @@
 #include <cstring>
 #include <stdexcept>
 
-#include "Color.h"
+#include "OldColor.h"
 #include "Vector4Int.h"
 
 namespace quicktex {
@@ -34,9 +34,9 @@ using Coords = std::tuple<int, int>;
 template <int N, int M> class ColorBlock  {
    public:
     struct Metrics {
-        Color min;
-        Color max;
-        Color avg;
+        OldColor min;
+        OldColor max;
+        OldColor avg;
         bool is_greyscale;
         bool has_black;
         Vector4Int sums;
@@ -45,37 +45,37 @@ template <int N, int M> class ColorBlock  {
     static constexpr int Width = N;
     static constexpr int Height = M;
 
-    constexpr Color Get(int x, int y) const {
+    constexpr OldColor Get(int x, int y) const {
         if (x >= Width || x < 0) throw std::invalid_argument("x value out of range");
         if (y >= Height || y < 0) throw std::invalid_argument("y value out of range");
 
         return _pixels[x + (N * y)];
     }
 
-    constexpr Color Get(int i) const {
+    constexpr OldColor Get(int i) const {
         if (i >= N * M || i < 0) throw std::invalid_argument("i value out of range");
         return _pixels[i];
     }
 
-    void Set(int x, int y, const Color &value) {
+    void Set(int x, int y, const OldColor &value) {
         if (x >= Width || x < 0) throw std::invalid_argument("x value out of range");
         if (y >= Height || y < 0) throw std::invalid_argument("y value out of range");
         _pixels[x + (N * y)] = value;
     }
 
-    void Set(int i, const Color &value) {
+    void Set(int i, const OldColor &value) {
         if (i >= N * M || i < 0) throw std::invalid_argument("i value out of range");
         _pixels[i] = value;
     }
 
-    void GetRow(int y, Color *dst) const {
+    void GetRow(int y, OldColor *dst) const {
         if (y >= Height || y < 0) throw std::invalid_argument("y value out of range");
-        std::memcpy(dst, &_pixels[N * y], N * sizeof(Color));
+        std::memcpy(dst, &_pixels[N * y], N * sizeof(OldColor));
     }
 
-    void SetRow(int y, const Color *src) {
+    void SetRow(int y, const OldColor *src) {
         if (y >= Height || y < 0) throw std::invalid_argument("y value out of range");
-        std::memcpy(&_pixels[N * y], src, N * sizeof(Color));
+        std::memcpy(&_pixels[N * y], src, N * sizeof(OldColor));
     }
 
     bool IsSingleColor() const {
@@ -88,8 +88,8 @@ template <int N, int M> class ColorBlock  {
 
     Metrics GetMetrics(bool ignore_black = false) const {
         Metrics metrics;
-        metrics.min = Color(UINT8_MAX, UINT8_MAX, UINT8_MAX);
-        metrics.max = Color(0, 0, 0);
+        metrics.min = OldColor(UINT8_MAX, UINT8_MAX, UINT8_MAX);
+        metrics.max = OldColor(0, 0, 0);
         metrics.has_black = false;
         metrics.is_greyscale = true;
         metrics.sums = {0, 0, 0};
@@ -97,7 +97,7 @@ template <int N, int M> class ColorBlock  {
         unsigned total = 0;
 
         for (unsigned i = 0; i < M * N; i++) {
-            Color val = Get(i);
+            OldColor val = Get(i);
             bool is_black = val.IsBlack();
 
             metrics.has_black |= is_black;
@@ -118,7 +118,7 @@ template <int N, int M> class ColorBlock  {
     }
 
    private:
-    std::array<Color, N * M> _pixels;
+    std::array<OldColor, N * M> _pixels;
 };
 
 }  // namespace quicktex
