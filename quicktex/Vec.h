@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <numeric>
 #include <xsimd/xsimd.hpp>
@@ -52,13 +53,11 @@ template <typename T, size_t N> class Vec {
     }
 
     /**
-     * Create a vector from a naked pointer
-     * @tparam S Source data type
-     * @param ptr Pointer to the start of the source data. N values will be read.
+     * Create a vector from an iterator
+     * @tparam II input iterator type
+     * @param input_iterator iterator to copy from
      */
-    template <typename S> Vec(const S *ptr) {
-        for (unsigned i = 0; i < N; i++) { at(i) = static_cast<T>(ptr[i]); }
-    }
+    template <typename II> Vec(const II input_iterator) { std::copy_n(input_iterator, N, begin()); }
 
     /**
      * Create a vector from a std::array
@@ -157,13 +156,7 @@ template <typename T, size_t N> class Vec {
     bool operator!=(const Vec &rhs) const { return _c != rhs._c; };
     // endregion
 
-    template <typename U> void write(U *ptr) const {
-        if constexpr (std::is_same_v<T, U>) {
-            std::memcpy(ptr, _c.begin(), N * sizeof(T));
-        } else {
-            for (unsigned i = 0; i < N; i++) { ptr[i] = static_cast<U>(_c[i]); }
-        }
-    }
+    template <typename OI> void copy(OI output_iterator) const { std::copy(begin(), end(), output_iterator); }
 
     template <typename P = T, typename W = size_t>
         requires std::is_unsigned_v<P> && std::is_integral_v<T>
@@ -196,7 +189,7 @@ template <typename T, size_t N> class Vec {
         return map(*this, [](T val) { return quicktex::abs(val); });
     }
 
-    Vec clamp(const float &low, const float &high) {
+    Vec clamp(float low, float high) {
         return map(*this, [&low, &high](T val) { return quicktex::clamp(val, low, high); });
     }
 

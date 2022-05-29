@@ -124,7 +124,7 @@ UTEST(Vec_int, pack) {
     ASSERT_EQ(result, 0xFD41);
 }
 
-UTEST(Vec_int, write) {
+UTEST(Vec_int, copy) {
     std::array<int, 4> arr{1, 3, 1, 2};
     Vec<int, 4> a(arr);
     Vec<int, 4> expected{1, 3, 1, 2};
@@ -132,7 +132,7 @@ UTEST(Vec_int, write) {
     ASSERT_TRUE(a == expected);
 
     std::array<int, 4> out{-1, -3, -1, -2};
-    a.write(out.begin());
+    a.copy(out.begin());
 
     ASSERT_TRUE(out == arr);
 }
