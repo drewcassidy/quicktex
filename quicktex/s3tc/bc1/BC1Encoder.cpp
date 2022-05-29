@@ -608,8 +608,8 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
         for (unsigned c = 0; c < 3; c++) {
             int inset = ((int)(metrics.max[c] - metrics.min[c]) - 8) >> 4;  // 1/16 of delta, with bias
 
-            min[c] = clamp255(metrics.min[c] + inset);
-            max[c] = clamp255(metrics.max[c] - inset);
+            min[c] = clamp(metrics.min[c] + inset, 0, 255);
+            max[c] = clamp(metrics.max[c] - inset, 0, 255);
         }
 
         int icov_xz = 0, icov_yz = 0;

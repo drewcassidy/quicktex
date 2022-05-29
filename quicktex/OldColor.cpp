@@ -46,7 +46,9 @@ uint16_t OldColor::Pack565Unscaled(uint8_t r, uint8_t g, uint8_t b) {
     return static_cast<uint16_t>(b | (g << 5) | (r << 11));
 }
 
-uint16_t OldColor::Pack565(uint8_t r, uint8_t g, uint8_t b) { return Pack565Unscaled(scale8To5(r), scale8To6(g), scale8To5(b)); }
+uint16_t OldColor::Pack565(uint8_t r, uint8_t g, uint8_t b) {
+    return Pack565Unscaled(scale8To5(r), scale8To6(g), scale8To5(b));
+}
 
 OldColor OldColor::Unpack565Unscaled(uint16_t Packed) {
     uint8_t r = (Packed >> 11) & 0x1F;
@@ -92,21 +94,11 @@ void OldColor::SetRGB(uint8_t vr, uint8_t vg, uint8_t vb) {
     b = vb;
 }
 
-size_t OldColor::MinChannelRGB() {
-    if (r <= g && r <= b) return 0;
-    if (g <= b && g <= r) return 1;
-    return 2;
-}
-
 size_t OldColor::MaxChannelRGB() {
     if (r >= g && r >= b) return 0;
     if (g >= b && g >= r) return 1;
     return 2;
 }
-
-OldColor OldColor::Min(const OldColor &A, const OldColor &B) { return OldColor(std::min(A[0], B[0]), std::min(A[1], B[1]), std::min(A[2], B[2]), std::min(A[3], B[3])); }
-
-OldColor OldColor::Max(const OldColor &a, const OldColor &b) { return OldColor(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]), std::max(a[3], b[3])); }
 
 OldColor::operator Vector4() const { return Vector4(r, g, b, a); }
 OldColor::operator Vector4Int() const { return Vector4Int(r, g, b, a); }

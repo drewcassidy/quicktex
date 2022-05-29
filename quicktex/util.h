@@ -20,17 +20,46 @@
 #pragma once
 #include <cassert>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <string>
 #include <type_traits>
-#include <functional>
 #include <vector>
+#include <xsimd/xsimd.hpp>
 
 #define UINT5_MAX 0x1FU  // 31
 #define UINT6_MAX 0x3FU  // 63
 
 #define assert5bit(x) assert(x <= UINT5_MAX)
 #define assert6bit(x) assert(x <= UINT6_MAX)
+
+namespace quicktex {
+
+template <typename S, size_t N> S scale_from_8(S v) {
+    static_assert(N < 8);
+    assert(v < (1 << 8));
+
+    unsigned max = (1 << N) - 1;
+    unsigned v2 = (v * max) + 128;
+    auto result = static_cast<S>((v2 + (v2 >> 8)) >> 8);
+
+    assert(result < (1 << N));
+
+    return result;
+}
+
+template <typename S, size_t N> S scale_to_8(S v) {
+    static_assert(N < 8);
+    assert(v < (1 << N));
+
+    constexpr unsigned lshift = 8 - N;
+    constexpr unsigned rshift = N - lshift;
+    S result = static_cast<S>((v << lshift) | (v >> rshift));
+
+    assert(v < (1 << 8));
+
+    return result;
+}
 
 template <typename S> constexpr auto iabs(S i) {
     static_assert(!std::is_unsigned<S>::value);
@@ -51,8 +80,10 @@ template <typename I, typename O, size_t S, size_t C> constexpr std::array<O, C>
     // type checking
     static_assert(std::is_unsigned<I>::value, "Packed input type must be unsigned");
     static_assert(std::is_unsigned<O>::value, "Unpacked output type must be unsigned");
-    static_assert(std::numeric_limits<I>::digits >= (C * S), "Packed input type must be big enough to represent the number of bits multiplied by count");
-    static_assert(std::numeric_limits<O>::digits >= S, "Unpacked output type must be big enough to represent the number of bits");
+    static_assert(std::numeric_limits<I>::digits >= (C * S),
+                  "Packed input type must be big enough to represent the number of bits multiplied by count");
+    static_assert(std::numeric_limits<O>::digits >= S,
+                  "Unpacked output type must be big enough to represent the number of bits");
 
     constexpr O mask = (1U << S) - 1U;  // maximum value representable by N bits
     std::array<O, C> vals;              // output values array of size C
@@ -78,8 +109,10 @@ template <typename I, typename O, size_t S, size_t C> constexpr O Pack(const std
     // type checking
     static_assert(std::is_unsigned<I>::value, "Unpacked input type must be unsigned");
     static_assert(std::is_unsigned<O>::value, "Packed output type must be unsigned");
-    static_assert(std::numeric_limits<I>::digits >= S, "Unpacked input type must be big enough to represent the number of bits");
-    static_assert(std::numeric_limits<O>::digits >= (C * S), "Packed output type must be big enough to represent the number of bits multiplied by count");
+    static_assert(std::numeric_limits<I>::digits >= S,
+                  "Unpacked input type must be big enough to represent the number of bits");
+    static_assert(std::numeric_limits<O>::digits >= (C * S),
+                  "Packed output type must be big enough to represent the number of bits multiplied by count");
 
     O packed = 0;  // output value of type O
 
@@ -126,26 +159,12 @@ template <typename S> constexpr S scale6To8(S v) {
     return static_cast<S>((v << 2) | (v >> 4));
 }
 
-template <typename S> constexpr S maximum(S a, S b) { return (a > b) ? a : b; }
-template <typename S> constexpr S maximum(S a, S b, S c) { return maximum(maximum(a, b), c); }
-template <typename S> constexpr S maximum(S a, S b, S c, S d) { return maximum(maximum(maximum(a, b), c), d); }
-
-template <typename S> constexpr S minimum(S a, S b) { return (a < b) ? a : b; }
-template <typename S> constexpr S minimum(S a, S b, S c) { return minimum(minimum(a, b), c); }
-template <typename S> constexpr S minimum(S a, S b, S c, S d) { return minimum(minimum(minimum(a, b), c), d); }
-
-template <typename T> constexpr T square(T a) { return a * a; }
-
-constexpr float clampf(float value, float low = 0.0f, float high = 1.0f) {
-    if (value < low)
-        value = low;
-    else if (value > high)
-        value = high;
+template <typename S> constexpr S clamp(S value, S low, S high) {
+    assert(low <= high);
+    if (value < low) return low;
+    if (value > high) return high;
     return value;
 }
-constexpr uint8_t clamp255(int32_t i) { return static_cast<uint8_t>((static_cast<unsigned int>(i) & 0xFFFFFF00U) ? (~(i >> 31)) : i); }
-
-template <typename S> constexpr S clamp(S value, S low, S high) { return (value < low) ? low : ((value > high) ? high : value); }
 constexpr int32_t clampi(int32_t value, int32_t low, int32_t high) {
     if (value < low)
         value = low;
@@ -154,8 +173,11 @@ constexpr int32_t clampi(int32_t value, int32_t low, int32_t high) {
     return value;
 }
 
-constexpr int squarei(int a) { return a * a; }
-constexpr int absi(int a) { return (a < 0) ? -a : a; }
+template <typename T> std::enable_if<std::is_unsigned_v<T>, T> abs(const T &sval) { return sval; }
+template <typename T> std::enable_if<std::is_signed_v<T> && std::is_arithmetic_v<T>, T> abs(const T &a) {
+    return (a < 0) ? -a : a;
+}
+using xsimd::abs;  // provides overload for abs<xsimd::batch>
 
 template <typename F> constexpr F lerp(F a, F b, F s) { return a + (b - a) * s; }
 
@@ -177,14 +199,15 @@ template <typename... Args> std::string Format(const char *str, const Args &...a
     return output;
 }
 
-template <class > struct next_size;
+template <class> struct next_size;
 template <class T> using next_size_t = typename next_size<T>::type;
 template <class T> struct Tag { using type = T; };
 
-template <> struct next_size<int8_t>  : Tag<int16_t> { };
-template <> struct next_size<int16_t> : Tag<int32_t> { };
-template <> struct next_size<int32_t> : Tag<int64_t> { };
+template <> struct next_size<int8_t> : Tag<int16_t> {};
+template <> struct next_size<int16_t> : Tag<int32_t> {};
+template <> struct next_size<int32_t> : Tag<int64_t> {};
 
-template <> struct next_size<uint8_t>  : Tag<uint16_t> { };
-template <> struct next_size<uint16_t> : Tag<uint32_t> { };
-template <> struct next_size<uint32_t> : Tag<uint64_t> { };
+template <> struct next_size<uint8_t> : Tag<uint16_t> {};
+template <> struct next_size<uint16_t> : Tag<uint32_t> {};
+template <> struct next_size<uint32_t> : Tag<uint64_t> {};
+}  // namespace quicktex

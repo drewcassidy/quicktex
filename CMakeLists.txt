@@ -57,7 +57,7 @@ endif ()
 target_link_libraries(_quicktex PUBLIC xsimd)
 
 # Set module features, like C/C++ standards
-target_compile_features(_quicktex PUBLIC cxx_std_17 c_std_11)
+target_compile_features(_quicktex PUBLIC cxx_std_20 c_std_11)
 
 # Set compiler warnings
 set_project_warnings(_quicktex)
