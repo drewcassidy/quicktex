@@ -48,9 +48,7 @@ template <typename T, size_t N> class Vec {
      * @param rvalue Source vector to copy from
      */
     template <typename S> Vec(std::enable_if_t<std::is_convertible_v<S, T>, const Vec<S, N>> &rvalue) {
-        Vec lvalue;
-        for (unsigned i = 0; i < N; i++) { lvalue[i] = static_cast<T>(rvalue[i]); }
-        return lvalue;
+        for (unsigned i = 0; i < N; i++) { at(i) = static_cast<T>(rvalue[i]); }
     }
 
     /**
