@@ -35,13 +35,13 @@ template <typename T, size_t N> class Vec {
      * Create a vector from an intializer list
      * @param vals values to populate with
      */
-    Vec(std::initializer_list<T> vals) { std::copy(vals.begin(), vals.end(), _c.begin()); }
+    Vec(std::initializer_list<T> vals) { std::copy(vals.begin(), vals.end(), begin()); }
 
     /**
      * Create a vector from a scalar value
      * @param scalar value to populate with
      */
-    Vec(const T &scalar = 0) { _c.fill(scalar); }
+    Vec(const T &scalar = 0) { std::fill(begin(), end(), scalar); }
 
     /**
      * Create a vector from another vector of the same size and another type
@@ -102,10 +102,10 @@ template <typename T, size_t N> class Vec {
      */
     T &operator[](size_t i) { return at(i); }
 
-    T *begin() { return _c.begin(); }
-    T *end() { return _c.end(); }
-    const T *begin() const { return _c.begin(); }
-    const T *end() const { return _c.end(); }
+    T *begin() { return &_c[0]; }
+    T *end() { return &_c[N]; }
+    const T *begin() const { return &_c[0]; }
+    const T *end() const { return &_c[N]; }
 
     // endregion
 
@@ -152,8 +152,8 @@ template <typename T, size_t N> class Vec {
     friend Vec &operator*=(Vec &lhs, const T &rhs) { return lhs = lhs * rhs; }
     friend Vec &operator/=(Vec &lhs, const T &rhs) { return lhs = lhs / rhs; }
 
-    bool operator==(const Vec &rhs) const { return _c == rhs._c; };
-    bool operator!=(const Vec &rhs) const { return _c != rhs._c; };
+    bool operator==(const Vec &rhs) const { return std::equal(begin(), end(), rhs.begin()); };
+    bool operator!=(const Vec &rhs) const { return !(*this == rhs); };
     // endregion
 
     template <typename OI> void copy(OI output_iterator) const { std::copy(begin(), end(), output_iterator); }
@@ -200,7 +200,7 @@ template <typename T, size_t N> class Vec {
     }
 
    protected:
-    std::array<T, N> _c;  // internal array of components
+    T _c[N];  // internal array of components
 
     template <typename Op> static inline Vec map(const Vec &lhs, Op f) {
         Vec r;
