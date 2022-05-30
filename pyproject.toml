@@ -77,7 +77,7 @@ skip = ["cp{38,39,31*}-macosx_x86_64"] # skip x86-only builds where fat binaries
 archs = ["auto64"] # arm64 windows builds not yet supported
 
 [tool.cibuildwheel.linux]
-skip = ["cp37-musllinux*", "*musllinux_aarch64*"] # skip targets without available Pillow wheels
+skip = ["*musllinux*"]
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
 
