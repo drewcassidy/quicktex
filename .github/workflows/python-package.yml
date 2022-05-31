@@ -75,8 +75,8 @@ jobs:
         run: |
           echo "CC=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
-          echo "LDFLAGS=-L$(brew --prefix)/opt/llvm/lib -Wl,-rpath,$(brew --prefix)/opt/llvm/lib" >> &GITHUB_ENV
-          echo "MACOSX_DEPLOYMENT_TARGET=10.9"
+          echo "LDFLAGS=-L$(brew --prefix)/opt/llvm/lib -Wl,-rpath,$(brew --prefix)/opt/llvm/lib" >> $GITHUB_ENV
+          echo "MACOSX_DEPLOYMENT_TARGET=10.9" >> $GITHUB_ENV
 
       - name: Install QEMU
         # install QEMU if building for arm linux
