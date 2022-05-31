@@ -30,6 +30,8 @@ namespace quicktex {
 
 template <typename T, size_t N> class Vec {
    public:
+    typedef T value_type;
+
     // region constructors
     /**
      * Create a vector from an intializer list
@@ -106,6 +108,7 @@ template <typename T, size_t N> class Vec {
     T *end() { return &_c[N]; }
     const T *begin() const { return &_c[0]; }
     const T *end() const { return &_c[N]; }
+    size_t size() const { return N; }
 
     // endregion
 
@@ -158,24 +161,6 @@ template <typename T, size_t N> class Vec {
 
     template <typename OI> void copy(OI output_iterator) const { std::copy(begin(), end(), output_iterator); }
 
-    template <typename P = T, typename W = size_t>
-        requires std::is_unsigned_v<P> && std::is_integral_v<T>
-    P pack(const Vec<W, N> &widths) const {
-        assert((sizeof(P) * 8) >= (size_t)std::accumulate(widths.begin(), widths.end(), 0));
-
-        P packed = 0;
-
-        for (unsigned i = 0; i < N; i++) {
-            T val = at(i);
-            if constexpr (std::is_signed_v<T>) { val &= ((1 << widths[i]) - 1); }  // mask out upper bits of signed vals
-
-            assert(val < (1 << widths[i]));
-
-            packed = (packed << widths[i]) | val;
-        }
-        return packed;
-    }
-
     T sum() const { return std::accumulate(begin(), end(), T{0}); }
 
     T dot(const Vec &rhs) const {
@@ -200,7 +185,7 @@ template <typename T, size_t N> class Vec {
     }
 
    protected:
-    T _c[N];  // internal array of components
+    std::array<T, N> _c;  // internal array of components
 
     template <typename Op> static inline Vec map(const Vec &lhs, Op f) {
         Vec r;

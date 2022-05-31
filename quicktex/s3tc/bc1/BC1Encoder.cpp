@@ -753,7 +753,7 @@ void BC1Encoder::FindSelectors(EncodeResults &result, const CBlock &pixels, Erro
             Vector4Int pixel_vector = Vector4Int::FromColorRGB(pixels.Get(i));
             auto diff = pixel_vector - color_vectors[0];
             float sel_f = (float)diff.Dot(axis) * f + 0.5f;
-            uint8_t sel = (uint8_t)clampi((int)sel_f, 1, 3);
+            uint8_t sel = (uint8_t)clamp<int>((int)sel_f, 1, 3);
 
             unsigned err0 = (color_vectors[sel - 1] - pixel_vector).SqrMag();
             unsigned err1 = (color_vectors[sel] - pixel_vector).SqrMag();

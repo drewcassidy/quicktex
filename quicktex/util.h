@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <numeric>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -34,6 +35,64 @@
 #define assert6bit(x) assert(x <= UINT6_MAX)
 
 namespace quicktex {
+
+// std::ranges::range is currently not usable by default in libc++
+template <class T>
+concept range = requires(T &t) {
+                    std::ranges::begin(t);
+                    std::ranges::end(t);
+                };
+
+template <class T>
+concept sized_range = range<T> && requires(T &t) { std::size(t); };
+
+template <class T>
+    requires range<T>
+size_t distance(T range) {
+    return std::distance(range.begin(), range.end());
+}
+
+template <typename T> class const_iterator {
+   public:
+    typedef ssize_t difference_type;
+    typedef T value_type;
+
+    const_iterator() : _value(T{}), _index(0) {}
+    const_iterator(T value, size_t index = 0) : _value(value), _index(index) {}
+
+    const_iterator &operator++() {
+        _index++;
+        return *this;
+    }
+    const_iterator operator++(int) {
+        const_iterator old = *this;
+        _index++;
+        return old;
+    }
+    const_iterator &operator--() {
+        _index++;
+        return *this;
+    }
+    const_iterator operator--(int) {
+        const_iterator old = *this;
+        _index++;
+        return old;
+    }
+
+    T operator*() const { return _value; }
+
+    ssize_t operator-(const_iterator rhs) const { return (ssize_t)_index - rhs._index; }
+    const_iterator operator+(size_t rhs) const { return const_iterator(rhs + _index); }
+    const_iterator operator-(size_t rhs) const { return const_iterator(rhs - _index); }
+
+    friend bool operator==(const const_iterator &lhs, const const_iterator &rhs) {
+        return (lhs._value == rhs._value) && (lhs._index == rhs._index);
+    }
+
+   private:
+    T _value;
+    size_t _index;
+};
 
 template <typename S, size_t N> S scale_from_8(S v) {
     static_assert(N < 8);
@@ -61,68 +120,256 @@ template <typename S, size_t N> S scale_to_8(S v) {
     return result;
 }
 
-template <typename S> constexpr auto iabs(S i) {
-    static_assert(!std::is_unsigned<S>::value);
-    using O = typename std::make_unsigned<S>::type;
-    return (i < 0) ? static_cast<O>(-i) : static_cast<O>(i);
+/**
+ * Unpacks an unsigned integer into a range of smaller integers.
+ * @param packed value to unpack
+ * @param begin destination start iterator
+ * @param end destination end iterator
+ * @param widths widths iterator. values are in bits
+ * @param little_endian if the input has the first element in the least significant place
+ * @return the total number of bits unpacked
+ */
+template <typename P, typename OI, typename WI>
+    requires std::unsigned_integral<P> && std::output_iterator<OI, P> && std::forward_iterator<WI>
+size_t unpack_into(P packed, OI begin, OI end, WI widths, bool little_endian = true) {
+    using U = std::remove_cvref_t<decltype(*begin)>;
+    if (little_endian) {
+        // first element is in the least significant place of packed
+
+        unsigned offset = 0;
+        while (begin < end) {
+            auto w = *(widths++);
+            assert(w <= std::numeric_limits<U>::digits);
+            U result{0};
+
+            auto mask = ((1 << w) - 1);
+            result = (packed >> offset) & mask;
+
+            *(begin++) = result;
+            offset += w;  // increment offset
+        }
+
+        assert(offset <= std::numeric_limits<P>::digits);  // detect an overflow condition
+        return offset;
+    } else {
+        // first element is in the most significant place of packed
+
+        // with non-constant width, we either need to iterate backwards or
+        // add up all the widths beforehand to know where to begin
+        unsigned total_offset = std::accumulate(widths, widths + std::distance(begin, end), 0);
+        assert(total_offset <= std::numeric_limits<P>::digits);  // detect an overflow condition
+
+        unsigned offset = total_offset;
+        while (begin < end) {
+            auto w = *(widths++);
+            offset -= w;  // decrement offset
+            assert(w < std::numeric_limits<U>::digits);
+            U result{0};
+
+            auto mask = ((1 << w) - 1);
+            result = (packed >> offset) & mask;
+
+            *(begin++) = result;
+        }
+
+        return total_offset;
+    }
 }
 
 /**
- * Unpacks an unsigned integer into an array of smaller integers.
- * @tparam I Input data type. Must be an unsigned integral type large enough to hold C * N bits.
- * @tparam O Output data type. must be an unsigned integral type large enough to hold C bits..
- * @tparam S Number of bits in each value.
- * @tparam C Number of values to unpack.
- * @param packed Packed integer input of type I.
- * @return Unpacked std::array of type O and size C.
+ * Unpacks an unsigned integer into a range of smaller integers.
+ * @param packed value to unpack
+ * @param dest destination range
+ * @param widths widths range. values are in bits
+ * @param little_endian if the input has the first element in the least significant place
+ * @return the total number of bits unpacked
  */
-template <typename I, typename O, size_t S, size_t C> constexpr std::array<O, C> Unpack(I packed) {
-    // type checking
-    static_assert(std::is_unsigned<I>::value, "Packed input type must be unsigned");
-    static_assert(std::is_unsigned<O>::value, "Unpacked output type must be unsigned");
-    static_assert(std::numeric_limits<I>::digits >= (C * S),
-                  "Packed input type must be big enough to represent the number of bits multiplied by count");
-    static_assert(std::numeric_limits<O>::digits >= S,
-                  "Unpacked output type must be big enough to represent the number of bits");
-
-    constexpr O mask = (1U << S) - 1U;  // maximum value representable by N bits
-    std::array<O, C> vals;              // output values array of size C
-
-    for (unsigned i = 0; i < C; i++) {
-        vals[i] = static_cast<O>(packed >> (i * S)) & mask;
-        assert(vals[i] <= mask);
-    }
-
-    return vals;
+template <typename P, typename OR, typename WR>
+    requires std::unsigned_integral<P> && range<OR> && range<WR>
+size_t unpack_into(P packed, OR &dest, const WR &widths, bool little_endian = true) {
+    assert(distance(widths) == distance(dest));
+    return unpack_into(packed, dest.begin(), dest.end(), widths.begin(), little_endian = true);
 }
 
 /**
- * Packs an array of unsigned integers into a single integer.
- * @tparam I Input data type. Must be an unsigned integral type large enough to hold C bits.
- * @tparam O Output data type. must be an unsigned integral type large enough to hold C * N bits.
- * @tparam S Number of bits in each value.
- * @tparam C Number of values to unpack.
- * @param vals Unpacked std::array of type I and size C.
- * @return Packed integer input of type O.
+ * Unpacks an unsigned integer into a range of smaller integers.
+ * @param packed value to unpack
+ * @param begin destination start iterator
+ * @param end destination end iterator
+ * @param width width of each packed element in bits
+ * @param little_endian if the input has the first element in the least significant place
+ * @return the total number of bits unpacked
  */
-template <typename I, typename O, size_t S, size_t C> constexpr O Pack(const std::array<I, C> &vals) {
-    // type checking
-    static_assert(std::is_unsigned<I>::value, "Unpacked input type must be unsigned");
-    static_assert(std::is_unsigned<O>::value, "Packed output type must be unsigned");
-    static_assert(std::numeric_limits<I>::digits >= S,
-                  "Unpacked input type must be big enough to represent the number of bits");
-    static_assert(std::numeric_limits<O>::digits >= (C * S),
-                  "Packed output type must be big enough to represent the number of bits multiplied by count");
+template <typename P, typename OI>
+    requires std::unsigned_integral<P> && std::output_iterator<OI, P>
+size_t unpack_into(P packed, OI begin, OI end, size_t width, bool little_endian = true) {
+    return unpack_into(packed, begin, end, const_iterator(width), little_endian);
+}
 
-    O packed = 0;  // output value of type O
+/**
+ * Unpacks an unsigned integer into a range of smaller integers.
+ * @param packed value to unpack
+ * @param dest destination range
+ * @param width width of each packed element in bits
+ * @param little_endian if the input has the first element in the least significant place
+ * @return the total number of bits unpacked
+ */
+template <typename P, typename OR>
+    requires std::unsigned_integral<P> && range<OR>
+size_t unpack_into(P packed, OR &dest, size_t width, bool little_endian = true) {
+    return unpack_into(packed, dest.begin(), dest.end(), const_iterator(width), little_endian = true);
+}
 
-    for (unsigned i = 0; i < C; i++) {
-        assert(vals[i] <= (1U << S) - 1U);
-        packed |= static_cast<O>(vals[i]) << (i * S);
+/**
+ * Unpacks an unsigned integer into an array of smaller integers
+ * @tparam U unpacked data type
+ * @tparam N number of values to unpack
+ * @param packed value to unpack
+ * @param width width of each packed element in bits
+ * @param little_endian if the input has the first element in the least significant place
+ * @return an array of unpacked values
+ */
+template <typename U, size_t N, typename P>
+    requires std::unsigned_integral<P>
+std::array<U, N> unpack(P packed, size_t width, bool little_endian = true) {
+    std::array<U, N> unpacked;
+    unpack_into(packed, unpacked, width, little_endian);
+    return unpacked;
+}
+
+/**
+ * Unpacks an unsigned integer into an array of smaller integers
+ * @tparam U unpacked data type
+ * @tparam N number of values to unpack
+ * @param packed value to unpack
+ * @param widths widths iterator. values are in bits
+ * @param little_endian if the input has the first element in the least significant place
+ * @return an array of unpacked values
+ */
+template <typename U, size_t N, typename P, typename WI>
+    requires std::unsigned_integral<P> && std::forward_iterator<WI>
+std::array<U, N> unpack(P packed, WI widths, bool little_endian = true) {
+    std::array<U, N> unpacked;
+    unpack_into(packed, unpacked, widths, little_endian);
+    return unpacked;
+}
+
+/**
+ * Unpacks an unsigned integer into an array of smaller integers
+ * @tparam U unpacked data type
+ * @param packed value to unpack
+ * @param widths widths array. values are in bits
+ * @param little_endian if the input has the first element in the least significant place
+ * @return an array of unpacked values
+ */
+template <typename U, size_t N, typename P>
+    requires std::unsigned_integral<P>
+std::array<U, N> unpack(P packed, const std::array<size_t, N> &widths, bool little_endian = true) {
+    return unpack<U, N>(packed, widths.begin(), little_endian);
+}
+
+/**
+ * Unpacks an unsigned integer into an array of smaller integers
+ * @tparam U unpacked data type
+ * @tparam N number of values to unpack
+ * @param packed value to unpack
+ * @param widths widths range. values are in bits
+ * @param little_endian if the input has the first element in the least significant place
+ * @return an array of unpacked values
+ */
+template <typename U, size_t N, typename P, typename WR>
+    requires std::unsigned_integral<P> && sized_range<WR>
+std::array<U, N> unpack(P packed, const WR &widths, bool little_endian = true) {
+    assert(widths.size() >= N);
+    return unpack<U, N>(packed, widths.begin(), little_endian);
+}
+
+/**
+ * Packs an iterable of integers into a single integer.
+ * @tparam II input iterator type
+ * @tparam WI width iterator type
+ * @tparam P Output data type. must be an unsigned integral type large enough to hold all input values
+ * @param start start iterator
+ * @param end end iterator
+ * @param widths width iterator. must be at least as large as the input data
+ * @param little_endian if the output value should have the first element in the least significant place
+ * of the output or not
+ * @return Packed integer of type P.
+ */
+template <typename P, typename II, typename WI>
+    requires std::unsigned_integral<P> && std::input_iterator<II> && std::input_iterator<WI>
+inline constexpr P pack(II start, II end, WI widths, bool little_endian = true) {
+    P packed = 0;
+    unsigned offset = 0;
+    while (start < end) {
+        auto val = static_cast<P>(*(start++));
+        auto w = *(widths++);
+
+        val &= ((1 << w) - 1);
+        assert(val < (1 << w));  // ensure value can fit in W bits
+
+        if (little_endian) {
+            packed |= static_cast<P>(val) << offset;  // first element is in the least significant place of packed
+        } else {
+            packed = (packed << w) | static_cast<P>(val);  // first element is in the most significant place of packed
+        }
+
+        offset += w;  // increment offset
     }
 
-    assert(packed <= (static_cast<O>(1U) << (C * S)) - 1U);
+    assert(offset <= std::numeric_limits<P>::digits);  // detect an overflow condition
     return packed;
+}
+
+/**
+ * Packs an iterable of integers into a single integer.
+ * @tparam IR input range type
+ * @tparam WR width range type
+ * @tparam P Output data type. must be an unsigned integral type large enough to hold all input values
+ * @param r range of values to pack
+ * @param widths range of widths to pack with. must be at least as large as r
+ * @param little_endian if the output value should have the first element in the least significant place
+ * of the output or not
+ * @return Packed integer of type P.
+ */
+template <typename P, typename IR, typename WR>
+    requires std::unsigned_integral<P> && range<IR> && range<WR>
+inline constexpr P pack(IR r, WR widths, bool little_endian = true) {
+    assert(distance(widths) == distance(r));
+    return pack<P>(r.begin(), r.end(), widths.start(), little_endian);
+}
+
+/**
+ * Packs an iterable of integers into a single integer.
+ * @tparam II input iterator type
+ * @tparam P Output data type. must be an unsigned integral type large enough to hold all input values
+ * @param start start iterator
+ * @param end end iterator
+ * @param width Number of bits in each value
+ * @param little_endian if the output value should have the first element in the least significant place
+ * of the output or not
+ * @return Packed integer of type P.
+ */
+template <typename P, typename II>
+    requires std::unsigned_integral<P> && std::input_iterator<II>
+inline constexpr P pack(II start, II end, size_t width, bool little_endian = true) {
+    return pack<P>(start, end, const_iterator(width), little_endian);
+}
+
+/**
+ * Packs a range of integers into a single integer.
+ * @tparam IR range type
+ * @tparam P Output data type. must be an unsigned integral type large enough to hold all input values
+ * @param r range of values to pack
+ * @param width Number of bits in each value
+ * @param little_endian if the output value should have the first element in the least significant place
+ * of the output or not
+ * @return Packed integer of type P.
+ */
+template <typename P, typename IR>
+    requires std::unsigned_integral<P> && range<IR>
+inline constexpr P pack(IR r, size_t width, bool little_endian = true) {
+    return pack<P>(r.begin(), r.end(), const_iterator(width), little_endian);
 }
 
 template <size_t Size, int Op(int)> constexpr std::array<uint8_t, Size> ExpandArray() {
@@ -133,7 +380,7 @@ template <size_t Size, int Op(int)> constexpr std::array<uint8_t, Size> ExpandAr
 
 template <typename Seq, typename Fn> constexpr auto MapArray(const Seq &input, Fn op) {
     using I = typename Seq::value_type;
-    using O = decltype(op(std::declval<I>()));
+    using O = decltype(op(I{}));
     constexpr size_t N = std::tuple_size<Seq>::value;
 
     std::array<O, N> output;
@@ -165,18 +412,8 @@ template <typename S> constexpr S clamp(S value, S low, S high) {
     if (value > high) return high;
     return value;
 }
-constexpr int32_t clampi(int32_t value, int32_t low, int32_t high) {
-    if (value < low)
-        value = low;
-    else if (value > high)
-        value = high;
-    return value;
-}
 
-template <typename T> std::enable_if<std::is_unsigned_v<T>, T> abs(const T &sval) { return sval; }
-template <typename T> std::enable_if<std::is_signed_v<T> && std::is_arithmetic_v<T>, T> abs(const T &a) {
-    return (a < 0) ? -a : a;
-}
+using std::abs;    // abs overload for builtin types
 using xsimd::abs;  // provides overload for abs<xsimd::batch>
 
 template <typename F> constexpr F lerp(F a, F b, F s) { return a + (b - a) * s; }
@@ -210,4 +447,5 @@ template <> struct next_size<int32_t> : Tag<int64_t> {};
 template <> struct next_size<uint8_t> : Tag<uint16_t> {};
 template <> struct next_size<uint16_t> : Tag<uint32_t> {};
 template <> struct next_size<uint32_t> : Tag<uint64_t> {};
+
 }  // namespace quicktex

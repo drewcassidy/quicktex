@@ -27,9 +27,9 @@
 namespace quicktex::s3tc {
 
 BC4Block::SelectorArray BC4Block::GetSelectors() const {
-    auto packed = Pack<uint8_t, uint64_t, 8, SelectorSize>(_selectors);
-    auto rows = Unpack<uint64_t, uint16_t, SelectorBits * Width, Height>(packed);
-    return MapArray(rows, Unpack<uint16_t, uint8_t, SelectorBits, Width>);
+    auto packed = pack<uint64_t>(_selectors, 8);
+    auto rows = unpack<uint16_t, Height>(packed, SelectorBits * Width);
+    return MapArray(rows, [](auto row) { return unpack<uint8_t, Width>(row, SelectorBits); });
 }
 
 void BC4Block::SetSelectors(const BC4Block::SelectorArray& unpacked) {
@@ -37,9 +37,9 @@ void BC4Block::SetSelectors(const BC4Block::SelectorArray& unpacked) {
         if (std::any_of(unpacked[y].begin(), unpacked[y].end(), [](uint8_t i) { return i > SelectorMax; }))
             throw std::invalid_argument("Selector value out of bounds.");
     }
-    auto rows = MapArray(unpacked, Pack<uint8_t, uint16_t, SelectorBits, Width>);
-    auto packed = Pack<uint16_t, uint64_t, SelectorBits * Width, Height>(rows);
-    _selectors = Unpack<uint64_t, uint8_t, 8, SelectorSize>(packed);
+    auto rows = MapArray(unpacked, [](auto r) { return pack<uint16_t>(r, SelectorBits); });
+    auto packed = pack<uint64_t>(rows, SelectorBits * Width);
+    _selectors = unpack<uint8_t, SelectorSize>(packed, 8);
 }
 
 std::array<uint8_t, 8> BC4Block::GetValues6() const {
@@ -64,6 +64,8 @@ std::array<uint8_t, 8> BC4Block::GetValues8() const {
             static_cast<uint8_t>((alpha0 + alpha1 * 6) / 7)};
 }
 
-bool BC4Block::operator==(const BC4Block& Rhs) const { return alpha0 == Rhs.alpha0 && alpha1 == Rhs.alpha1 && _selectors == Rhs._selectors; }
+bool BC4Block::operator==(const BC4Block& Rhs) const {
+    return alpha0 == Rhs.alpha0 && alpha1 == Rhs.alpha1 && _selectors == Rhs._selectors;
+}
 bool BC4Block::operator!=(const BC4Block& Rhs) const { return !(Rhs == *this); }
 }  // namespace quicktex::s3tc

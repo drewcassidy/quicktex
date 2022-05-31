@@ -71,10 +71,10 @@ template <size_t B, size_t N> MatchListPtr SingleColorTable(InterpolatorPtr inte
                     value = (B == 5) ? interpolator->Interpolate5(high, low) : interpolator->Interpolate6(high, low);
                 }
 
-                unsigned new_error = iabs(value - (int)i);
+                unsigned new_error = abs(value - (int)i);
 
                 // We only need to factor in 3% error in BC1 ideal mode.
-                if (ideal) new_error += (iabs(high8 - (int)low8) * 3) / 100;
+                if (ideal) new_error += (abs(high8 - (int)low8) * 3) / 100;
 
                 if ((new_error < error) || (new_error == error && low == high)) {
                     assert(new_error <= UINT8_MAX);

@@ -72,9 +72,9 @@ OldColor OldColor::PreciseRound565(Vector4 &v) {
     int trial_b = (int)(v[2] * UINT5_MAX);
 
     // clamp to prevent weirdness with slightly out of bounds float values
-    uint8_t r = (uint8_t)clampi(trial_r, 0, UINT5_MAX);
-    uint8_t g = (uint8_t)clampi(trial_g, 0, UINT6_MAX);
-    uint8_t b = (uint8_t)clampi(trial_b, 0, UINT5_MAX);
+    uint8_t r = (uint8_t)clamp<int>(trial_r, 0, UINT5_MAX);
+    uint8_t g = (uint8_t)clamp<int>(trial_g, 0, UINT6_MAX);
+    uint8_t b = (uint8_t)clamp<int>(trial_b, 0, UINT5_MAX);
 
     // increment each channel if above the rounding point
     r += v[0] > Midpoints5bit[r];

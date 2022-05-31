@@ -116,14 +116,6 @@ UTEST(Vec_int, subscript) {
     ASSERT_EQ(a[2], 4);
 }
 
-UTEST(Vec_int, pack) {
-    auto a = Vec<uint16_t, 3>{0x1F, 0x2A, 0x01};
-    auto w = Vec<int, 3>{5, 6, 5};
-    auto result = a.pack(w);
-
-    ASSERT_EQ(result, 0xFD41);
-}
-
 UTEST(Vec_int, copy) {
     std::array<int, 4> arr{1, 3, 1, 2};
     Vec<int, 4> a(arr);
