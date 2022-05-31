@@ -49,7 +49,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-11, windows-latest, ubuntu-latest ]
-        arch: [ ['x86', 'x86_64', 'AMD64', 'x86_64' ] ] #[suffix, mac, windows, linux] arch names
+        arch: [ [ 'x86', 'x86_64', 'AMD64', 'x86_64' ] ] #[suffix, mac, windows, linux] arch names
         include:
           - os: ubuntu-latest
             arch: [ 'ARM', 'arm64', 'ARM64', 'aarch64' ]
@@ -69,6 +69,14 @@ jobs:
         run: |
           wget https://pileof.rocks/openmp-13.0.0-darwin21-Release.tar.gz
           sudo tar fvxz openmp-*.tar.gz -C /
+
+      - name: Select LLVM 13
+        if: runner.os == 'macOS'
+        run: |
+          echo "CC=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
+          echo "CXX=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$(brew --prefix)/opt/llvm/lib -Wl,-rpath,$(brew --prefix)/opt/llvm/lib" >> &GITHUB_ENV
+          echo "MACOSX_DEPLOYMENT_TARGET=10.9"
 
       - name: Install QEMU
         # install QEMU if building for arm linux

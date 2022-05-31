@@ -39,8 +39,8 @@ namespace quicktex {
 // std::ranges::range is currently not usable by default in libc++
 template <class T>
 concept range = requires(T &t) {
-                    std::ranges::begin(t);
-                    std::ranges::end(t);
+                    std::begin(t);
+                    std::end(t);
                 };
 
 template <class T>
