@@ -76,7 +76,6 @@ jobs:
           echo "CC=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
           echo "LDFLAGS=-L$(brew --prefix)/opt/llvm/lib -Wl,-rpath,$(brew --prefix)/opt/llvm/lib" >> $GITHUB_ENV
-          echo "MACOSX_DEPLOYMENT_TARGET=10.9" >> $GITHUB_ENV
 
       - name: Install QEMU
         # install QEMU if building for arm linux
@@ -88,7 +87,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@2.5.0
         env:
-          MACOSX_DEPLOYMENT_TARGET: "10.15"
+          MACOSX_DEPLOYMENT_TARGET: "10.9"
           CIBW_ARCHS_LINUX: ${{ matrix.arch[3] }}
 
       - name: Upload Wheels

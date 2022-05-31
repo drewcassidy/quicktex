@@ -54,7 +54,7 @@ size_t distance(T range) {
 
 template <typename T> class const_iterator {
    public:
-    typedef ssize_t difference_type;
+    typedef long long difference_type;
     typedef T value_type;
 
     const_iterator() : _value(T{}), _index(0) {}
@@ -81,7 +81,7 @@ template <typename T> class const_iterator {
 
     T operator*() const { return _value; }
 
-    ssize_t operator-(const_iterator rhs) const { return (ssize_t)_index - rhs._index; }
+    difference_type operator-(const_iterator rhs) const { return (difference_type)_index - rhs._index; }
     const_iterator operator+(size_t rhs) const { return const_iterator(rhs + _index); }
     const_iterator operator-(size_t rhs) const { return const_iterator(rhs - _index); }
 
