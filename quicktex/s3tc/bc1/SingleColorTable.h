@@ -26,7 +26,7 @@
 #include "../../util.h"
 #include "../interpolator/Interpolator.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 
 struct BC1MatchEntry {
     uint8_t high;
@@ -59,10 +59,10 @@ template <size_t B, size_t N> MatchListPtr SingleColorTable(InterpolatorPtr inte
         // TODO: Can probably avoid testing for values that definitely wont yield good results,
         // e.g. low8 and high8 both much smaller or larger than index
         for (uint8_t low = 0; low < Size; low++) {
-            uint8_t low8 = (B == 5) ? scale5To8(low) : scale6To8(low);
+            uint8_t low8 = scale_to_8<B>(low);
 
             for (uint8_t high = 0; high < Size; high++) {
-                uint8_t high8 = (B == 5) ? scale5To8(high) : scale6To8(high);
+                uint8_t high8 = scale_to_8<B>(high);
                 uint8_t value;
 
                 if (use_8bit) {

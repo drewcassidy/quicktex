@@ -94,7 +94,7 @@ template <typename T> class const_iterator {
     size_t _index;
 };
 
-template <typename S, size_t N> S scale_from_8(S v) {
+template <size_t N, typename S> S scale_from_8(S v) {
     static_assert(N < 8);
     assert(v < (1 << 8));
 
@@ -107,13 +107,13 @@ template <typename S, size_t N> S scale_from_8(S v) {
     return result;
 }
 
-template <typename S, size_t N> S scale_to_8(S v) {
+template <size_t N, typename S> S scale_to_8(S v) {
     static_assert(N < 8);
     assert(v < (1 << N));
 
-    constexpr unsigned lshift = 8 - N;
-    constexpr unsigned rshift = N - lshift;
-    S result = static_cast<S>((v << lshift) | (v >> rshift));
+    constexpr unsigned Lshift = 8 - N;
+    constexpr unsigned Rshift = N - Lshift;
+    S result = static_cast<S>((v << Lshift) | (v >> Rshift));
 
     assert(v < (1 << 8));
 
@@ -140,12 +140,10 @@ size_t unpack_into(P packed, OI begin, OI end, WI widths, bool little_endian = t
         while (begin < end) {
             auto w = *(widths++);
             assert(w <= std::numeric_limits<U>::digits);
-            U result{0};
 
             auto mask = ((1 << w) - 1);
-            result = (packed >> offset) & mask;
+            *(begin++) = (packed >> offset) & mask;
 
-            *(begin++) = result;
             offset += w;  // increment offset
         }
 
@@ -164,12 +162,9 @@ size_t unpack_into(P packed, OI begin, OI end, WI widths, bool little_endian = t
             auto w = *(widths++);
             offset -= w;  // decrement offset
             assert(w < std::numeric_limits<U>::digits);
-            U result{0};
 
             auto mask = ((1 << w) - 1);
-            result = (packed >> offset) & mask;
-
-            *(begin++) = result;
+            *(begin++) = (packed >> offset) & mask;
         }
 
         return total_offset;
@@ -188,7 +183,7 @@ template <typename P, typename OR, typename WR>
     requires std::unsigned_integral<P> && range<OR> && range<WR>
 size_t unpack_into(P packed, OR &dest, const WR &widths, bool little_endian = true) {
     assert(distance(widths) == distance(dest));
-    return unpack_into(packed, dest.begin(), dest.end(), widths.begin(), little_endian = true);
+    return unpack_into(packed, dest.begin(), dest.end(), widths.begin(), little_endian);
 }
 
 /**
@@ -217,24 +212,7 @@ size_t unpack_into(P packed, OI begin, OI end, size_t width, bool little_endian 
 template <typename P, typename OR>
     requires std::unsigned_integral<P> && range<OR>
 size_t unpack_into(P packed, OR &dest, size_t width, bool little_endian = true) {
-    return unpack_into(packed, dest.begin(), dest.end(), const_iterator(width), little_endian = true);
-}
-
-/**
- * Unpacks an unsigned integer into an array of smaller integers
- * @tparam U unpacked data type
- * @tparam N number of values to unpack
- * @param packed value to unpack
- * @param width width of each packed element in bits
- * @param little_endian if the input has the first element in the least significant place
- * @return an array of unpacked values
- */
-template <typename U, size_t N, typename P>
-    requires std::unsigned_integral<P>
-std::array<U, N> unpack(P packed, size_t width, bool little_endian = true) {
-    std::array<U, N> unpacked;
-    unpack_into(packed, unpacked, width, little_endian);
-    return unpacked;
+    return unpack_into(packed, dest.begin(), dest.end(), const_iterator(width), little_endian);
 }
 
 /**
@@ -282,6 +260,23 @@ template <typename U, size_t N, typename P, typename WR>
 std::array<U, N> unpack(P packed, const WR &widths, bool little_endian = true) {
     assert(widths.size() >= N);
     return unpack<U, N>(packed, widths.begin(), little_endian);
+}
+
+/**
+ * Unpacks an unsigned integer into an array of smaller integers
+ * @tparam U unpacked data type
+ * @tparam N number of values to unpack
+ * @param packed value to unpack
+ * @param width width of each packed element in bits
+ * @param little_endian if the input has the first element in the least significant place
+ * @return an array of unpacked values
+ */
+template <typename U, size_t N, typename P>
+    requires std::unsigned_integral<P>
+std::array<U, N> unpack(P packed, size_t width, bool little_endian = true) {
+    std::array<U, N> unpacked;
+    unpack_into(packed, unpacked, width, little_endian);
+    return unpacked;
 }
 
 /**
@@ -372,12 +367,6 @@ inline constexpr P pack(IR r, size_t width, bool little_endian = true) {
     return pack<P>(r.begin(), r.end(), const_iterator(width), little_endian);
 }
 
-template <size_t Size, int Op(int)> constexpr std::array<uint8_t, Size> ExpandArray() {
-    std::array<uint8_t, Size> res;
-    for (int i = 0; i < Size; i++) { res[i] = Op(i); }
-    return res;
-}
-
 template <typename Seq, typename Fn> constexpr auto MapArray(const Seq &input, Fn op) {
     using I = typename Seq::value_type;
     using O = decltype(op(I{}));
@@ -386,24 +375,6 @@ template <typename Seq, typename Fn> constexpr auto MapArray(const Seq &input, F
     std::array<O, N> output;
     for (unsigned i = 0; i < N; i++) { output[i] = op(input[i]); }
     return output;
-}
-
-template <typename S> constexpr S scale8To5(S v) {
-    auto v2 = v * 31 + 128;
-    return static_cast<S>((v2 + (v2 >> 8)) >> 8);
-}
-template <typename S> constexpr S scale8To6(S v) {
-    auto v2 = v * 63 + 128;
-    return static_cast<S>((v2 + (v2 >> 8)) >> 8);
-}
-
-template <typename S> constexpr S scale5To8(S v) {
-    assert5bit(v);
-    return static_cast<S>((v << 3) | (v >> 2));
-}
-template <typename S> constexpr S scale6To8(S v) {
-    assert6bit(v);
-    return static_cast<S>((v << 2) | (v >> 4));
 }
 
 template <typename S> constexpr S clamp(S value, S low, S high) {
@@ -415,8 +386,6 @@ template <typename S> constexpr S clamp(S value, S low, S high) {
 
 using std::abs;    // abs overload for builtin types
 using xsimd::abs;  // provides overload for abs<xsimd::batch>
-
-template <typename F> constexpr F lerp(F a, F b, F s) { return a + (b - a) * s; }
 
 template <typename... Args> std::string Format(const char *str, const Args &...args) {
     auto output = std::string(str);

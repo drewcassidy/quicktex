@@ -20,13 +20,14 @@
 #include <utest.h>
 
 #include <array>
-#include <cassert>
 #include <cstdint>
+#include <limits>
 #include <numeric>
-#include <type_traits>
+#include <vector>
 #include <xsimd/xsimd.hpp>
 
 #include "../VecUtil.h"
+#include "../util.h"
 
 namespace quicktex::tests {
 
@@ -47,7 +48,7 @@ template <typename T> constexpr auto make_arrays() {
     arrays.push_back(buffer);
 
     if (std::is_signed_v<T>) {
-        std::iota(buffer.begin(), buffer.end(), -1);
+        std::iota(buffer.begin(), buffer.end(), -1 * (int)xsimd::batch<T>::size);
         arrays.push_back(buffer);
 
         buffer.fill(-1);

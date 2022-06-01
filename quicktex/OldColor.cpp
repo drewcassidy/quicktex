@@ -23,7 +23,7 @@
 
 #include "Vector4.h"
 #include "Vector4Int.h"
-#include "util.h"  // for scale5To8, scale8To5, assert5bit, scale6To8
+#include "util.h"  // for scale_to_8<5>, scale_from_8<5>, assert5bit, scale_to_8<6>
 
 namespace quicktex {
 
@@ -47,7 +47,7 @@ uint16_t OldColor::Pack565Unscaled(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 uint16_t OldColor::Pack565(uint8_t r, uint8_t g, uint8_t b) {
-    return Pack565Unscaled(scale8To5(r), scale8To6(g), scale8To5(b));
+    return Pack565Unscaled(scale_from_8<5>(r), scale_from_8<6>(g), scale_from_8<5>(b));
 }
 
 OldColor OldColor::Unpack565Unscaled(uint16_t Packed) {
@@ -59,9 +59,9 @@ OldColor OldColor::Unpack565Unscaled(uint16_t Packed) {
 }
 
 OldColor OldColor::Unpack565(uint16_t Packed) {
-    uint8_t r = static_cast<uint8_t>(scale5To8((Packed >> 11) & 0x1FU));
-    uint8_t g = static_cast<uint8_t>(scale6To8((Packed >> 5) & 0x3FU));
-    uint8_t b = static_cast<uint8_t>(scale5To8(Packed & 0x1FU));
+    uint8_t r = static_cast<uint8_t>(scale_to_8<5>((Packed >> 11) & 0x1FU));
+    uint8_t g = static_cast<uint8_t>(scale_to_8<6>((Packed >> 5) & 0x3FU));
+    uint8_t b = static_cast<uint8_t>(scale_to_8<5>(Packed & 0x1FU));
 
     return OldColor(r, g, b);
 }
@@ -111,8 +111,8 @@ Vector4Int operator-(const OldColor &lhs, const OldColor &rhs) {
 uint16_t OldColor::Pack565() const { return Pack565(r, g, b); }
 uint16_t OldColor::Pack565Unscaled() const { return Pack565Unscaled(r, g, b); }
 
-OldColor OldColor::ScaleTo565() const { return OldColor(scale8To5(r), scale8To6(g), scale8To5(b)); }
-OldColor OldColor::ScaleFrom565() const { return OldColor(scale5To8(r), scale6To8(g), scale5To8(b)); }
+OldColor OldColor::ScaleTo565() const { return OldColor(scale_from_8<5>(r), scale_from_8<6>(g), scale_from_8<5>(b)); }
+OldColor OldColor::ScaleFrom565() const { return OldColor(scale_to_8<5>(r), scale_to_8<6>(g), scale_to_8<5>(b)); }
 
 bool OldColor::operator==(const OldColor &Rhs) const { return r == Rhs.r && g == Rhs.g && b == Rhs.b && a == Rhs.a; }
 bool OldColor::operator!=(const OldColor &Rhs) const { return !(Rhs == *this); }

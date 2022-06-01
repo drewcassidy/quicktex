@@ -495,17 +495,17 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
 
         if (metrics.max.r - metrics.min.r < 2) {
             // single color block
-            uint8_t fr5 = (uint8_t)scale8To5(fr);
-            uint8_t fr6 = (uint8_t)scale8To6(fr);
+            uint8_t fr5 = (uint8_t)scale_from_8<5>(fr);
+            uint8_t fr6 = (uint8_t)scale_from_8<6>(fr);
 
             result.low = OldColor(fr5, fr6, fr5);
             result.high = result.low;
         } else {
-            uint8_t lr5 = scale8To5(metrics.min.r);
-            uint8_t lr6 = scale8To6(metrics.min.r);
+            uint8_t lr5 = scale_from_8<5>(metrics.min.r);
+            uint8_t lr6 = scale_from_8<6>(metrics.min.r);
 
-            uint8_t hr5 = scale8To5(metrics.max.r);
-            uint8_t hr6 = scale8To6(metrics.max.r);
+            uint8_t hr5 = scale_from_8<5>(metrics.max.r);
+            uint8_t hr6 = scale_from_8<6>(metrics.max.r);
 
             result.low = OldColor(lr5, lr6, lr5);
             result.high = OldColor(hr5, hr6, hr5);

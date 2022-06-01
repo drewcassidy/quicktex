@@ -17,9 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <utest.h>
+#include <stdlib.h>  // for abs
+#include <utest.h>   // for UTEST
 
-#include "../Vec.h"
+#include <array>  // for operator==
+
+#include "../Vec.h"   // for Vec, ope...
+#include "../util.h"  // for abs
 
 namespace quicktex::tests {
 
