@@ -23,9 +23,9 @@
 #include <cassert>
 #include <cstdint>
 
-#include "../../ColorBlock.h"
-#include "../../OldColor.h"
-#include "BC1Block.h"
+#include "ColorBlock.h"
+#include "OldColor.h"
+#include "s3tc/bc1/BC1Block.h"
 
 namespace quicktex::s3tc {
 

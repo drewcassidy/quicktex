@@ -23,9 +23,12 @@
 
 #include "Vector4.h"
 #include "Vector4Int.h"
-#include "util.h"  // for scale_to_8<5>, scale_from_8<5>, assert5bit, scale_to_8<6>
+#include "util/bitbash.h"
+#include "util/math.h"  // for scale_to_8<5>, scale_from_8<5>, assert5bit, scale_to_8<6>
 
 namespace quicktex {
+
+using namespace quicktex::util;
 
 OldColor::OldColor(Vector4Int v) {
     if (v.MaxAbs() > 0xFF) throw std::invalid_argument("Vector members out of range");

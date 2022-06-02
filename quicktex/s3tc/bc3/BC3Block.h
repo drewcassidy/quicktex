@@ -21,8 +21,8 @@
 
 #include <utility>
 
-#include "../bc1/BC1Block.h"
-#include "../bc4/BC4Block.h"
+#include "s3tc/bc1/BC1Block.h"
+#include "s3tc/bc4/BC4Block.h"
 
 namespace quicktex::s3tc {
 
@@ -54,7 +54,9 @@ class alignas(8) BC3Block {
         color_block = blocks.second;
     }
 
-    bool operator==(const BC3Block &Rhs) const { return alpha_block == Rhs.alpha_block && color_block == Rhs.color_block; }
+    bool operator==(const BC3Block &Rhs) const {
+        return alpha_block == Rhs.alpha_block && color_block == Rhs.color_block;
+    }
     bool operator!=(const BC3Block &Rhs) const { return !(Rhs == *this); }
 };
 }  // namespace quicktex::s3tc

@@ -12,10 +12,12 @@ find_package(OpenMP)
 
 add_subdirectory(external/xsimd)
 include_directories(external/utest)
+include_directories(quicktex) # include source root for project-relative includes
 
 # Collect source files
 file(GLOB SOURCE_FILES
         "quicktex/*.cpp"
+        "quicktex/util/*.cpp"
         "quicktex/ctests/*.cpp"
         "quicktex/s3tc/*.cpp"
         "quicktex/s3tc/bc1/*.cpp"
@@ -27,6 +29,7 @@ file(GLOB SOURCE_FILES
 
 file(GLOB HEADER_FILES
         "quicktex/*.h"
+        "quicktex/util/*.h"
         "quicktex/ctests/*.h"
         "quicktex/s3tc/*.h"
         "quicktex/s3tc/bc1/*.h"
@@ -65,7 +68,7 @@ set_simd_flags(_quicktex)
 
 if (MSVC)
     target_compile_options(_quicktex PUBLIC /DWIN32_LEAN_AND_MEAN=1 /DNOMINMAX=1) # prevent windows macros from stepping on everything
-endif()
+endif ()
 
 message("RELEASE FLAGS=${CMAKE_CXX_FLAGS}")
 

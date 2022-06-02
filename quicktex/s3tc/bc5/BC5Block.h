@@ -19,9 +19,7 @@
 
 #pragma once
 
-#include <utility>
-
-#include "../bc4/BC4Block.h"
+#include "s3tc/bc4/BC4Block.h"
 
 namespace quicktex::s3tc {
 
@@ -53,7 +51,9 @@ class alignas(8) BC5Block {
         chan1_block = pair.second;
     }
 
-    bool operator==(const BC5Block &Rhs) const { return chan0_block == Rhs.chan0_block && chan1_block == Rhs.chan1_block; }
+    bool operator==(const BC5Block &Rhs) const {
+        return chan0_block == Rhs.chan0_block && chan1_block == Rhs.chan1_block;
+    }
     bool operator!=(const BC5Block &Rhs) const { return !(Rhs == *this); }
 };
 }  // namespace quicktex::s3tc

@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <utility>
 
-#include "../../OldColor.h"
+#include "OldColor.h"
 
 namespace quicktex::s3tc {
 

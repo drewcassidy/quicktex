@@ -27,10 +27,10 @@
 #include <mutex>
 #include <numeric>
 
-#include "../../Vector4.h"
-#include "../../util.h"
+#include "Vector4.h"
+#include "util/math.h"
 
-namespace quicktex::s3tc  {
+namespace quicktex::s3tc {
 template <size_t N> class Histogram {
    public:
     using Hash = uint16_t;
@@ -71,7 +71,7 @@ template <size_t N> class Histogram {
     unsigned GetPacked() const {
         Hash packed = 0;
 
-        for (unsigned i = 0; i < (N-1); i++) {
+        for (unsigned i = 0; i < (N - 1); i++) {
             assert(_bins[i] <= (1U << 4) - 1U);
             packed |= static_cast<uint16_t>(_bins[i]) << (i * 4U);
         }

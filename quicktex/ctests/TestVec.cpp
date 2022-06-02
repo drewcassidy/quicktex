@@ -23,7 +23,7 @@
 #include <array>  // for operator==
 
 #include "../Vec.h"   // for Vec, ope...
-#include "../util.h"  // for abs
+#include "util/math.h"  // for abs
 
 namespace quicktex::tests {
 

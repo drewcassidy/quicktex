@@ -19,6 +19,7 @@
 
 #pragma once
 #include "Vec.h"
+#include "bitbash.h"
 
 namespace quicktex::color {
 

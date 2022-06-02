@@ -24,14 +24,16 @@
 
 #include <cstdint>
 #include <cstring>
-#include <memory>
 #include <stdexcept>
+#include <string>
+#include <tuple>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
-#include "ColorBlock.h"
 #include "OldColor.h"
 #include "Texture.h"
-#include "util.h"
+#include "util/math.h"
 
 namespace pybind11::detail {
 using namespace quicktex;
@@ -85,7 +87,26 @@ template <> struct type_caster<OldColor> {
 
 namespace py = pybind11;
 namespace quicktex::bindings {
+
 using namespace pybind11::literals;
+
+template <typename... Args> std::string Format(const char* str, const Args&... args) {
+    auto output = std::string(str);
+
+    std::vector<std::string> values = {{args...}};
+
+    for (unsigned i = 0; i < values.size(); i++) {
+        auto key = "{" + std::to_string(i) + "}";
+        auto value = values[i];
+        while (true) {
+            size_t where = output.find(key);
+            if (where == output.npos) break;
+            output.replace(where, key.length(), value);
+        }
+    }
+
+    return output;
+}
 
 template <typename T> T BufferToTexture(py::buffer buf, int width, int height) {
     static_assert(std::is_base_of<Texture, T>::value);
@@ -95,11 +116,15 @@ template <typename T> T BufferToTexture(py::buffer buf, int width, int height) {
     auto output = T(width, height);
     auto dst_size = output.NBytes();
 
-    if (info.format != py::format_descriptor<uint8_t>::format()) throw std::runtime_error("Incompatible format in python buffer: expected a byte array.");
-    if (info.size < (Py_ssize_t)dst_size) std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
+    if (info.format != py::format_descriptor<uint8_t>::format())
+        throw std::runtime_error("Incompatible format in python buffer: expected a byte array.");
+    if (info.size < (Py_ssize_t)dst_size)
+        std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
     if (info.ndim == 1) {
-        if (info.shape[0] < (Py_ssize_t)dst_size) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer has incorrect length.");
-        if (info.strides[0] != 1) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer is not contiguous.");
+        if (info.shape[0] < (Py_ssize_t)dst_size)
+            throw std::runtime_error("Incompatible format in python buffer: 1-D buffer has incorrect length.");
+        if (info.strides[0] != 1)
+            throw std::runtime_error("Incompatible format in python buffer: 1-D buffer is not contiguous.");
     } else {
         throw std::runtime_error("Incompatible format in python buffer: Incorrect number of dimensions.");
     }
@@ -114,11 +139,15 @@ template <typename T> T BufferToPOD(py::buffer buf) {
 
     auto info = buf.request(false);
 
-    if (info.format != py::format_descriptor<uint8_t>::format()) throw std::runtime_error("Incompatible format in python buffer: expected a byte array.");
-    if (info.size < (Py_ssize_t)sizeof(T)) std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
+    if (info.format != py::format_descriptor<uint8_t>::format())
+        throw std::runtime_error("Incompatible format in python buffer: expected a byte array.");
+    if (info.size < (Py_ssize_t)sizeof(T))
+        std::runtime_error("Incompatible format in python buffer: Input data is smaller than texture size.");
     if (info.ndim == 1) {
-        if (info.shape[0] < (Py_ssize_t)sizeof(T)) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer has incorrect length.");
-        if (info.strides[0] != 1) throw std::runtime_error("Incompatible format in python buffer: 1-D buffer is not contiguous.");
+        if (info.shape[0] < (Py_ssize_t)sizeof(T))
+            throw std::runtime_error("Incompatible format in python buffer: 1-D buffer has incorrect length.");
+        if (info.strides[0] != 1)
+            throw std::runtime_error("Incompatible format in python buffer: 1-D buffer is not contiguous.");
     } else {
         throw std::runtime_error("Incompatible format in python buffer: Incorrect number of dimensions.");
     }
@@ -133,15 +162,18 @@ inline int PyIndex(int val, int size, std::string name = "index") {
     return val;
 }
 
-template <typename T, typename Getter, typename Setter, typename Extent> void DefSubscript(py::class_<T> t, Getter&& get, Setter&& set, Extent&& ext) {
+template <typename T, typename Getter, typename Setter, typename Extent>
+void DefSubscript(py::class_<T> t, Getter&& get, Setter&& set, Extent&& ext) {
     using V = typename std::invoke_result<Getter, T*, int>::type;
     t.def(
         "__getitem__", [get, ext](T& self, int index) { return (self.*get)(PyIndex(index, (self.*ext)())); }, "key"_a);
     t.def(
-        "__setitem__", [set, ext](T& self, int index, V val) { (self.*set)(PyIndex(index, (self.*ext)()), val); }, "key"_a, "value"_a);
+        "__setitem__", [set, ext](T& self, int index, V val) { (self.*set)(PyIndex(index, (self.*ext)()), val); },
+        "key"_a, "value"_a);
 }
 
-template <typename Tpy, typename Getter, typename Setter, typename Extent> void DefSubscript2D(Tpy t, Getter&& get, Setter&& set, Extent&& ext) {
+template <typename Tpy, typename Getter, typename Setter, typename Extent>
+void DefSubscript2D(Tpy t, Getter&& get, Setter&& set, Extent&& ext) {
     using T = typename Tpy::type;
     using V = typename std::invoke_result<Getter, T*, int, int>::type;
     using Coords = std::tuple<int, int>;
@@ -184,7 +216,8 @@ template <typename B> py::class_<B> BindBlock(py::module_& m, const char* name) 
     block.def_readonly_static("width", &B::Width, "The width of the block in pixels.");
     block.def_readonly_static("height", &B::Height, "The height of the block in pixels.");
     block.def_property_readonly_static(
-        "size", [](py::object) { return std::make_tuple(B::Width, B::Height); }, "The dimensions of the block in pixels.");
+        "size", [](py::object) { return std::make_tuple(B::Width, B::Height); },
+        "The dimensions of the block in pixels.");
     block.def_property_readonly_static(
         "nbytes", [](py::object) { return sizeof(B); }, "The size of the block in bytes.");
 
@@ -223,7 +256,8 @@ template <typename B> py::class_<BlockTexture<B>> BindBlockTexture(py::module_& 
     py::class_<BTex, Texture> block_texture(m, name);
 
     block_texture.def(py::init<int, int>(), "width"_a, "height"_a, Format(constructor_str, name).c_str());
-    block_texture.def_static("from_bytes", &BufferToTexture<BTex>, "data"_a, "width"_a, "height"_a, Format(from_bytes_str, name).c_str());
+    block_texture.def_static("from_bytes", &BufferToTexture<BTex>, "data"_a, "width"_a, "height"_a,
+                             Format(from_bytes_str, name).c_str());
 
     block_texture.def_property_readonly("width_blocks", &BTex::BlocksX, "The width of the texture in blocks.");
     block_texture.def_property_readonly("height_blocks", &BTex::BlocksY, "The height of the texture in blocks.");

@@ -19,12 +19,16 @@
 
 #include "BC1Block.h"
 
-#include <algorithm>
 #include <stdexcept>
 
-#include "../../util.h"
+#include "util/ranges.h"
+#include "util/bitbash.h"
+#include "util/math.h"
 
 namespace quicktex::s3tc {
+
+using namespace quicktex::util;
+
 uint16_t BC1Block::GetColor0Raw() const { return pack<uint16_t>(_color0, 8); }
 uint16_t BC1Block::GetColor1Raw() const { return pack<uint16_t>(_color1, 8); }
 
@@ -32,7 +36,7 @@ void BC1Block::SetColor0Raw(uint16_t c) { _color0 = unpack<uint8_t, EndpointSize
 void BC1Block::SetColor1Raw(uint16_t c) { _color1 = unpack<uint8_t, EndpointSize>(c, 8); }
 
 BC1Block::SelectorArray BC1Block::GetSelectors() const {
-    return MapArray(_selectors, [](auto row) { return unpack<uint8_t, Width>(row, SelectorBits); });
+    return map(_selectors, [](auto row) { return unpack<uint8_t, Width>(row, SelectorBits); });
 }
 
 void BC1Block::SetSelectors(const BC1Block::SelectorArray& unpacked) {
@@ -40,7 +44,7 @@ void BC1Block::SetSelectors(const BC1Block::SelectorArray& unpacked) {
     //        if (std::any_of(unpacked[y].begin(), unpacked[y].end(), [](uint8_t i) { return i > SelectorMax; }))
     //            throw std::invalid_argument("Selector value out of bounds.");
     //    }
-    _selectors = MapArray(unpacked, [](auto row) { return pack<uint8_t>(row, SelectorBits, true); });
+    _selectors = map(unpacked, [](auto row) { return pack<uint8_t>(row, SelectorBits, true); });
 }
 
 bool BC1Block::operator==(const BC1Block& Rhs) const {

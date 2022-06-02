@@ -26,10 +26,13 @@
 #include <vector>
 #include <xsimd/xsimd.hpp>
 
-#include "../VecUtil.h"
-#include "../util.h"
+#include "util/math.h"
+#include "util/simd.h"
+#include "util/types.h"
 
 namespace quicktex::tests {
+
+using namespace quicktex::util;
 
 template <typename T> constexpr auto make_arrays() {
     std::vector<std::array<T, xsimd::batch<T>::size>> arrays;

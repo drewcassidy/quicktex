@@ -24,10 +24,10 @@
 #include <array>
 #include <cstdint>
 
-#include "../../Decoder.h"
-#include "../../Encoder.h"
-#include "BC5Decoder.h"
-#include "BC5Encoder.h"
+#include "s3tc/bc4/BC4Block.h"
+#include "s3tc/bc5/BC5Block.h"
+#include "s3tc/bc5/BC5Decoder.h"
+#include "s3tc/bc5/BC5Encoder.h"
 
 namespace py = pybind11;
 namespace quicktex::bindings {
@@ -52,7 +52,8 @@ void InitBC5(py::module_ &s3tc) {
 
     bc5_block.def_readwrite("chan0_block", &BC5Block::chan0_block, "The BC4 block used for the first channel.");
     bc5_block.def_readwrite("chan1_block", &BC5Block::chan1_block, "The BC4 block used for the second channel.");
-    bc5_block.def_property("blocks", &BC5Block::GetBlocks, &BC5Block::SetBlocks, "The BC4 and BC1 blocks that make up this block as a 2-tuple.");
+    bc5_block.def_property("blocks", &BC5Block::GetBlocks, &BC5Block::SetBlocks,
+                           "The BC4 and BC1 blocks that make up this block as a 2-tuple.");
     // endregion
 
     // region BC5Texture
@@ -79,9 +80,11 @@ void InitBC5(py::module_ &s3tc) {
         :returns: A new BC5Texture with the same dimension as the input.
     )doc");
 
-    bc5_encoder.def_property_readonly("channels", &BC5Encoder::GetChannels, "A 2-tuple of channels that will be read from. 0 to 3 inclusive. Readonly.");
-    bc5_encoder.def_property_readonly("bc4_encoders", &BC5Encoder::GetBC4Encoders,
-                                      "2-tuple of internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` s used for each channel. Readonly.");
+    bc5_encoder.def_property_readonly("channels", &BC5Encoder::GetChannels,
+                                      "A 2-tuple of channels that will be read from. 0 to 3 inclusive. Readonly.");
+    bc5_encoder.def_property_readonly(
+        "bc4_encoders", &BC5Encoder::GetBC4Encoders,
+        "2-tuple of internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` s used for each channel. Readonly.");
     // endregion
 
     // region BC5Decoder
@@ -103,9 +106,11 @@ void InitBC5(py::module_ &s3tc) {
         :returns: A new RawTexture with the same dimensions as the input
     )doc");
 
-    bc5_decoder.def_property_readonly("channels", &BC5Decoder::GetChannels, "A 2-tuple of channels that will be written to. 0 to 3 inclusive. Readonly.");
-    bc5_decoder.def_property_readonly("bc4_decoders", &BC5Decoder::GetBC4Decoders,
-                                      "2-tuple of internal :py:class:`~quicktex.s3tc.bc4.BC4Decoder` s used for each channel. Readonly.");
+    bc5_decoder.def_property_readonly("channels", &BC5Decoder::GetChannels,
+                                      "A 2-tuple of channels that will be written to. 0 to 3 inclusive. Readonly.");
+    bc5_decoder.def_property_readonly(
+        "bc4_decoders", &BC5Decoder::GetBC4Decoders,
+        "2-tuple of internal :py:class:`~quicktex.s3tc.bc4.BC4Decoder` s used for each channel. Readonly.");
     // endregion
 }
 }  // namespace quicktex::bindings

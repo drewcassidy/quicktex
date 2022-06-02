@@ -29,8 +29,8 @@
 #include <mutex>
 #include <type_traits>
 
-#include "../../Vector4.h"
 #include "Histogram.h"
+#include "Vector4.h"
 
 namespace quicktex::s3tc {
 template <size_t N> class OrderTable {
@@ -113,7 +113,9 @@ template <size_t N> class OrderTable {
         return factors->at(hash);
     }
 
-    static bool IsSingleColor(Hash hash) { return (std::find(SingleColorHashes.begin(), SingleColorHashes.end(), hash) != SingleColorHashes.end()); }
+    static bool IsSingleColor(Hash hash) {
+        return (std::find(SingleColorHashes.begin(), SingleColorHashes.end(), hash) != SingleColorHashes.end());
+    }
 
    private:
     static std::mutex table_mutex;

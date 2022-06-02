@@ -1,5 +1,5 @@
 /*  Quicktex Texture Compression Library
-    Copyright (C) 2021-2022 Andrew Cassidy <drewcassidy@me.com>
+    Copyright (C) 2021 Andrew Cassidy <drewcassidy@me.com>
     Partially derived from rgbcx.h written by Richard Geldreich <richgel99@gmail.com>
     and licenced under the public domain
 
@@ -18,15 +18,16 @@
  */
 
 #pragma once
+
+#include <array>
 #include <cassert>
-#include <cstdint>
-#include <functional>
+#include <concepts>
 #include <limits>
 #include <numeric>
-#include <string>
 #include <type_traits>
-#include <vector>
-#include <xsimd/xsimd.hpp>
+
+#include "util/math.h"
+#include "util/ranges.h"
 
 #define UINT5_MAX 0x1FU  // 31
 #define UINT6_MAX 0x3FU  // 63
@@ -34,65 +35,7 @@
 #define assert5bit(x) assert(x <= UINT5_MAX)
 #define assert6bit(x) assert(x <= UINT6_MAX)
 
-namespace quicktex {
-
-// std::ranges::range is currently not usable by default in libc++
-template <class T>
-concept range = requires(T &t) {
-                    std::begin(t);
-                    std::end(t);
-                };
-
-template <class T>
-concept sized_range = range<T> && requires(T &t) { std::size(t); };
-
-template <class T>
-    requires range<T>
-size_t distance(T range) {
-    return std::distance(range.begin(), range.end());
-}
-
-template <typename T> class const_iterator {
-   public:
-    typedef long long difference_type;
-    typedef T value_type;
-
-    const_iterator() : _value(T{}), _index(0) {}
-    const_iterator(T value, size_t index = 0) : _value(value), _index(index) {}
-
-    const_iterator &operator++() {
-        _index++;
-        return *this;
-    }
-    const_iterator operator++(int) {
-        const_iterator old = *this;
-        _index++;
-        return old;
-    }
-    const_iterator &operator--() {
-        _index++;
-        return *this;
-    }
-    const_iterator operator--(int) {
-        const_iterator old = *this;
-        _index++;
-        return old;
-    }
-
-    T operator*() const { return _value; }
-
-    difference_type operator-(const_iterator rhs) const { return (difference_type)_index - rhs._index; }
-    const_iterator operator+(size_t rhs) const { return const_iterator(rhs + _index); }
-    const_iterator operator-(size_t rhs) const { return const_iterator(rhs - _index); }
-
-    friend bool operator==(const const_iterator &lhs, const const_iterator &rhs) {
-        return (lhs._value == rhs._value) && (lhs._index == rhs._index);
-    }
-
-   private:
-    T _value;
-    size_t _index;
-};
+namespace quicktex::util {
 
 template <size_t N, typename S> S scale_from_8(S v) {
     static_assert(N < 8);
@@ -366,55 +309,4 @@ template <typename P, typename IR>
 inline constexpr P pack(IR r, size_t width, bool little_endian = true) {
     return pack<P>(r.begin(), r.end(), const_iterator(width), little_endian);
 }
-
-template <typename Seq, typename Fn> constexpr auto MapArray(const Seq &input, Fn op) {
-    using I = typename Seq::value_type;
-    using O = decltype(op(I{}));
-    constexpr size_t N = std::tuple_size<Seq>::value;
-
-    std::array<O, N> output;
-    for (unsigned i = 0; i < N; i++) { output[i] = op(input[i]); }
-    return output;
-}
-
-template <typename S> constexpr S clamp(S value, S low, S high) {
-    assert(low <= high);
-    if (value < low) return low;
-    if (value > high) return high;
-    return value;
-}
-
-using std::abs;    // abs overload for builtin types
-using xsimd::abs;  // provides overload for abs<xsimd::batch>
-
-template <typename... Args> std::string Format(const char *str, const Args &...args) {
-    auto output = std::string(str);
-
-    std::vector<std::string> values = {{args...}};
-
-    for (unsigned i = 0; i < values.size(); i++) {
-        auto key = "{" + std::to_string(i) + "}";
-        auto value = values[i];
-        while (true) {
-            size_t where = output.find(key);
-            if (where == output.npos) break;
-            output.replace(where, key.length(), value);
-        }
-    }
-
-    return output;
-}
-
-template <class> struct next_size;
-template <class T> using next_size_t = typename next_size<T>::type;
-template <class T> struct Tag { using type = T; };
-
-template <> struct next_size<int8_t> : Tag<int16_t> {};
-template <> struct next_size<int16_t> : Tag<int32_t> {};
-template <> struct next_size<int32_t> : Tag<int64_t> {};
-
-template <> struct next_size<uint8_t> : Tag<uint16_t> {};
-template <> struct next_size<uint16_t> : Tag<uint32_t> {};
-template <> struct next_size<uint32_t> : Tag<uint64_t> {};
-
-}  // namespace quicktex
+}  // namespace quicktex::util

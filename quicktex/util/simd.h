@@ -21,13 +21,14 @@
 
 #include <array>
 #include <type_traits>
-#include <xsimd/xsimd.hpp>
 
-#include "util.h"
+#include "util/math.h"
+#include "util/types.h"
+#include "xsimd/xsimd.hpp"
 
 template <typename T> using requires_arch = xsimd::kernel::requires_arch<T>;
 
-namespace quicktex::simd {
+namespace quicktex::util::simd {
 
 namespace kernel {
 
@@ -93,4 +94,4 @@ template <class A, class T> inline next_size_t<T> whadd(xsimd::batch<T, A> const
     return kernel::whadd(arg, A{});
 }
 
-}  // namespace quicktex::simd
+}  // namespace quicktex::util::simd

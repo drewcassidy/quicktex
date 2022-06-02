@@ -1,5 +1,5 @@
 /*  Quicktex Texture Compression Library
-    Copyright (C) 2021-2022 Andrew Cassidy <drewcassidy@me.com>
+    Copyright (C) 2021 Andrew Cassidy <drewcassidy@me.com>
     Partially derived from rgbcx.h written by Richard Geldreich <richgel99@gmail.com>
     and licenced under the public domain
 
@@ -17,16 +17,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "BC3Encoder.h"
+#pragma once
+#include <cstdint>
 
-#include "ColorBlock.h"
-#include "s3tc/bc3/BC3Block.h"
+namespace quicktex::util {
+template <class> struct next_size;
+template <class T> using next_size_t = typename next_size<T>::type;
+template <class T> struct next_size_tag { using type = T; };
 
-namespace quicktex::s3tc {
-BC3Block BC3Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
-    auto output = BC3Block();
-    output.color_block = _bc1_encoder->EncodeBlock(pixels);
-    output.alpha_block = _bc4_encoder->EncodeBlock(pixels);
-    return output;
-}
-}  // namespace quicktex::s3tc
+template <> struct next_size<int8_t> : next_size_tag<int16_t> {};
+template <> struct next_size<int16_t> : next_size_tag<int32_t> {};
+template <> struct next_size<int32_t> : next_size_tag<int64_t> {};
+
+template <> struct next_size<uint8_t> : next_size_tag<uint16_t> {};
+template <> struct next_size<uint16_t> : next_size_tag<uint32_t> {};
+template <> struct next_size<uint32_t> : next_size_tag<uint64_t> {};
+}  // namespace quicktex::util

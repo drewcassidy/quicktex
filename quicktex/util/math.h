@@ -17,16 +17,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "BC3Encoder.h"
+#pragma once
+#include <cassert>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <numeric>
+#include <string>
+#include <type_traits>
+#include <vector>
 
-#include "ColorBlock.h"
-#include "s3tc/bc3/BC3Block.h"
+#include "xsimd/xsimd.hpp"
 
-namespace quicktex::s3tc {
-BC3Block BC3Encoder::EncodeBlock(const ColorBlock<4, 4> &pixels) const {
-    auto output = BC3Block();
-    output.color_block = _bc1_encoder->EncodeBlock(pixels);
-    output.alpha_block = _bc4_encoder->EncodeBlock(pixels);
-    return output;
+namespace quicktex {
+
+using std::abs;    // abs overload for builtin types
+using xsimd::abs;  // abs overload for xsimd buffers
+
+template <typename S> constexpr S clamp(S value, S low, S high) {
+    assert(low <= high);
+    if (value < low) return low;
+    if (value > high) return high;
+    return value;
 }
-}  // namespace quicktex::s3tc
+}  // namespace quicktex

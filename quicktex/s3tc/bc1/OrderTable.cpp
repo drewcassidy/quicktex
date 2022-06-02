@@ -21,7 +21,7 @@
 
 #include <array>
 
-#include "../../Vector4.h"
+#include "Vector4.h"
 
 namespace quicktex::s3tc  {
 using Hash = uint16_t;

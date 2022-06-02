@@ -22,16 +22,14 @@
 #include <pybind11/pybind11.h>
 
 #include <array>
-#include <cstddef>
-#include <cstdint>
-#include <stdexcept>
-#include <string>
+#include <memory>
 
-#include "../../Decoder.h"
-#include "../../Encoder.h"
-#include "../interpolator/Interpolator.h"
-#include "BC3Decoder.h"
-#include "BC3Encoder.h"
+#include "s3tc/bc1/BC1Block.h"
+#include "s3tc/bc3/BC3Block.h"
+#include "s3tc/bc3/BC3Decoder.h"
+#include "s3tc/bc3/BC3Encoder.h"
+#include "s3tc/bc4/BC4Block.h"
+#include "s3tc/interpolator/Interpolator.h"
 
 namespace py = pybind11;
 namespace quicktex::bindings {
@@ -59,7 +57,8 @@ void InitBC3(py::module_ &s3tc) {
 
     bc3_block.def_readwrite("alpha_block", &BC3Block::alpha_block, "The BC4 block used for alpha data.");
     bc3_block.def_readwrite("color_block", &BC3Block::color_block, "The BC1 block used for rgb data.");
-    bc3_block.def_property("blocks", &BC3Block::GetBlocks, &BC3Block::SetBlocks, "The BC4 and BC1 blocks that make up this block as a 2-tuple.");
+    bc3_block.def_property("blocks", &BC3Block::GetBlocks, &BC3Block::SetBlocks,
+                           "The BC4 and BC1 blocks that make up this block as a 2-tuple.");
     // endregion
 
     // region BC3Texture
@@ -88,10 +87,12 @@ void InitBC3(py::module_ &s3tc) {
         :returns: A new BC3Texture with the same dimension as the input.
     )doc");
 
-    bc3_encoder.def_property_readonly("bc1_encoder", &BC3Encoder::GetBC1Encoder,
-                                      "Internal :py:class:`~quicktex.s3tc.bc1.BC1Encoder` used for RGB data. Readonly.");
-    bc3_encoder.def_property_readonly("bc4_encoder", &BC3Encoder::GetBC4Encoder,
-                                      "Internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` used for alpha data. Readonly.");
+    bc3_encoder.def_property_readonly(
+        "bc1_encoder", &BC3Encoder::GetBC1Encoder,
+        "Internal :py:class:`~quicktex.s3tc.bc1.BC1Encoder` used for RGB data. Readonly.");
+    bc3_encoder.def_property_readonly(
+        "bc4_encoder", &BC3Encoder::GetBC4Encoder,
+        "Internal :py:class:`~quicktex.s3tc.bc4.BC4Encoder` used for alpha data. Readonly.");
     // endregion
 
     // region BC3Decoder
@@ -113,10 +114,12 @@ void InitBC3(py::module_ &s3tc) {
         :returns: A new RawTexture with the same dimensions as the input
     )doc");
 
-    bc3_decoder.def_property_readonly("bc1_decoder", &BC3Decoder::GetBC1Decoder,
-                                      "Internal :py:class:`~quicktex.s3tc.bc1.BC1Decoder` used for RGB data. Readonly.");
-    bc3_decoder.def_property_readonly("bc4_decoder", &BC3Decoder::GetBC4Decoder,
-                                      "Internal :py:class:`~quicktex.s3tc.bc4.BC4Decoder` used for alpha data. Readonly.");
+    bc3_decoder.def_property_readonly(
+        "bc1_decoder", &BC3Decoder::GetBC1Decoder,
+        "Internal :py:class:`~quicktex.s3tc.bc1.BC1Decoder` used for RGB data. Readonly.");
+    bc3_decoder.def_property_readonly(
+        "bc4_decoder", &BC3Decoder::GetBC4Decoder,
+        "Internal :py:class:`~quicktex.s3tc.bc4.BC4Decoder` used for alpha data. Readonly.");
     // endregion
 }
 }  // namespace quicktex::bindings

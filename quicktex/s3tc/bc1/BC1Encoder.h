@@ -26,13 +26,13 @@
 #include <memory>
 #include <tuple>
 
-#include "../../ColorBlock.h"
-#include "../../Encoder.h"
-#include "../../OldColor.h"
-#include "../../Texture.h"
-#include "../interpolator/Interpolator.h"
-#include "BC1Block.h"
-#include "SingleColorTable.h"
+#include "ColorBlock.h"
+#include "Encoder.h"
+#include "OldColor.h"
+#include "Texture.h"
+#include "s3tc/bc1/BC1Block.h"
+#include "s3tc/bc1/SingleColorTable.h"
+#include "s3tc/interpolator/Interpolator.h"
 
 namespace quicktex {
 class Vector4;
@@ -79,7 +79,8 @@ class BC1Encoder final : public BlockEncoder<BlockTexture<BC1Block>> {
     };
 
     enum class EndpointMode {
-        // Use 2D least squares+inset+optimal rounding (the method used in Humus's GPU texture encoding demo), instead of PCA.
+        // Use 2D least squares+inset+optimal rounding (the method used in Humus's GPU texture encoding demo), instead
+        // of PCA.
         // Around 18% faster, very slightly lower average quality to better (depends on the content).
         LeastSquares,
 
@@ -101,7 +102,8 @@ class BC1Encoder final : public BlockEncoder<BlockTexture<BC1Block>> {
 
     BC1Encoder(unsigned level, ColorMode color_mode, InterpolatorPtr interpolator);
 
-    BC1Encoder(unsigned int level = 5, ColorMode color_mode = ColorMode::FourColor) : BC1Encoder(level, color_mode, std::make_shared<Interpolator>()) {}
+    BC1Encoder(unsigned int level = 5, ColorMode color_mode = ColorMode::FourColor)
+        : BC1Encoder(level, color_mode, std::make_shared<Interpolator>()) {}
 
     // Getters and Setters
     void SetLevel(unsigned level);
@@ -172,21 +174,26 @@ class BC1Encoder final : public BlockEncoder<BlockTexture<BC1Block>> {
     BC1Block WriteBlockSolid(OldColor color) const;
     BC1Block WriteBlock(EncodeResults &result) const;
 
-    void FindEndpoints(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, EndpointMode endpoint_mode, bool ignore_black = false) const;
+    void FindEndpoints(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics,
+                       EndpointMode endpoint_mode, bool ignore_black = false) const;
     void FindEndpointsSingleColor(EncodeResults &result, OldColor color, bool is_3color = false) const;
     void FindEndpointsSingleColor(EncodeResults &result, const CBlock &pixels, OldColor color, bool is_3color) const;
 
     template <ColorMode M> void FindSelectors(EncodeResults &result, const CBlock &pixels, ErrorMode error_mode) const;
 
-    template <ColorMode M> bool RefineEndpointsLS(EncodeResults &result, const CBlock &pixels, BlockMetrics metrics) const;
-
-    template <ColorMode M> void RefineEndpointsLS(EncodeResults &result, std::array<Vector4, 17> &sums, Vector4 &matrix, Hash hash) const;
+    template <ColorMode M>
+    bool RefineEndpointsLS(EncodeResults &result, const CBlock &pixels, BlockMetrics metrics) const;
 
     template <ColorMode M>
-    void RefineBlockLS(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, ErrorMode error_mode, unsigned passes) const;
+    void RefineEndpointsLS(EncodeResults &result, std::array<Vector4, 17> &sums, Vector4 &matrix, Hash hash) const;
 
     template <ColorMode M>
-    void RefineBlockCF(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, ErrorMode error_mode, unsigned orderings) const;
+    void RefineBlockLS(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, ErrorMode error_mode,
+                       unsigned passes) const;
+
+    template <ColorMode M>
+    void RefineBlockCF(EncodeResults &result, const CBlock &pixels, const BlockMetrics &metrics, ErrorMode error_mode,
+                       unsigned orderings) const;
 
     void EndpointSearch(EncodeResults &result, const CBlock &pixels) const;
 };

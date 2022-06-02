@@ -21,38 +21,48 @@
 
 #include <type_traits>
 
+namespace quicktex::util {
+
 // Thanks dkavolis
-template <typename E, typename = std::enable_if_t<std::is_enum_v<E>>> constexpr inline auto operator~(E a) noexcept -> E {
+template <typename E> requires std::is_enum_v<E>
+constexpr inline auto operator~(E a) noexcept -> E {
     using Base = std::underlying_type_t<E>;
     return static_cast<E>(~static_cast<Base>(a));
 }
 
-template <typename E, typename = std::enable_if_t<std::is_enum_v<E>>> constexpr inline auto operator|(E a, E b) noexcept -> E {
+template <typename E> requires std::is_enum_v<E>
+constexpr inline auto operator|(E a, E b) noexcept -> E {
     using Base = std::underlying_type_t<E>;
     return static_cast<E>(static_cast<Base>(a) | static_cast<Base>(b));
 }
 
-template <typename E, typename = std::enable_if_t<std::is_enum_v<E>>> constexpr inline auto operator&(E a, E b) noexcept -> E {
+template <typename E> requires std::is_enum_v<E>
+constexpr inline auto operator&(E a, E b) noexcept -> E {
     using Base = std::underlying_type_t<E>;
     return static_cast<E>(static_cast<Base>(a) & static_cast<Base>(b));
 }
 
-template <typename E, typename = std::enable_if_t<std::is_enum_v<E>>> constexpr inline auto operator^(E a, E b) noexcept -> E {
+template <typename E> requires std::is_enum_v<E>
+constexpr inline auto operator^(E a, E b) noexcept -> E {
     using Base = std::underlying_type_t<E>;
     return static_cast<E>(static_cast<Base>(a) ^ static_cast<Base>(b));
 }
 
-template <typename E, typename = std::enable_if_t<std::is_enum_v<E>>> constexpr inline auto operator|=(E& a, E b) noexcept -> E& {
+template <typename E> requires std::is_enum_v<E>
+constexpr inline auto operator|=(E& a, E b) noexcept -> E& {
     a = a | b;
     return a;
 }
 
-template <typename E, typename = std::enable_if_t<std::is_enum_v<E>>> constexpr inline auto operator&=(E& a, E b) noexcept -> E& {
+template <typename E> requires std::is_enum_v<E>
+constexpr inline auto operator&=(E& a, E b) noexcept -> E& {
     a = a & b;
     return a;
 }
 
-template <typename E, typename = std::enable_if_t<std::is_enum_v<E>>> constexpr inline auto operator^=(E& a, E b) noexcept -> E& {
+template <typename E> requires std::is_enum_v<E>
+constexpr inline auto operator^=(E& a, E b) noexcept -> E& {
     a = a ^ b;
     return a;
 }
+}  // namespace quicktex::util

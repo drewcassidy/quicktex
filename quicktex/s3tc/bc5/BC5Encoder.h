@@ -24,11 +24,11 @@
 #include <tuple>
 #include <type_traits>
 
-#include "../../ColorBlock.h"
-#include "../../Encoder.h"
-#include "../../Texture.h"
-#include "../bc4/BC4Encoder.h"
-#include "BC5Block.h"
+#include "ColorBlock.h"
+#include "Encoder.h"
+#include "Texture.h"
+#include "s3tc/bc4/BC4Encoder.h"
+#include "s3tc/bc5/BC5Block.h"
 
 namespace quicktex::s3tc {
 class BC5Encoder : public BlockEncoder<BlockTexture<BC5Block>> {
@@ -37,8 +37,10 @@ class BC5Encoder : public BlockEncoder<BlockTexture<BC5Block>> {
     using BC4EncoderPtr = std::shared_ptr<BC4Encoder>;
     using BC4EncoderPair = std::tuple<BC4EncoderPtr, BC4EncoderPtr>;
 
-    BC5Encoder(uint8_t chan0 = 0, uint8_t chan1 = 1) : BC5Encoder(std::make_shared<BC4Encoder>(chan0), std::make_shared<BC4Encoder>(chan1)) {}
-    BC5Encoder(BC4EncoderPtr chan0_encoder, BC4EncoderPtr chan1_encoder) : _chan0_encoder(chan0_encoder), _chan1_encoder(chan1_encoder) {}
+    BC5Encoder(uint8_t chan0 = 0, uint8_t chan1 = 1)
+        : BC5Encoder(std::make_shared<BC4Encoder>(chan0), std::make_shared<BC4Encoder>(chan1)) {}
+    BC5Encoder(BC4EncoderPtr chan0_encoder, BC4EncoderPtr chan1_encoder)
+        : _chan0_encoder(chan0_encoder), _chan1_encoder(chan1_encoder) {}
 
     BC5Block EncodeBlock(const ColorBlock<4, 4> &pixels) const override;
 

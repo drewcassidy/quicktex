@@ -29,20 +29,23 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "../../ColorBlock.h"
-#include "../../Matrix4x4.h"
-#include "../../OldColor.h"
-#include "../../Texture.h"
-#include "../../VecUtil.h"
-#include "../../Vector4.h"
-#include "../../Vector4Int.h"
-#include "../../bitwiseEnums.h"
-#include "../../util.h"
+#include "ColorBlock.h"
 #include "Histogram.h"
-#include "OrderTable.h"
-#include "SingleColorTable.h"
+#include "Matrix4x4.h"
+#include "OldColor.h"
+#include "Texture.h"
+#include "Vector4.h"
+#include "Vector4Int.h"
+#include "s3tc/bc1/BC1Block.h"
+#include "s3tc/bc1/OrderTable.h"
+#include "s3tc/bc1/SingleColorTable.h"
+#include "util/bitbash.h"
+#include "util/bitwiseEnums.h"
+#include "util/math.h"
 
 namespace quicktex::s3tc {
+
+using namespace quicktex::util;
 
 // constructors
 

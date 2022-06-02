@@ -21,18 +21,19 @@
 
 #include <memory>
 
-#include "../../ColorBlock.h"
-#include "../../Decoder.h"
-#include "../../Texture.h"
-#include "../interpolator/Interpolator.h"
-#include "BC1Block.h"
+#include "ColorBlock.h"
+#include "Decoder.h"
+#include "Texture.h"
+#include "s3tc/bc1/BC1Block.h"
+#include "s3tc/interpolator/Interpolator.h"
 
 namespace quicktex::s3tc {
 class BC1Decoder final : public BlockDecoder<BlockTexture<BC1Block>> {
    public:
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
-    BC1Decoder(bool vwrite_alpha, InterpolatorPtr interpolator) : write_alpha(vwrite_alpha), _interpolator(interpolator) {}
+    BC1Decoder(bool vwrite_alpha, InterpolatorPtr interpolator)
+        : write_alpha(vwrite_alpha), _interpolator(interpolator) {}
 
     BC1Decoder(bool vwrite_alpha = false) : BC1Decoder(vwrite_alpha, std::make_shared<Interpolator>()) {}
 

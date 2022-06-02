@@ -24,7 +24,8 @@
 #include <numeric>
 #include <xsimd/xsimd.hpp>
 
-#include "util.h"
+#include "util/math.h"
+#include "util/types.h"
 
 namespace quicktex {
 

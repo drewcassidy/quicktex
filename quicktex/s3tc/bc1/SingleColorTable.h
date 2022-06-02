@@ -23,10 +23,13 @@
 #include <cstdint>
 #include <memory>
 
-#include "../../util.h"
-#include "../interpolator/Interpolator.h"
+#include "s3tc/interpolator/Interpolator.h"
+#include "util/bitbash.h"
+#include "util/math.h"
 
 namespace quicktex::s3tc {
+
+using namespace quicktex::util;
 
 struct BC1MatchEntry {
     uint8_t high;

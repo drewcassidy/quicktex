@@ -23,15 +23,11 @@
 #include <pybind11/stl.h>
 
 #include <array>
-#include <cstddef>
 #include <cstdint>
-#include <stdexcept>
-#include <string>
 
-#include "../../Decoder.h"
-#include "../../Encoder.h"
-#include "BC4Decoder.h"
-#include "BC4Encoder.h"
+#include "s3tc/bc4/BC4Block.h"
+#include "s3tc/bc4/BC4Decoder.h"
+#include "s3tc/bc4/BC4Encoder.h"
 
 namespace py = pybind11;
 namespace quicktex::bindings {
@@ -46,7 +42,8 @@ void InitBC4(py::module_ &s3tc) {
     bc4_block.doc() = "A single BC4 block.";
 
     bc4_block.def(py::init<>());
-    bc4_block.def(py::init<uint8_t, uint8_t, BC4Block::SelectorArray>(), "endpoint0"_a, "endpoint1"_a, "selectors"_a, R"doc(
+    bc4_block.def(py::init<uint8_t, uint8_t, BC4Block::SelectorArray>(), "endpoint0"_a, "endpoint1"_a, "selectors"_a,
+                  R"doc(
         Create a new BC4Block with the specified endpoints and selectors.
 
         :param int endpoint0: The first endpoint.
@@ -54,7 +51,8 @@ void InitBC4(py::module_ &s3tc) {
         :param selectors: the selectors as a 4x4 list of integers, between 0 and 7 inclusive.
     )doc");
 
-    bc4_block.def_property("endpoints", &BC4Block::GetAlphas, &BC4Block::SetAlphas, "The block's endpoint values as a 2-tuple.");
+    bc4_block.def_property("endpoints", &BC4Block::GetAlphas, &BC4Block::SetAlphas,
+                           "The block's endpoint values as a 2-tuple.");
     bc4_block.def_property("selectors", &BC4Block::GetSelectors, &BC4Block::SetSelectors, R"doc(
         The block's selectors as a 4x4 list of integers between 0 and 7 inclusive.
 
@@ -96,8 +94,9 @@ void InitBC4(py::module_ &s3tc) {
         :param RawTexture texture: Input texture to encode.
         :returns: A new BC4Texture with the same dimension as the input.
     )doc");
-    
-    bc4_encoder.def_property_readonly("channel", &BC4Encoder::GetChannel, "The channel that will be read from. 0 to 3 inclusive. Readonly.");
+
+    bc4_encoder.def_property_readonly("channel", &BC4Encoder::GetChannel,
+                                      "The channel that will be read from. 0 to 3 inclusive. Readonly.");
     // endregion
 
     // region BC4Decoder
@@ -117,8 +116,9 @@ void InitBC4(py::module_ &s3tc) {
         :param RawTexture texture: Input texture to encode.
         :returns: A new RawTexture with the same dimensions as the input
     )doc");
-    
-    bc4_decoder.def_property_readonly("channel", &BC4Decoder::GetChannel, "The channel that will be written to. 0 to 3 inclusive. Readonly.");
+
+    bc4_decoder.def_property_readonly("channel", &BC4Decoder::GetChannel,
+                                      "The channel that will be written to. 0 to 3 inclusive. Readonly.");
     // endregion
 }
 

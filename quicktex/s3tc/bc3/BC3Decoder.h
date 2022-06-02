@@ -21,13 +21,13 @@
 
 #include <memory>
 
-#include "../../ColorBlock.h"
-#include "../../Decoder.h"
-#include "../../Texture.h"
-#include "../bc1/BC1Decoder.h"
-#include "../bc4/BC4Decoder.h"
-#include "../interpolator/Interpolator.h"
-#include "BC3Block.h"
+#include "ColorBlock.h"
+#include "Decoder.h"
+#include "Texture.h"
+#include "s3tc/bc1/BC1Decoder.h"
+#include "s3tc/bc3/BC3Block.h"
+#include "s3tc/bc4/BC4Decoder.h"
+#include "s3tc/interpolator/Interpolator.h"
 
 namespace quicktex::s3tc {
 
@@ -37,7 +37,8 @@ class BC3Decoder : public BlockDecoder<BlockTexture<BC3Block>> {
     using BC4DecoderPtr = std::shared_ptr<BC4Decoder>;
     using InterpolatorPtr = std::shared_ptr<Interpolator>;
 
-    BC3Decoder(InterpolatorPtr interpolator) : _bc1_decoder(std::make_shared<BC1Decoder>(interpolator)), _bc4_decoder(std::make_shared<BC4Decoder>(3)) {}
+    BC3Decoder(InterpolatorPtr interpolator)
+        : _bc1_decoder(std::make_shared<BC1Decoder>(interpolator)), _bc4_decoder(std::make_shared<BC4Decoder>(3)) {}
 
     BC3Decoder() : BC3Decoder(std::make_shared<Interpolator>()) {}
 
