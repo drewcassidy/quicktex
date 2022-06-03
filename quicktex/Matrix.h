@@ -20,6 +20,7 @@
 #pragma once
 
 #include <array>
+#include <type_traits>
 
 #include "Vec.h"
 
@@ -43,8 +44,27 @@ template <typename T, size_t M, size_t N> class Matrix : Vec<Vec<T, N>, M> {
 
     std::array<T *, M> get_column_ptrs(size_t index) const {
         std::array<T *, M> ptrs;
-        for (unsigned i = 0; i < M; i++) { ptrs[i] = &(row(i)[index]); }
+        for (unsigned m = 0; m < M; m++) { ptrs[m] = &(row(m)[index]); }
         return ptrs;
     }
+
+    Matrix<T, N, M> transpose() {
+        Matrix<T, N, M> res;
+        for (unsigned m = 0; m < M; m++) { res.set_column(m, row(m)); }
+        return res;
+    }
 };
+
+/**
+ * Extension of Matrix with some helper aliases for use as a vector of channels
+ */
+template <typename T, size_t M, size_t N> class ChannelSet : Matrix<T, M, N> {
+    Vec<T, N> &channel(size_t m) { return this->row(m); }
+    const Vec<T, N> &channel(size_t m) const { return this->row(m); }
+
+    Vec<T, M> get_pixel(size_t n) { return this->get_column(n); }
+
+    void set_pixel(size_t n, const Vec<T, M> &pixel) { this->set_column(n, pixel); }
+};
+
 }  // namespace quicktex
