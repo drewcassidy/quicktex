@@ -29,6 +29,7 @@
 
 namespace quicktex {
 
+#pragma pack(push, 1)
 template <typename T, size_t N> class Vec {
    public:
     typedef T value_type;
@@ -52,6 +53,7 @@ template <typename T, size_t N> class Vec {
      * @param rvalue Source vector to copy from
      */
     template <typename S> Vec(std::enable_if_t<std::is_convertible_v<S, T>, const Vec<S, N>> &rvalue) {
+        static_assert(sizeof(Vec) == N * sizeof(T));
         for (unsigned i = 0; i < N; i++) { at(i) = static_cast<T>(rvalue[i]); }
     }
 
@@ -218,5 +220,6 @@ template <typename T, size_t N, typename A = xsimd::default_arch> class BatchVec
         return val;
     }
 };
+#pragma pack(pop)
 
 }  // namespace quicktex

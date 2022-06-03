@@ -84,8 +84,8 @@ size_t unpack_into(P packed, OI begin, OI end, WI widths, bool little_endian = t
             auto w = *(widths++);
             assert(w <= std::numeric_limits<U>::digits);
 
-            auto mask = ((1 << w) - 1);
-            *(begin++) = (packed >> offset) & mask;
+            auto mask = ((1 << w) - 1);              // least significant w bits all 1
+            *(begin++) = (packed >> offset) & mask;  // write to output
 
             offset += w;  // increment offset
         }
@@ -103,11 +103,11 @@ size_t unpack_into(P packed, OI begin, OI end, WI widths, bool little_endian = t
         unsigned offset = total_offset;
         while (begin < end) {
             auto w = *(widths++);
-            offset -= w;  // decrement offset
-            assert(w < std::numeric_limits<U>::digits);
+            offset -= w;                                 // decrement offset
+            assert(w < std::numeric_limits<U>::digits);  // detect an overflow condition
 
-            auto mask = ((1 << w) - 1);
-            *(begin++) = (packed >> offset) & mask;
+            auto mask = ((1 << w) - 1);              // least significant w bits all 1
+            *(begin++) = (packed >> offset) & mask;  // write to output
         }
 
         return total_offset;
@@ -199,9 +199,9 @@ std::array<U, N> unpack(P packed, const std::array<size_t, N> &widths, bool litt
  * @return an array of unpacked values
  */
 template <typename U, size_t N, typename P, typename WR>
-    requires std::unsigned_integral<P> && sized_range<WR>
+    requires std::unsigned_integral<P> && range<WR>
 std::array<U, N> unpack(P packed, const WR &widths, bool little_endian = true) {
-    assert(widths.size() >= N);
+    assert(distance(widths) == N);
     return unpack<U, N>(packed, widths.begin(), little_endian);
 }
 

@@ -23,13 +23,27 @@
 namespace quicktex::util {
 template <class> struct next_size;
 template <class T> using next_size_t = typename next_size<T>::type;
-template <class T> struct next_size_tag { using type = T; };
+template <class T> struct type_tag { using type = T; };
 
-template <> struct next_size<int8_t> : next_size_tag<int16_t> {};
-template <> struct next_size<int16_t> : next_size_tag<int32_t> {};
-template <> struct next_size<int32_t> : next_size_tag<int64_t> {};
+template <> struct next_size<int8_t> : type_tag<int16_t> {};
+template <> struct next_size<int16_t> : type_tag<int32_t> {};
+template <> struct next_size<int32_t> : type_tag<int64_t> {};
 
-template <> struct next_size<uint8_t> : next_size_tag<uint16_t> {};
-template <> struct next_size<uint16_t> : next_size_tag<uint32_t> {};
-template <> struct next_size<uint32_t> : next_size_tag<uint64_t> {};
+template <> struct next_size<uint8_t> : type_tag<uint16_t> {};
+template <> struct next_size<uint16_t> : type_tag<uint32_t> {};
+template <> struct next_size<uint32_t> : type_tag<uint64_t> {};
+
+template <auto bitCount>
+using unsigned_bits =
+    std::conditional_t<bitCount <= 8, std::uint8_t,
+                       std::conditional_t<bitCount <= 16, std::uint16_t,
+                                          std::conditional_t<bitCount <= 32, std::uint32_t,
+                                                             std::conditional_t<bitCount <= 64, std::uint64_t, void>>>>;
+
+template <auto bitCount>
+using signed_bits =
+    std::conditional_t<bitCount <= 8, std::int8_t,
+                       std::conditional_t<bitCount <= 16, std::int16_t,
+                                          std::conditional_t<bitCount <= 32, std::int32_t,
+                                                             std::conditional_t<bitCount <= 64, std::int64_t, void>>>>;
 }  // namespace quicktex::util
