@@ -23,9 +23,9 @@
 
 #include "ColorBlock.h"
 #include "Decoder.h"
-#include "Texture.h"
 #include "s3tc/bc1/BC1Block.h"
 #include "s3tc/interpolator/Interpolator.h"
+#include "texture/BlockTexture.h"
 
 namespace quicktex::s3tc {
 class BC1Decoder final : public BlockDecoder<BlockTexture<BC1Block>> {

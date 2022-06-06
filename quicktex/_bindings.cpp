@@ -25,8 +25,9 @@
 #include "Decoder.h"
 #include "Encoder.h"
 #include "OldColor.h"
-#include "Texture.h"
 #include "_bindings.h"
+#include "texture/RawTexture.h"
+#include "texture/Texture.h"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -60,14 +61,14 @@ PYBIND11_MODULE(_quicktex, m) {
 
     py::class_<Texture> texture(m, "Texture", py::buffer_protocol());
 
-    texture.def_property_readonly("nbytes", &Texture::NBytes);
+    texture.def_property_readonly("nbytes", &Texture::nbytes);
     texture.def_property_readonly("size", &Texture::Size);
-    texture.def_property_readonly("width", &Texture::Width);
-    texture.def_property_readonly("height", &Texture::Height);
+    texture.def_readonly("width", &Texture::width);
+    texture.def_readonly("height", &Texture::height);
 
-    texture.def_buffer([](Texture &t) { return py::buffer_info(t.Data(), t.NBytes()); });
+    texture.def_buffer([](Texture &t) { return py::buffer_info(t.data(), t.nbytes()); });
     texture.def("tobytes",
-                [](const Texture &t) { return py::bytes(reinterpret_cast<const char *>(t.Data()), t.NBytes()); });
+                [](const Texture &t) { return py::bytes(reinterpret_cast<const char *>(t.data()), t.nbytes()); });
 
     // RawTexture
 
@@ -76,7 +77,9 @@ PYBIND11_MODULE(_quicktex, m) {
     raw_texture.def(py::init<int, int>(), "width"_a, "height"_a);
     raw_texture.def_static("frombytes", &BufferToTexture<RawTexture>, "data"_a, "width"_a, "height"_a);
 
-    DefSubscript2D(raw_texture, &RawTexture::GetPixel, &RawTexture::SetPixel, &RawTexture::Size);
+    DefSubscript2DRef(
+        raw_texture, [](RawTexture &self, int x, int y) -> Color { return self.pixel(x, y); },
+        [](RawTexture &self, int x, int y, Color val) { self.pixel(x, y) = val; }, &RawTexture::Size);
 
     InitS3TC(m);
 

@@ -26,9 +26,9 @@
 
 #include "ColorBlock.h"
 #include "Decoder.h"
-#include "Texture.h"
 #include "s3tc/bc4/BC4Decoder.h"
 #include "s3tc/bc5/BC5Block.h"
+#include "texture/BlockTexture.h"
 
 namespace quicktex::s3tc {
 

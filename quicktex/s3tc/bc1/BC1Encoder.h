@@ -29,10 +29,10 @@
 #include "ColorBlock.h"
 #include "Encoder.h"
 #include "OldColor.h"
-#include "Texture.h"
 #include "s3tc/bc1/BC1Block.h"
 #include "s3tc/bc1/SingleColorTable.h"
 #include "s3tc/interpolator/Interpolator.h"
+#include "texture/BlockTexture.h"
 
 namespace quicktex {
 class Vector4;

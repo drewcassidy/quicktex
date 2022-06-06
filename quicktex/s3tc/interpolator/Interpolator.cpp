@@ -29,8 +29,6 @@
 
 namespace quicktex::s3tc {
 
-using namespace quicktex::util;
-
 // region Interpolator implementation
 std::unique_ptr<Interpolator> Interpolator::MakeInterpolator(Interpolator::Type type) {
     switch (type) {

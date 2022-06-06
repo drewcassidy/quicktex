@@ -22,10 +22,10 @@
 #include <cstdint>
 #include <stdexcept>
 
-#include "../../ColorBlock.h"
-#include "../../Decoder.h"
-#include "../../Texture.h"
-#include "BC4Block.h"
+#include "ColorBlock.h"
+#include "Decoder.h"
+#include "s3tc/bc4/BC4Block.h"
+#include "texture/BlockTexture.h"
 
 namespace quicktex::s3tc {
 

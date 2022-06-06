@@ -21,13 +21,11 @@
 
 #include <stdexcept>
 
-#include "util/ranges.h"
 #include "util/bitbash.h"
 #include "util/math.h"
+#include "util/ranges.h"
 
 namespace quicktex::s3tc {
-
-using namespace quicktex::util;
 
 uint16_t BC1Block::GetColor0Raw() const { return pack<uint16_t>(_color0, 8); }
 uint16_t BC1Block::GetColor1Raw() const { return pack<uint16_t>(_color1, 8); }
@@ -40,10 +38,10 @@ BC1Block::SelectorArray BC1Block::GetSelectors() const {
 }
 
 void BC1Block::SetSelectors(const BC1Block::SelectorArray& unpacked) {
-    //    for (unsigned y = 0; y < (unsigned)Height; y++) {
-    //        if (std::any_of(unpacked[y].begin(), unpacked[y].end(), [](uint8_t i) { return i > SelectorMax; }))
-    //            throw std::invalid_argument("Selector value out of bounds.");
-    //    }
+        for (unsigned y = 0; y < (unsigned)Height; y++) {
+            if (std::any_of(unpacked[y].begin(), unpacked[y].end(), [](uint8_t i) { return i > SelectorMax; }))
+                throw std::invalid_argument("Selector value out of bounds.");
+        }
     _selectors = map(unpacked, [](auto row) { return pack<uint8_t>(row, SelectorBits, true); });
 }
 

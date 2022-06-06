@@ -33,19 +33,17 @@
 #include "Histogram.h"
 #include "Matrix4x4.h"
 #include "OldColor.h"
-#include "Texture.h"
 #include "Vector4.h"
 #include "Vector4Int.h"
 #include "s3tc/bc1/BC1Block.h"
 #include "s3tc/bc1/OrderTable.h"
 #include "s3tc/bc1/SingleColorTable.h"
+#include "texture/Texture.h"
 #include "util/bitbash.h"
 #include "util/bitwiseEnums.h"
 #include "util/math.h"
 
 namespace quicktex::s3tc {
-
-using namespace quicktex::util;
 
 // constructors
 

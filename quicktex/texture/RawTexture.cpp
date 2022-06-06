@@ -1,5 +1,5 @@
 /*  Quicktex Texture Compression Library
-    Copyright (C) 2021-2022 Andrew Cassidy <drewcassidy@me.com>
+    Copyright (C) 2021 Andrew Cassidy <drewcassidy@me.com>
     Partially derived from rgbcx.h written by Richard Geldreich <richgel99@gmail.com>
     and licenced under the public domain
 
@@ -17,30 +17,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "RawTexture.h"
 
-#include <cstdint>
-#include <stdexcept>
-
-#include "ColorBlock.h"
-#include "Encoder.h"
-#include "s3tc/bc4/BC4Block.h"
-#include "texture/BlockTexture.h"
-
-namespace quicktex::s3tc {
-
-class BC4Encoder : public BlockEncoder<BlockTexture<BC4Block>> {
-   public:
-    BC4Encoder(const uint8_t channel) {
-        if (channel >= 4) throw std::invalid_argument("Channel out of range");
-        _channel = channel;
-    }
-
-    BC4Block EncodeBlock(const ColorBlock<4, 4> &pixels) const override;
-
-    uint8_t GetChannel() const { return _channel; }
-
-   private:
-    uint8_t _channel;
-};
-}  // namespace quicktex::s3tc
+namespace quicktex {
+Color RawTexture::pixel(unsigned int x, unsigned int y) const {
+    if (x < 0 || x >= width) throw std::invalid_argument("x value out of range.");
+    if (y < 0 || y >= height) throw std::invalid_argument("y value out of range.");
+    return _pixels.at(x + (y * width));
+}
+quicktex::Color& RawTexture::pixel(unsigned int x, unsigned int y) {
+    if (x < 0 || x >= width) throw std::invalid_argument("x value out of range.");
+    if (y < 0 || y >= height) throw std::invalid_argument("y value out of range.");
+    return _pixels.at(x + (y * width));
+}
+}  // namespace quicktex

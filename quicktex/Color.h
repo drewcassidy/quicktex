@@ -19,9 +19,12 @@
 
 #pragma once
 #include "Vec.h"
-#include "bitbash.h"
+#include "util/bitbash.h"
 
-namespace quicktex::color {
+namespace quicktex {
+
+using Color = Vec<uint8_t, 4>;
+using ColorRGB = Vec<uint8_t, 3>;
 
 constexpr size_t uint5_max = (1 << 5) - 1;
 constexpr size_t uint6_max = (1 << 6) - 1;
@@ -71,4 +74,4 @@ template <typename T = int16_t> Vec<T, 3> precise_round_565(Vec<float, 3> &v) {
 
     return rounded;
 }
-}  // namespace quicktex::color
+}  // namespace quicktex

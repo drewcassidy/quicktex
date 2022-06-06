@@ -26,9 +26,9 @@
 
 #include "ColorBlock.h"
 #include "Encoder.h"
-#include "Texture.h"
 #include "s3tc/bc4/BC4Encoder.h"
 #include "s3tc/bc5/BC5Block.h"
+#include "texture/BlockTexture.h"
 
 namespace quicktex::s3tc {
 class BC5Encoder : public BlockEncoder<BlockTexture<BC5Block>> {

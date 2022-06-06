@@ -28,7 +28,7 @@
 
 template <typename T> using requires_arch = xsimd::kernel::requires_arch<T>;
 
-namespace quicktex::util::simd {
+namespace quicktex::simd {
 
 namespace kernel {
 
@@ -94,4 +94,4 @@ template <class A, class T> inline next_size_t<T> whadd(xsimd::batch<T, A> const
     return kernel::whadd(arg, A{});
 }
 
-}  // namespace quicktex::util::simd
+}  // namespace quicktex::simd

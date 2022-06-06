@@ -22,7 +22,7 @@
 #include <memory>
 
 #include "ColorBlock.h"
-#include "Texture.h"
+#include "texture/RawTexture.h"
 
 namespace quicktex {
 
@@ -46,19 +46,19 @@ template <class T> class BlockDecoder : public Decoder<T> {
     virtual DecodedBlock DecodeBlock(const EncodedBlock &block) const = 0;
 
     virtual RawTexture Decode(const T &encoded) const override {
-        auto decoded = RawTexture(encoded.Width(), encoded.Height());
+        auto decoded = RawTexture(encoded.width, encoded.height);
 
-        int blocks_x = encoded.BlocksX();
-        int blocks_y = encoded.BlocksY();
+        int blocks_x = encoded.bwidth();
+        int blocks_y = encoded.bheight();
 
         // from experimentation, multithreading this using OpenMP actually makes decoding slower
         // due to thread creation/teardown taking longer than the decoding process itself.
         // As a result, this is left as a serial operation despite being embarassingly parallelizable
         for (int y = 0; y < blocks_y; y++) {
             for (int x = 0; x < blocks_x; x++) {
-                auto block = encoded.GetBlock(x, y);
+                auto block = encoded.get_block(x, y);
                 auto pixels = DecodeBlock(block);
-                decoded.SetBlock<BlockWidth, BlockHeight>(x, y, pixels);
+                decoded.set_block<BlockWidth, BlockHeight>(x, y, pixels);
             }
         }
 

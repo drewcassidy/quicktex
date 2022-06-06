@@ -21,7 +21,7 @@
 
 #include <type_traits>
 
-namespace quicktex::util {
+namespace quicktex {
 
 // Thanks dkavolis
 template <typename E> requires std::is_enum_v<E>

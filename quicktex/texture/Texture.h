@@ -19,28 +19,46 @@
 
 #pragma once
 
+#include <array>
+#include <climits>
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <memory>
 #include <stdexcept>
+#include <tuple>
+#include <type_traits>
+#include <vector>
 
+#include "Color.h"
 #include "ColorBlock.h"
-#include "Encoder.h"
-#include "s3tc/bc4/BC4Block.h"
-#include "texture/BlockTexture.h"
+#include "OldColor.h"
+#include "Window.h"
 
-namespace quicktex::s3tc {
+namespace quicktex {
 
-class BC4Encoder : public BlockEncoder<BlockTexture<BC4Block>> {
+class Texture {
    public:
-    BC4Encoder(const uint8_t channel) {
-        if (channel >= 4) throw std::invalid_argument("Channel out of range");
-        _channel = channel;
-    }
+    const unsigned width;
+    const unsigned height;
 
-    BC4Block EncodeBlock(const ColorBlock<4, 4> &pixels) const override;
+    virtual ~Texture() = default;
 
-    uint8_t GetChannel() const { return _channel; }
+    virtual std::tuple<unsigned, unsigned> Size() const { return {width, height}; }
 
-   private:
-    uint8_t _channel;
+    /**
+     * The texture's total size
+     * @return The size of the texture in bytes.
+     */
+    virtual size_t nbytes() const noexcept = 0;
+
+    virtual const uint8_t *data() const noexcept = 0;
+    virtual uint8_t *data() noexcept = 0;
+
+   protected:
+    Texture(unsigned width, unsigned height) : width(width), height(height) {}
 };
-}  // namespace quicktex::s3tc
+
+
+
+}  // namespace quicktex

@@ -32,8 +32,6 @@
 
 namespace quicktex::tests {
 
-using namespace quicktex::util;
-
 template <typename T> constexpr auto make_arrays() {
     std::vector<std::array<T, xsimd::batch<T>::size>> arrays;
     std::array<T, xsimd::batch<T>::size> buffer;

@@ -23,11 +23,11 @@
 
 #include "ColorBlock.h"
 #include "Decoder.h"
-#include "Texture.h"
 #include "s3tc/bc1/BC1Decoder.h"
 #include "s3tc/bc3/BC3Block.h"
 #include "s3tc/bc4/BC4Decoder.h"
 #include "s3tc/interpolator/Interpolator.h"
+#include "texture/BlockTexture.h"
 
 namespace quicktex::s3tc {
 

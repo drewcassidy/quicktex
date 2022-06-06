@@ -29,8 +29,6 @@
 
 namespace quicktex::s3tc {
 
-using namespace quicktex::util;
-
 struct BC1MatchEntry {
     uint8_t high;
     uint8_t low;

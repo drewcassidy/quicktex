@@ -117,24 +117,24 @@ template <typename T, size_t N> class Vec {
 
     // region accessor shortcuts
     // RGBA accessors
-    std::enable_if<N >= 1, T> r() const { return _c[0]; }
-    std::enable_if<N >= 1, T &> r() { return _c[0]; }
-    std::enable_if<N >= 2, T> g() const { return _c[1]; }
-    std::enable_if<N >= 2, T &> g() { return _c[1]; }
-    std::enable_if<N >= 3, T> b() const { return _c[2]; }
-    std::enable_if<N >= 3, T &> b() { return _c[2]; }
-    std::enable_if<N >= 4, T> a() const { return _c[3]; }
-    std::enable_if<N >= 4, T &> a() { return _c[3]; }
+    T r() const { return _c[0]; }
+    T &r() { return _c[0]; }
+    template <typename S = T> std::enable_if_t<N >= 2, S> g() const { return _c[1]; }
+    template <typename S = T> std::enable_if_t<N >= 2, S &> g() { return _c[1]; }
+    template <typename S = T> std::enable_if_t<N >= 3, S> b() const { return _c[2]; }
+    template <typename S = T> std::enable_if_t<N >= 3, S &> b() { return _c[2]; }
+    template <typename S = T> std::enable_if_t<N >= 4, S> a() const { return _c[3]; }
+    template <typename S = T> std::enable_if_t<N >= 4, S &> a() { return _c[3]; }
 
     // XYZW accessors
-    std::enable_if<N >= 1, T> x() const { return _c[0]; }
-    std::enable_if<N >= 1, T &> x() { return _c[0]; }
-    std::enable_if<N >= 2, T> y() const { return _c[1]; }
-    std::enable_if<N >= 2, T &> y() { return _c[1]; }
-    std::enable_if<N >= 3, T> z() const { return _c[2]; }
-    std::enable_if<N >= 3, T &> z() { return _c[2]; }
-    std::enable_if<N >= 4, T> w() const { return _c[3]; }
-    std::enable_if<N >= 4, T &> w() { return _c[3]; }
+    T x() const { return _c[0]; }
+    T &x() { return _c[0]; }
+    template <typename S = T> std::enable_if_t<N >= 2, S> y() const { return _c[1]; }
+    template <typename S = T> std::enable_if_t<N >= 2, S &> y() { return _c[1]; }
+    template <typename S = T> std::enable_if_t<N >= 3, S> z() const { return _c[2]; }
+    template <typename S = T> std::enable_if_t<N >= 3, S &> z() { return _c[2]; }
+    template <typename S = T> std::enable_if_t<N >= 4, S> w() const { return _c[3]; }
+    template <typename S = T> std::enable_if_t<N >= 4, S &> w() { return _c[3]; }
     // endregion
 
     // region simple operators

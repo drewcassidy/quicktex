@@ -28,8 +28,6 @@
 
 namespace quicktex {
 
-using namespace quicktex::util;
-
 OldColor::OldColor(Vector4Int v) {
     if (v.MaxAbs() > 0xFF) throw std::invalid_argument("Vector members out of range");
     for (int i = 0; i < 4; i++) {

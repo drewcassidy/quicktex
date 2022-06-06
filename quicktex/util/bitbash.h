@@ -35,7 +35,7 @@
 #define assert5bit(x) assert(x <= UINT5_MAX)
 #define assert6bit(x) assert(x <= UINT6_MAX)
 
-namespace quicktex::util {
+namespace quicktex {
 
 template <size_t N, typename S> S scale_from_8(S v) {
     static_assert(N < 8);
@@ -309,4 +309,4 @@ template <typename P, typename IR>
 inline constexpr P pack(IR r, size_t width, bool little_endian = true) {
     return pack<P>(r.begin(), r.end(), const_iterator(width), little_endian);
 }
-}  // namespace quicktex::util
+}  // namespace quicktex

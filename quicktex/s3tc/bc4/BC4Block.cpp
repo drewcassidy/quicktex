@@ -28,8 +28,6 @@
 
 namespace quicktex::s3tc {
 
-using namespace quicktex::util;
-
 BC4Block::SelectorArray BC4Block::GetSelectors() const {
     auto packed = pack<uint64_t>(_selectors, 8);
     auto rows = unpack<uint16_t, Height>(packed, SelectorBits * Width);

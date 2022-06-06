@@ -32,7 +32,7 @@
 
 #include "xsimd/xsimd.hpp"
 
-namespace quicktex::util {
+namespace quicktex {
 
 // std::ranges::range is currently not usable by default in libc++
 template <class T>

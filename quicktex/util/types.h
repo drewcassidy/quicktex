@@ -20,7 +20,7 @@
 #pragma once
 #include <cstdint>
 
-namespace quicktex::util {
+namespace quicktex {
 template <class> struct next_size;
 template <class T> using next_size_t = typename next_size<T>::type;
 template <class T> struct type_tag { using type = T; };
