@@ -159,6 +159,8 @@ template <typename T> class const_iterator : public index_iterator_base<const_it
     typedef long long difference_type;
     typedef T value_type;
 
+    friend base;
+
     const_iterator() : base(0), _value(T{}) {}
     const_iterator(T value, size_t index = 0) : base(index), _value(value) {}
 
@@ -183,6 +185,8 @@ class index_iterator : public index_iterator_base<index_iterator<R>> {
     typedef index_iterator_base<index_iterator<R>> base;
     typedef long long difference_type;
     typedef range_value_t<R> value_type;
+
+    friend base;
 
     index_iterator() : base(0), _range(nullptr) {}
     index_iterator(R &range, size_t index) : base(index), _range(&range) {}
