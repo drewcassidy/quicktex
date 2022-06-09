@@ -25,188 +25,267 @@
 #include <xsimd/xsimd.hpp>
 
 #include "util/math.h"
-#include "util/types.h"
+#include "util/ranges.h"
 
 namespace quicktex {
 
-#pragma pack(push, 1)
-template <typename T, size_t N> class Vec {
-   public:
-    typedef T value_type;
+template <typename V>
+concept vector_like = subscriptable_range<V> && requires { V::size(); };
 
+template <typename V> constexpr size_t vector_dims = vector_like<V> ? 1 + vector_dims<range_value_t<V>> : 0;
+template <typename V> constexpr size_t vector_width = vector_like<V> ? V::size() : 1;
+template <typename V> constexpr size_t vector_height = vector_like<V> ? vector_width<range_value_t<V>> : 1;
+
+template <typename L, typename R, typename Op>
+concept operable_VV = vector_like<L> && vector_like<R> && (vector_dims<L> == vector_dims<R>) &&
+                      (vector_width<L> == vector_width<R>) &&
+                      requires(range_value_t<L> &l, range_value_t<R> &r, Op &op) { op(l, r); };
+
+template <typename L, typename R, typename Op>
+concept operable_Vs = vector_like<L> && (!vector_like<R>) && requires(range_value_t<L> &l, R &r, Op &op) { op(l, r); };
+
+template <typename T, size_t N, typename D> class VecBase {
+   public:
     // region constructors
     /**
      * Create a vector from an intializer list
-     * @param vals values to populate with
+     * @param il values to populate with
      */
-    Vec(std::initializer_list<T> vals) { std::copy(vals.begin(), vals.end(), begin()); }
+    VecBase(std::initializer_list<T> il) {
+        assert(il.size() == N);  // ensure il is of the right size
+        std::copy_n(il.begin(), N, begin());
+    }
 
     /**
      * Create a vector from a scalar value
      * @param scalar value to populate with
      */
-    Vec(const T &scalar = 0) { std::fill(begin(), end(), scalar); }
-
-    /**
-     * Create a vector from another vector of the same size and another type
-     * @tparam S Source vector type
-     * @param rvalue Source vector to copy from
-     */
-    template <typename S> Vec(std::enable_if_t<std::is_convertible_v<S, T>, const Vec<S, N>> &rvalue) {
-        static_assert(sizeof(Vec) == N * sizeof(T));
-        for (unsigned i = 0; i < N; i++) { at(i) = static_cast<T>(rvalue[i]); }
-    }
+    VecBase(const T &scalar) { std::fill(begin(), end(), scalar); }
 
     /**
      * Create a vector from an iterator
      * @tparam II input iterator type
      * @param input_iterator iterator to copy from
      */
-    template <typename II> Vec(const II input_iterator) { std::copy_n(input_iterator, N, begin()); }
+    template <typename II>
+    VecBase(const II input_iterator)
+        requires std::input_iterator<II> && std::convertible_to<std::iter_value_t<II>,
+                                                                T> {
+        std::copy_n(input_iterator, N, begin());
+    }
 
     /**
-     * Create a vector from a std::array
-     * @tparam S Source data type
-     * @param arr Array to copy from
+     * Create a vector from a range type
+     * @tparam R Range type
+     * @param input_range Range to copy from
      */
-    template <typename S> Vec(const std::array<S, N> &arr) : Vec(arr.begin()) {}
+    template <typename R>
+    VecBase(const R &input_range)
+        requires range<R> && std::convertible_to<typename R::value_type, T>
+    : VecBase(input_range.begin()) {
+        assert(std::distance(input_range.begin(), input_range.end()) == N);
+    }
     // endregion
 
-    // region subscript accessors
-    /**
-     * Get the element at index i
-     * @param i index to read from
-     * @return the element at index i
-     */
-    T at(size_t i) const {
-        assert(i < N);
-        return _c[i];
-    }
+    // region iterators and accessors
+    static constexpr size_t size() { return N; }
+    inline auto begin() { return this->_derived()._begin(); }
+    inline auto begin() const { return this->_derived()._begin(); }
+    inline auto end() { return this->_derived()._end(); }
+    inline auto end() const { return this->_derived()._end(); }
 
-    /**
-     * Get a reference to the element at index i
-     * @param i index to read from
-     * @return Reference to the element at index i
-     */
-    T &at(size_t i) {
-        assert(i < N);
-        return _c[i];
-    }
+    inline T &at(size_t i) { return this->_derived()._at(i); }
+    inline const T &at(size_t i) const { return this->_derived()._at(i); }
 
-    /**
-     * Get the element at index i
-     * @param i index to read from
-     * @return the element at index i
-     */
-    T operator[](size_t i) const { return at(i); }
-
-    /**
-     * Get a reference to the element at index i
-     * @param i index to read from
-     * @return Reference to the element at index i
-     */
+    const T &operator[](size_t i) const { return at(i); }
     T &operator[](size_t i) { return at(i); }
 
-    T *begin() { return &_c[0]; }
-    T *end() { return &_c[N]; }
-    const T *begin() const { return &_c[0]; }
-    const T *end() const { return &_c[N]; }
-    size_t size() const { return N; }
-
-    // endregion
-
-    // region accessor shortcuts
     // RGBA accessors
-    T r() const { return _c[0]; }
-    T &r() { return _c[0]; }
-    template <typename S = T> std::enable_if_t<N >= 2, S> g() const { return _c[1]; }
-    template <typename S = T> std::enable_if_t<N >= 2, S &> g() { return _c[1]; }
-    template <typename S = T> std::enable_if_t<N >= 3, S> b() const { return _c[2]; }
-    template <typename S = T> std::enable_if_t<N >= 3, S &> b() { return _c[2]; }
-    template <typename S = T> std::enable_if_t<N >= 4, S> a() const { return _c[3]; }
-    template <typename S = T> std::enable_if_t<N >= 4, S &> a() { return _c[3]; }
+    const T &r() const { return at(0); }
+    T &r() { return at(0); }
+    template <typename S = T> std::enable_if_t<N >= 2, const S &> g() const { return at(1); }
+    template <typename S = T> std::enable_if_t<N >= 2, S &> g() { return at(1); }
+    template <typename S = T> std::enable_if_t<N >= 3, const S &> b() const { return at(2); }
+    template <typename S = T> std::enable_if_t<N >= 3, S &> b() { return at(2); }
+    template <typename S = T> std::enable_if_t<N >= 4, const S &> a() const { return at(3); }
+    template <typename S = T> std::enable_if_t<N >= 4, S &> a() { return at(3); }
 
     // XYZW accessors
-    T x() const { return _c[0]; }
-    T &x() { return _c[0]; }
-    template <typename S = T> std::enable_if_t<N >= 2, S> y() const { return _c[1]; }
-    template <typename S = T> std::enable_if_t<N >= 2, S &> y() { return _c[1]; }
-    template <typename S = T> std::enable_if_t<N >= 3, S> z() const { return _c[2]; }
-    template <typename S = T> std::enable_if_t<N >= 3, S &> z() { return _c[2]; }
-    template <typename S = T> std::enable_if_t<N >= 4, S> w() const { return _c[3]; }
-    template <typename S = T> std::enable_if_t<N >= 4, S &> w() { return _c[3]; }
+    const T &x() const { return at(0); }
+    T &x() { return at(0); }
+    template <typename S = T> std::enable_if_t<N >= 2, const S &> y() const { return at(1); }
+    template <typename S = T> std::enable_if_t<N >= 2, S &> y() { return at(1); }
+    template <typename S = T> std::enable_if_t<N >= 3, const S &> z() const { return at(2); }
+    template <typename S = T> std::enable_if_t<N >= 3, S &> z() { return at(2); }
+    template <typename S = T> std::enable_if_t<N >= 4, const S &> w() const { return at(3); }
+    template <typename S = T> std::enable_if_t<N >= 4, S &> w() { return at(3); }
     // endregion
 
-    // region simple operators
-    friend Vec operator+(const Vec &lhs, const Vec &rhs) { return map(lhs, rhs, std::plus()); }
-    friend Vec operator-(const Vec &lhs, const Vec &rhs) { return map(lhs, rhs, std::minus()); }
-    friend Vec operator*(const Vec &lhs, const Vec &rhs) { return map(lhs, rhs, std::multiplies()); }
-    friend Vec operator/(const Vec &lhs, const Vec &rhs) { return map(lhs, rhs, std::divides()); }
+    //    template <typename R>
+    //        requires sized_range<R> bool
+    bool operator==(const VecBase &rhs) const {
+        return size() == rhs.size() && std::equal(begin(), end(), rhs.begin());
+    };
 
-    friend Vec operator+(const Vec &lhs, const T &rhs) { return map(lhs, rhs, std::plus()); }
-    friend Vec operator-(const Vec &lhs, const T &rhs) { return map(lhs, rhs, std::minus()); }
-    friend Vec operator*(const Vec &lhs, const T &rhs) { return map(lhs, rhs, std::multiplies()); }
-    friend Vec operator/(const Vec &lhs, const T &rhs) { return map(lhs, rhs, std::divides()); }
+    // unary vector negation
+    template <typename S = T>
+        requires(!std::unsigned_integral<T>) && requires(T &t) { -t; }
+    D operator-() const {
+        return map(_derived(), std::negate());
+    };
 
-    friend Vec &operator+=(Vec &lhs, const Vec &rhs) { return lhs = lhs + rhs; }
-    friend Vec &operator-=(Vec &lhs, const Vec &rhs) { return lhs = lhs - rhs; }
-    friend Vec &operator*=(Vec &lhs, const Vec &rhs) { return lhs = lhs * rhs; }
-    friend Vec &operator/=(Vec &lhs, const Vec &rhs) { return lhs = lhs / rhs; }
+    // add vectors
+    template <typename R>
+        requires operable_VV<D, R, std::plus<>>
+    D operator+(const R &rhs) const {
+        return map(_derived(), rhs, std::plus());
+    };
 
-    friend Vec &operator+=(Vec &lhs, const T &rhs) { return lhs = lhs + rhs; }
-    friend Vec &operator-=(Vec &lhs, const T &rhs) { return lhs = lhs - rhs; }
-    friend Vec &operator*=(Vec &lhs, const T &rhs) { return lhs = lhs * rhs; }
-    friend Vec &operator/=(Vec &lhs, const T &rhs) { return lhs = lhs / rhs; }
+    // subtract vectors
+    template <typename R>
+        requires operable_VV<D, R, std::minus<>>
+    D operator-(const R &rhs) const {
+        // we can't just add the negation because that's invalid for unsigned types
+        return map(_derived(), rhs, std::minus());
+    };
 
-    bool operator==(const Vec &rhs) const { return std::equal(begin(), end(), rhs.begin()); };
-    bool operator!=(const Vec &rhs) const { return !(*this == rhs); };
-    // endregion
+    // multiply vector with a vector or scalar
+    template <typename R>
+        requires operable_VV<D, R, std::multiplies<>> || operable_Vs<D, R, std::multiplies<>>
+    D operator*(const R &rhs) const {
+        return map(_derived(), rhs, std::multiplies());
+    };
 
-    template <typename OI> void copy(OI output_iterator) const { std::copy(begin(), end(), output_iterator); }
+    // multiply a scalar by a vector
+    template <typename L>
+        requires operable_Vs<D, L, std::multiplies<>>
+    friend D operator*(const L &lhs, const D &rhs) {
+        return rhs * lhs;
+    }
+
+    // divides vector with a vector or scalar
+    template <typename R>
+        requires operable_VV<D, R, std::divides<>> || operable_Vs<D, R, std::divides<>>
+    D operator/(const R &rhs) const {
+        return map(_derived(), rhs, std::divides());
+    };
+
+    template <typename R>
+        requires operable_VV<D, R, std::plus<>>
+    D &operator+=(const R &rhs) {
+        return _derived() = _derived() + rhs;
+    }
+
+    template <typename R>
+        requires operable_VV<D, R, std::minus<>>
+    D &operator-=(const R &rhs) {
+        return _derived() = _derived() - rhs;
+    }
+
+    template <typename R>
+        requires operable_VV<D, R, std::multiplies<>> || operable_Vs<D, R, std::multiplies<>>
+    D &operator*=(const R &rhs) {
+        return _derived() = _derived() * rhs;
+    }
+
+    template <typename R>
+        requires operable_VV<D, R, std::divides<>> || operable_Vs<D, R, std::divides<>>
+    D &operator/=(const R &rhs) {
+        return _derived() = _derived() / rhs;
+    }
 
     T sum() const { return std::accumulate(begin(), end(), T{0}); }
 
-    T dot(const Vec &rhs) const {
-        Vec product = (*this) * rhs;
+    template <typename V>
+        requires vector_like<V>
+    T dot(const V &rhs) const {
+        D product = _derived() * rhs;
         return product.sum();
     }
 
-    T sqr_mag() const { return this->dot(*this); }
+    T sqr_mag() const { return this->dot(_derived()); }
 
-    Vec abs() const {
-        return map(*this, [](T val) { return quicktex::abs(val); });
+    D abs() const {
+        return map(_derived(), [](T val) { return quicktex::abs(val); });
     }
 
-    Vec clamp(float low, float high) {
-        return map(*this, [&low, &high](T val) { return quicktex::clamp(val, low, high); });
+    D clamp(T low, T high) {
+        return map(_derived(), [&low, &high](T val) { return quicktex::clamp(val, low, high); });
     }
 
-    Vec clamp(const Vec &low, const Vec &high) {
-        Vec r;
+    template <typename L, typename H>
+        requires vector_like<L> && vector_like<H>
+    D clamp(const L &low, const H &high) {
+        D r;
         for (unsigned i = 0; i < N; i++) { r[i] = quicktex::clamp(at(i), low[i], high[i]); }
         return r;
     }
 
    protected:
-    std::array<T, N> _c;  // internal array of components
-
-    template <typename Op> static inline Vec map(const Vec &lhs, Op f) {
-        Vec r;
-        for (unsigned i = 0; i < N; i++) { r[i] = f(lhs[i]); }
+    template <typename Op, typename L>
+        requires subscriptable_range<L>
+    static inline D map(const L &lhs, Op f) {
+        D r;
+        for (unsigned i = 0; i < lhs.size(); i++) { r[i] = f(lhs[i]); }
         return r;
     }
 
-    template <typename Op> static inline Vec map(const Vec &lhs, const T &rhs, Op f) {
-        Vec r;
-        for (unsigned i = 0; i < N; i++) { r[i] = f(lhs[i], rhs); }
+    template <typename Op, typename L, typename R>
+        requires operable_Vs<L, R, Op>
+    static inline D map(const L &lhs, const R &rhs, Op f) {
+        D r;
+        for (unsigned i = 0; i < lhs.size(); i++) { r[i] = f(lhs[i], rhs); }
         return r;
     }
 
-    template <typename Op> static inline Vec map(const Vec &lhs, const Vec &rhs, Op f) {
-        Vec r;
+    template <typename Op, typename L, typename R>
+        requires operable_VV<L, R, Op>
+    static inline D map(const L &lhs, const R &rhs, Op f) {
+        D r;
         for (unsigned i = 0; i < N; i++) { r[i] = f(lhs[i], rhs[i]); }
         return r;
     }
+
+   private:
+    // error guard constructor prevents incorrect CRTP usage
+    VecBase() {
+        static_assert(subscriptable_range<D>);  // ensure a Vec satisfies the subscriptable range concept
+        static_assert(vector_like<D>);          // obviousy a vector is vector-like
+    };
+    friend D;
+
+    D &_derived() { return static_cast<D &>(*this); }
+    D const &_derived() const { return static_cast<D const &>(*this); }
+};
+
+#pragma pack(push, 1)
+template <typename T, size_t N> class Vec : public VecBase<T, N, Vec<T, N>> {
+   public:
+    typedef T value_type;
+    typedef VecBase<T, N, Vec<T, N>> base;
+
+    friend base;
+    using base::base;  // import base constructors
+
+    Vec() : _c() {}  // default constructor
+   protected:
+    const T &_at(size_t i) const {
+        assert(i < N);
+        return _c[i];
+    }
+
+    T &_at(size_t i) {
+        assert(i < N);
+        return _c[i];
+    }
+
+    auto _begin() { return _c.begin(); }
+    auto _begin() const { return _c.begin(); }
+
+    auto _end() { return _c.end(); }
+    auto _end() const { return _c.end(); }
+
+    std::array<T, N> _c;  // internal array of components
 };
 
 template <typename T, size_t N, typename A = xsimd::default_arch> class BatchVec : Vec<xsimd::batch<T, A>, N> {

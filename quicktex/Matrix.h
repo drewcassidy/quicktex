@@ -29,22 +29,22 @@ template <typename T, size_t M, size_t N> class Matrix : Vec<Vec<T, N>, M> {
     // N: width, M:height
     // when using as a buffer for batches, vectors are actually *columns*
    public:
-    Vec<T, N> &row(size_t m) { return this->at(m); }
+    Vec<T, N> &row(unsigned m) { return this->at(m); }
     const Vec<T, N> &row(size_t m) const { return this->at(m); }
 
-    Vec<T, M> get_column(size_t n) {
+    Vec<T, M> get_column(unsigned n) {
         Vec<T, M> res;
         for (unsigned m = 0; m < M; m++) { res[m] = row(m)[n]; }
         return res;
     }
 
-    void set_column(size_t n, const Vec<T, M> &col) {
+    void set_column(unsigned n, const Vec<T, M> &col) {
         for (unsigned m = 0; m < M; m++) { row(m)[n] = col[m]; }
     }
 
-    std::array<T *, M> get_column_ptrs(size_t index) const {
+    std::array<T *, M> get_column_ptrs(size_t n) const {
         std::array<T *, M> ptrs;
-        for (unsigned m = 0; m < M; m++) { ptrs[m] = &(row(m)[index]); }
+        for (unsigned m = 0; m < M; m++) { ptrs[m] = &(row(m)[n]); }
         return ptrs;
     }
 

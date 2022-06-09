@@ -34,11 +34,10 @@ namespace quicktex {
 
 // std::ranges::range is not usable by default in libc++ 13
 template <class T>
-concept range = requires(T &t) {
-                    std::begin(t);
-                    std::end(t);
-                    typename T::value_type;
-                };
+concept range = std::is_constructible_v<T> && requires(T &t) {
+                                                  std::begin(t);
+                                                  std::end(t);
+                                              };
 
 template <class T>
 concept sized = requires(T &t) { std::size(t); };
@@ -60,11 +59,22 @@ concept subscriptable = const_subscriptable<T> && requires(T &t) {
 template <typename T>
 concept subscriptable_range = sized_range<T> && subscriptable<T>;
 
+template <typename T> struct range_value { using type = void; };
+
+template <typename T>
+    requires requires(T &t) { std::begin(t); }
+struct range_value<T> {
+    using type = std::iter_value_t<decltype((std::declval<T>()).begin())>;
+};
+
+template <typename T> using range_value_t = typename range_value<T>::type;
+
 // some quick inline checks
 static_assert(const_subscriptable<const std::array<int, 4>>);  // const array can be subscripted
 static_assert(!subscriptable<const std::array<int, 4>>);       // const array cannot be assigned to
 static_assert(subscriptable_range<std::array<int, 4>>);  // array is subscriptable, sized, and has begin() and end()
 static_assert(sized_range<std::initializer_list<int>>);  // initializer list is a range and has size()
+static_assert(std::same_as<range_value_t<int>, void>);
 
 template <class T>
     requires range<T>
@@ -172,7 +182,7 @@ class index_iterator : public index_iterator_base<index_iterator<R>> {
    public:
     typedef index_iterator_base<index_iterator<R>> base;
     typedef long long difference_type;
-    typedef typename R::value_type value_type;
+    typedef range_value_t<R> value_type;
 
     index_iterator() : base(0), _range(nullptr) {}
     index_iterator(R &range, size_t index) : base(index), _range(&range) {}

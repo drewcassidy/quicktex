@@ -85,6 +85,6 @@ bool WindowIterator::operator==(const WindowIterator& rhs) const {
 }
 
 static_assert(std::forward_iterator<WindowIterator>);
-static_assert(sized_range<Window>);
+//static_assert(sized_range<Window>);
 
 }  // namespace quicktex

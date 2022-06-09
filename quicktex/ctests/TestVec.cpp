@@ -128,7 +128,7 @@ UTEST(Vec_int, copy) {
     ASSERT_TRUE(a == expected);
 
     std::array<int, 4> out{-1, -3, -1, -2};
-    a.copy(out.begin());
+    std::copy(a.begin(), a.end(), out.begin());
 
     ASSERT_TRUE(out == arr);
 }
