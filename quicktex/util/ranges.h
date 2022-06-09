@@ -94,6 +94,8 @@ template <typename Seq, typename Fn> constexpr auto map(const Seq &input, Fn op)
 
 template <typename D> class index_iterator_base {
    public:
+    friend D;
+
     typedef long long difference_type;
 
     D &operator++() {
@@ -146,10 +148,10 @@ template <typename D> class index_iterator_base {
     auto &operator[](difference_type i) { return *(static_cast<D>(*this) + i); }
     auto operator[](difference_type i) const { return *(static_cast<const D &>(*this) + i); }
 
-   private:
+   protected:
     size_t _index;
 
-    friend D;
+   private:
     index_iterator_base(size_t index = 0) : _index(index) {}
 };
 
@@ -158,8 +160,6 @@ template <typename T> class const_iterator : public index_iterator_base<const_it
     typedef index_iterator_base<const_iterator<T>> base;
     typedef long long difference_type;
     typedef T value_type;
-
-    friend base;
 
     const_iterator() : base(0), _value(T{}) {}
     const_iterator(T value, size_t index = 0) : base(index), _value(value) {}
@@ -185,8 +185,6 @@ class index_iterator : public index_iterator_base<index_iterator<R>> {
     typedef index_iterator_base<index_iterator<R>> base;
     typedef long long difference_type;
     typedef range_value_t<R> value_type;
-
-    friend base;
 
     index_iterator() : base(0), _range(nullptr) {}
     index_iterator(R &range, size_t index) : base(index), _range(&range) {}
