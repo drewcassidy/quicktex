@@ -33,8 +33,52 @@ template <typename V>
 concept vector_like = subscriptable_range<V> && requires { V::size(); };
 
 template <typename V> constexpr size_t vector_dims = vector_like<V> ? 1 + vector_dims<range_value_t<V>> : 0;
-template <typename V> constexpr size_t vector_width = vector_like<V> ? V::size() : 1;
-template <typename V> constexpr size_t vector_height = vector_like<V> ? vector_width<range_value_t<V>> : 1;
+
+template <typename T, size_t N> class Vec;
+
+namespace detail {
+template <typename T> struct _vector_stype { using type = T; };
+
+template <typename T>
+    requires vector_like<T>
+struct _vector_stype<T> {
+    using type = range_value_t<T>;
+};
+
+template <typename T, size_t N = 1, size_t M = 1> struct _make_matrix { using type = T; };
+
+template <typename T, size_t N, size_t M>
+    requires(N > 1 && M == 1)
+struct _make_matrix<T, N, M> {
+    using type = Vec<T, N>;
+};
+
+template <typename T, size_t N, size_t M>
+    requires(N > 1 && M > 1)
+struct _make_matrix<T, N, M> {
+    using type = Vec<Vec<T, N>, M>;
+};
+
+template <typename T> struct _vector_width { static constexpr size_t width = 1; };
+template <typename T>
+    requires vector_like<T>
+struct _vector_width<T> {
+    static constexpr size_t width = T::size();
+};
+
+template <typename T> struct _vector_height { static constexpr size_t height = 1; };
+template <typename T>
+    requires vector_like<T>
+struct _vector_height<T> {
+    static constexpr size_t height = _vector_width<range_value_t<T>>::width;
+};
+
+}  // namespace detail
+
+template <typename T> using vector_stype = typename detail::_vector_stype<T>::type;
+template <typename T, size_t N = 1, size_t M = 1> using make_matrix = typename detail::_make_matrix<T, N, M>::type;
+template <typename T> constexpr size_t vector_width = detail::_vector_width<T>::width;
+template <typename T> constexpr size_t vector_height = detail::_vector_height<T>::height;
 
 template <typename L, typename R, typename Op>
 concept operable_VV = vector_like<L> && vector_like<R> && (vector_dims<L> == vector_dims<R>) &&
@@ -94,11 +138,40 @@ template <typename T, size_t N, typename D> class VecBase {
     inline auto end() { return this->_derived()._end(); }
     inline auto end() const { return this->_derived()._end(); }
 
-    inline T &at(size_t i) { return this->_derived()._at(i); }
-    inline const T &at(size_t i) const { return this->_derived()._at(i); }
+    inline T &at(size_t i) {
+        assert(i < N);
+        return this->_derived()._at(i);
+    }
+    inline const T &at(size_t i) const {
+        assert(i < N);
+        return this->_derived()._at(i);
+    }
 
     const T &operator[](size_t i) const { return at(i); }
     T &operator[](size_t i) { return at(i); }
+
+    const T &get_row(size_t y) const { return at(y); }
+
+    template <typename R>
+        requires vector_like<R> && (R::size() == N)
+    void set_row(size_t y, const R &value) {
+        at(y) = value;
+    }
+
+    const auto &get_column(size_t x) const {
+        make_matrix<vector_stype<D>, vector_height<D>> ret;
+        if constexpr (vector_height<D> == 1) {
+            return at(x);
+        }
+        for (unsigned y = 0; y < vector_height<D>; y++) { ret[y] = at(x)[y]; }
+        return ret;
+    }
+
+    template <typename R>
+        requires vector_like<R> && (R::size() == vector_height<D>)
+    void set_column(size_t x, const R &value) {
+        for (unsigned y = 0; y < vector_height<D>; y++) { at(x)[y] = value[y]; }
+    }
 
     // RGBA accessors
     const T &r() const { return at(0); }
@@ -194,16 +267,21 @@ template <typename T, size_t N, typename D> class VecBase {
         return _derived() = _derived() / rhs;
     }
 
-    T sum() const { return std::accumulate(begin(), end(), T{0}); }
-
-    template <typename V>
-        requires vector_like<V>
-    T dot(const V &rhs) const {
-        D product = _derived() * rhs;
-        return product.sum();
+    auto hsum() const {
+        make_matrix<vector_stype<D>, vector_height<D>> acc;
+        for (unsigned n = 0; n < N; n++) { acc += get_column(n); }
+        return acc;
     }
 
-    T sqr_mag() const { return this->dot(_derived()); }
+    template <typename V>
+        requires vector_like<V> && (vector_dims<V> == vector_dims<D>) && (vector_width<V> == vector_width<D>) &&
+                 (vector_height<V> == vector_height<D>)
+    auto dot(const V &rhs) const {
+        auto product = _derived() * rhs;
+        return product.hsum();
+    }
+
+    auto sqr_mag() const { return this->dot(_derived()); }
 
     D abs() const {
         return map(_derived(), [](T val) { return quicktex::abs(val); });
@@ -214,7 +292,7 @@ template <typename T, size_t N, typename D> class VecBase {
     }
 
     template <typename L, typename H>
-        requires vector_like<L> && vector_like<H>
+        requires vector_like<L> && vector_like<H> && (L::size() == H::size())
     D clamp(const L &low, const H &high) {
         D r;
         for (unsigned i = 0; i < N; i++) { r[i] = quicktex::clamp(at(i), low[i], high[i]); }
@@ -249,8 +327,7 @@ template <typename T, size_t N, typename D> class VecBase {
    private:
     // error guard constructor prevents incorrect CRTP usage
     VecBase() {
-        static_assert(subscriptable_range<D>);  // ensure a Vec satisfies the subscriptable range concept
-        static_assert(vector_like<D>);          // obviousy a vector is vector-like
+        static_assert(vector_like<D>);  // obviousy a vector is vector-like
     };
     friend D;
 
@@ -268,16 +345,11 @@ template <typename T, size_t N> class Vec : public VecBase<T, N, Vec<T, N>> {
     using base::base;  // import base constructors
 
     Vec() : _c() {}  // default constructor
-   protected:
-    const T &_at(size_t i) const {
-        assert(i < N);
-        return _c[i];
-    }
 
-    T &_at(size_t i) {
-        assert(i < N);
-        return _c[i];
-    }
+   protected:
+    const T &_at(size_t i) const { return _c[i]; }
+
+    T &_at(size_t i) { return _c[i]; }
 
     auto _begin() { return _c.begin(); }
     auto _begin() const { return _c.begin(); }
@@ -285,18 +357,27 @@ template <typename T, size_t N> class Vec : public VecBase<T, N, Vec<T, N>> {
     auto _end() { return _c.end(); }
     auto _end() const { return _c.end(); }
 
+   private:
     std::array<T, N> _c;  // internal array of components
 };
 
-template <typename T, size_t N, typename A = xsimd::default_arch> class BatchVec : Vec<xsimd::batch<T, A>, N> {
-    template <typename M = xsimd::unaligned_mode> void store(std::array<T *, N> mem_rows, M) const {
-        for (unsigned i = 0; i < N; i++) { this->_c[i].store(mem_rows[i], M{}); }
+template <typename T, size_t M, typename A = xsimd::default_arch> class BatchVec : Vec<xsimd::batch<T, A>, M> {
+    template <size_t N, typename U = xsimd::unaligned_mode>
+    static BatchVec load_columns(const make_matrix<T, N, M> &matrix, size_t column) {
+        const size_t batch_size = xsimd::batch<T, A>::size;
+        assert(column + batch_size <= N);
+
+        BatchVec ret;
+        for (unsigned i = 0; i < M; i++) { ret[i] = xsimd::load<A, T>(&(matrix[column][i]), U{}); }
+        return ret;
     }
 
-    template <typename M = xsimd::unaligned_mode> static Vec<T, N> load(std::array<T *, N> mem_rows, M) {
-        BatchVec<T, N, A> val;
-        for (unsigned i = 0; i < N; i++) { val[i] = xsimd::load<A, T>(mem_rows[i], M{}); }
-        return val;
+    template <typename U = xsimd::unaligned_mode, typename V, size_t N>
+    void store_columns(make_matrix<T, N, M> &matrix, size_t column) {
+        const size_t batch_size = xsimd::batch<T, A>::size;
+        assert(column + batch_size <= N);
+
+        for (unsigned i = 0; i < M; i++) { this->at(i).store((&(matrix[column][i]), U{})); }
     }
 };
 #pragma pack(pop)
