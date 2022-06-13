@@ -35,8 +35,8 @@ namespace quicktex {
 // std::ranges::range is not usable by default in libc++ 13
 template <class T>
 concept range = std::is_constructible_v<T> && requires(T &t) {
-                                                  std::begin(t);
-                                                  std::end(t);
+                                                  t.begin();
+                                                  t.end();
                                               };
 
 template <class T>
@@ -82,6 +82,22 @@ size_t distance(T range) {
     return std::distance(range.begin(), range.end());
 }
 
+template <class II>
+    requires std::input_or_output_iterator<II>
+class view {
+   public:
+    view() : _begin(), _end() {}
+    view(II begin, II end) : _begin(begin), _end(end) {}
+
+    inline size_t size() { return distance(_begin, _end); }
+    inline II begin() { return _begin; }
+    inline II end() { return _end; }
+
+   private:
+    II _begin;
+    II _end;
+};
+
 template <typename Seq, typename Fn> constexpr auto map(const Seq &input, Fn op) {
     using I = typename Seq::value_type;
     using O = decltype(op(I{}));
@@ -94,8 +110,6 @@ template <typename Seq, typename Fn> constexpr auto map(const Seq &input, Fn op)
 
 template <typename D> class index_iterator_base {
    public:
-    friend D;
-
     typedef long long difference_type;
 
     D &operator++() {
@@ -145,13 +159,14 @@ template <typename D> class index_iterator_base {
 
     friend auto operator<=>(const D &lhs, const D &rhs) { return lhs._index <=> rhs._index; }
 
-    auto &operator[](difference_type i) { return *(static_cast<D>(*this) + i); }
+    auto &operator[](difference_type i) { return *(static_cast<D &>(*this) + i); }
     auto operator[](difference_type i) const { return *(static_cast<const D &>(*this) + i); }
 
    protected:
     size_t _index;
 
    private:
+    friend D;
     index_iterator_base(size_t index = 0) : _index(index) {}
 };
 
@@ -182,19 +197,19 @@ template <typename R>
     requires subscriptable<R>
 class index_iterator : public index_iterator_base<index_iterator<R>> {
    public:
-    typedef index_iterator_base<index_iterator<R>> base;
-    typedef long long difference_type;
-    typedef range_value_t<R> value_type;
+    using base = index_iterator_base<index_iterator<R>>;
+    using difference_type = long long;
+    using value_type = range_value_t<R>;
 
     index_iterator() : base(0), _range(nullptr) {}
     index_iterator(R &range, size_t index) : base(index), _range(&range) {}
 
-    value_type operator*() const {
+    auto operator*() const {
         // if we have the information, do a bounds check
         if constexpr (sized<R>) { assert(this->_index < std::size(*_range)); }
         return (*_range)[this->_index];
     }
-    const value_type *operator->() const { return &((*_range)[this->_index]); }
+    auto *operator->() const { return &((*_range)[this->_index]); }
 
     friend bool operator==(const index_iterator &lhs, const index_iterator &rhs) {
         return (lhs._range == rhs._range) && (lhs._index == rhs._index);

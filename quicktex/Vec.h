@@ -29,82 +29,97 @@
 
 namespace quicktex {
 
+template <typename T, size_t N, size_t M>
+    requires(N >= 1) && (M >= 1)
+class Matrix;
+
+template <typename T, size_t M> using Vec = Matrix<T, 1, M>;
+
 template <typename V>
 concept vector_like = subscriptable_range<V> && requires { V::size(); };
 
-template <typename V> constexpr size_t vector_dims = vector_like<V> ? 1 + vector_dims<range_value_t<V>> : 0;
-
-template <typename T, size_t N> class Vec;
-
-namespace detail {
-template <typename T> struct _vector_stype { using type = T; };
-
-template <typename T>
-    requires vector_like<T>
-struct _vector_stype<T> {
-    using type = range_value_t<T>;
-};
-
-template <typename T, size_t N = 1, size_t M = 1> struct _make_matrix { using type = T; };
-
-template <typename T, size_t N, size_t M>
-    requires(N > 1 && M == 1)
-struct _make_matrix<T, N, M> {
-    using type = Vec<T, N>;
-};
-
-template <typename T, size_t N, size_t M>
-    requires(N > 1 && M > 1)
-struct _make_matrix<T, N, M> {
-    using type = Vec<Vec<T, N>, M>;
-};
-
-template <typename T> struct _vector_width { static constexpr size_t width = 1; };
-template <typename T>
-    requires vector_like<T>
-struct _vector_width<T> {
-    static constexpr size_t width = T::size();
-};
-
-template <typename T> struct _vector_height { static constexpr size_t height = 1; };
-template <typename T>
-    requires vector_like<T>
-struct _vector_height<T> {
-    static constexpr size_t height = _vector_width<range_value_t<T>>::width;
-};
-
-}  // namespace detail
-
-template <typename T> using vector_stype = typename detail::_vector_stype<T>::type;
-template <typename T, size_t N = 1, size_t M = 1> using make_matrix = typename detail::_make_matrix<T, N, M>::type;
-template <typename T> constexpr size_t vector_width = detail::_vector_width<T>::width;
-template <typename T> constexpr size_t vector_height = detail::_vector_height<T>::height;
-
 template <typename L, typename R, typename Op>
-concept operable_VV = vector_like<L> && vector_like<R> && (vector_dims<L> == vector_dims<R>) &&
-                      (vector_width<L> == vector_width<R>) &&
-                      requires(range_value_t<L> &l, range_value_t<R> &r, Op &op) { op(l, r); };
+concept operable_VV =
+    vector_like<L> && vector_like<R> && requires(range_value_t<L> &l, range_value_t<R> &r, Op &op) { op(l, r); };
 
 template <typename L, typename R, typename Op>
 concept operable_Vs = vector_like<L> && (!vector_like<R>) && requires(range_value_t<L> &l, R &r, Op &op) { op(l, r); };
 
-template <typename T, size_t N, typename D> class VecBase {
+template <typename L, typename R, typename Op>
+concept operable = requires(L &l, R &r, Op &op) {
+                       { op(l, r) } -> std::same_as<L>;
+                   };
+template <typename L, typename R, typename Op>
+concept scalar_operable = std::is_scalar_v<L> && std::is_scalar_v<R> && operable<L, R, Op>;
+
+template <typename V>
+concept is_matrix = requires(V &v) {
+                        V::width();
+                        V::height();
+                        V::value_type;
+                    } && std::same_as < Matrix<typename V::value_type, V::width(), V::height()>,
+std::remove_cvref_t < V >> ;
+
+template <typename V, size_t N, size_t M>
+concept is_matrix_NxM = is_matrix<V> && (V::width() == N) && (V::height() == M);
+
+template <typename T, size_t N> class VecBase {
+   public:
+    const T &operator[](size_t index) const { return _c[index]; }
+    T &operator[](size_t index) { return _c[index]; }
+
+    const T &at(size_t index) const { return _c.at(index); }
+    T &at(size_t index) { return _c.at(index); }
+
+    auto begin() { return _c.begin(); }
+    auto begin() const { return _c.begin(); }
+    auto end() { return _c.end(); }
+    auto end() const { return _c.end(); }
+
+   private:
+    std::array<T, N> _c;
+};
+
+template <typename T, size_t N, size_t M> using matrix_row_type = std::conditional_t<N <= 1, T, Vec<T, N>>;
+template <typename T, size_t N, size_t M> using matrix_column_type = std::conditional_t<M <= 1, T, Vec<T, M>>;
+
+/**
+ * A matrix of values that can be operated on
+ * @tparam T Scalar type
+ * @tparam N Width of the matrix
+ * @tparam M Height of the matrix
+ */
+template <typename T, size_t N, size_t M>
+    requires(N >= 1) && (M >= 1)
+class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
+   public:
+    using base = VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M>;
+
+    using value_type = T;
+    using row_type = std::conditional_t<N == 1, T, Vec<T, N>>;
+    using column_type = std::conditional_t<M == 1, T, Vec<T, M>>;
+
+    using base::base;
+    using base::begin;
+    using base::end;
+    using base::operator[];
+
    public:
     // region constructors
     /**
      * Create a vector from an intializer list
      * @param il values to populate with
      */
-    VecBase(std::initializer_list<T> il) {
-        assert(il.size() == N);  // ensure il is of the right size
-        std::copy_n(il.begin(), N, begin());
+    Matrix(std::initializer_list<T> il) {
+        assert(il.size() == M);  // ensure il is of the right size
+        std::copy_n(il.begin(), M, this->begin());
     }
 
     /**
      * Create a vector from a scalar value
      * @param scalar value to populate with
      */
-    VecBase(const T &scalar) { std::fill(begin(), end(), scalar); }
+    Matrix(const T &scalar) { std::fill(this->begin(), this->end(), scalar); }
 
     /**
      * Create a vector from an iterator
@@ -112,10 +127,10 @@ template <typename T, size_t N, typename D> class VecBase {
      * @param input_iterator iterator to copy from
      */
     template <typename II>
-    VecBase(const II input_iterator)
+    Matrix(const II input_iterator)
         requires std::input_iterator<II> && std::convertible_to<std::iter_value_t<II>,
                                                                 T> {
-        std::copy_n(input_iterator, N, begin());
+        std::copy_n(input_iterator, M, this->begin());
     }
 
     /**
@@ -124,246 +139,275 @@ template <typename T, size_t N, typename D> class VecBase {
      * @param input_range Range to copy from
      */
     template <typename R>
-    VecBase(const R &input_range)
+    Matrix(const R &input_range)
         requires range<R> && std::convertible_to<typename R::value_type, T>
-    : VecBase(input_range.begin()) {
-        assert(std::distance(input_range.begin(), input_range.end()) == N);
+    : Matrix(input_range.begin()) {
+        assert(std::distance(input_range.begin(), input_range.end()) == M);
     }
     // endregion
 
     // region iterators and accessors
-    static constexpr size_t size() { return N; }
-    inline auto begin() { return this->_derived()._begin(); }
-    inline auto begin() const { return this->_derived()._begin(); }
-    inline auto end() { return this->_derived()._end(); }
-    inline auto end() const { return this->_derived()._end(); }
+    static constexpr size_t size() { return M; }
+    static constexpr size_t width() { return N; }
+    static constexpr size_t height() { return M; }
 
-    inline T &at(size_t i) {
-        assert(i < N);
-        return this->_derived()._at(i);
-    }
-    inline const T &at(size_t i) const {
-        assert(i < N);
-        return this->_derived()._at(i);
-    }
+    auto row_begin() { return this->begin(); }
+    auto row_begin() const { return this->begin(); }
 
-    const T &operator[](size_t i) const { return at(i); }
-    T &operator[](size_t i) { return at(i); }
+    auto row_end() { return this->end(); }
+    auto row_end() const { return this->end(); }
 
-    const T &get_row(size_t y) const { return at(y); }
+    auto column_begin() const { return column_iterator(this, 0); }
+    auto column_end() const { return column_iterator(this, N); }
 
-    template <typename R>
-        requires vector_like<R> && (R::size() == N)
-    void set_row(size_t y, const R &value) {
-        at(y) = value;
-    }
+    const row_type &get_row(size_t y) const { return this->at(y); }
 
-    const auto &get_column(size_t x) const {
-        make_matrix<vector_stype<D>, vector_height<D>> ret;
-        if constexpr (vector_height<D> == 1) {
-            return at(x);
-        }
-        for (unsigned y = 0; y < vector_height<D>; y++) { ret[y] = at(x)[y]; }
+    template <typename R> void set_row(size_t y, const R &value) { this->at(y) = value; }
+
+    template <typename S = T> column_type get_column(size_t n) const {
+        column_type ret;
+        for (unsigned m = 0; m < M; m++) { ret[m] = element(m, n); }
         return ret;
     }
 
-    template <typename R>
-        requires vector_like<R> && (R::size() == vector_height<D>)
-    void set_column(size_t x, const R &value) {
-        for (unsigned y = 0; y < vector_height<D>; y++) { at(x)[y] = value[y]; }
+    void set_column(size_t n, const column_type &value) {
+        column_type ret;
+        for (unsigned m = 0; m < M; m++) { element(m, n) = value[m]; }
+        return ret;
     }
 
+    const T &element(size_t m, size_t n) const {
+        assert(n < N);
+        assert(m < M);
+
+        if constexpr (N == 1) {
+            return this->at(m);
+        } else {
+            return this->at(m)[n];
+        }
+    }
+
+    T &element(size_t n, size_t m) { return const_cast<T &>(static_cast<const Matrix &>(*this).element(n, m)); }
+
+    const T &element(size_t i) const { return element(i / N, i % N); }
+
+    T &element(size_t i) { return element(i / N, i % N); }
+
     // RGBA accessors
-    const T &r() const { return at(0); }
-    T &r() { return at(0); }
-    template <typename S = T> std::enable_if_t<N >= 2, const S &> g() const { return at(1); }
-    template <typename S = T> std::enable_if_t<N >= 2, S &> g() { return at(1); }
-    template <typename S = T> std::enable_if_t<N >= 3, const S &> b() const { return at(2); }
-    template <typename S = T> std::enable_if_t<N >= 3, S &> b() { return at(2); }
-    template <typename S = T> std::enable_if_t<N >= 4, const S &> a() const { return at(3); }
-    template <typename S = T> std::enable_if_t<N >= 4, S &> a() { return at(3); }
+    const T &r() const { return this->at(0); }
+    T &r() { return this->at(0); }
+    template <typename S = T> std::enable_if_t<M >= 2, const S &> g() const { return this->at(1); }
+    template <typename S = T> std::enable_if_t<M >= 2, S &> g() { return this->at(1); }
+    template <typename S = T> std::enable_if_t<M >= 3, const S &> b() const { return this->at(2); }
+    template <typename S = T> std::enable_if_t<M >= 3, S &> b() { return this->at(2); }
+    template <typename S = T> std::enable_if_t<M >= 4, const S &> a() const { return this->at(3); }
+    template <typename S = T> std::enable_if_t<M >= 4, S &> a() { return this->at(3); }
 
     // XYZW accessors
-    const T &x() const { return at(0); }
-    T &x() { return at(0); }
-    template <typename S = T> std::enable_if_t<N >= 2, const S &> y() const { return at(1); }
-    template <typename S = T> std::enable_if_t<N >= 2, S &> y() { return at(1); }
-    template <typename S = T> std::enable_if_t<N >= 3, const S &> z() const { return at(2); }
-    template <typename S = T> std::enable_if_t<N >= 3, S &> z() { return at(2); }
-    template <typename S = T> std::enable_if_t<N >= 4, const S &> w() const { return at(3); }
-    template <typename S = T> std::enable_if_t<N >= 4, S &> w() { return at(3); }
+    const T &x() const { return this->at(0); }
+    T &x() { return this->at(0); }
+    template <typename S = T> std::enable_if_t<M >= 2, const S &> y() const { return this->at(1); }
+    template <typename S = T> std::enable_if_t<M >= 2, S &> y() { return this->at(1); }
+    template <typename S = T> std::enable_if_t<M >= 3, const S &> z() const { return this->at(2); }
+    template <typename S = T> std::enable_if_t<M >= 3, S &> z() { return this->at(2); }
+    template <typename S = T> std::enable_if_t<M >= 4, const S &> w() const { return this->at(3); }
+    template <typename S = T> std::enable_if_t<M >= 4, S &> w() { return this->at(3); }
     // endregion
 
-    //    template <typename R>
-    //        requires sized_range<R> bool
-    bool operator==(const VecBase &rhs) const {
-        return size() == rhs.size() && std::equal(begin(), end(), rhs.begin());
+    template <typename R>
+        requires std::equality_comparable_with<T, R> bool
+    operator==(const Matrix<R, N, M> &rhs) const {
+        return size() == rhs.size() && std::equal(this->begin(), this->end(), rhs.begin());
     };
 
     // unary vector negation
     template <typename S = T>
         requires(!std::unsigned_integral<T>) && requires(T &t) { -t; }
-    D operator-() const {
-        return map(_derived(), std::negate());
+    Matrix operator-() const {
+        return map(*this, std::negate());
     };
 
     // add vectors
     template <typename R>
-        requires operable_VV<D, R, std::plus<>>
-    D operator+(const R &rhs) const {
-        return map(_derived(), rhs, std::plus());
+        requires operable<R, T, std::plus<>>
+    Matrix operator+(const Matrix<R, N, M> &rhs) const {
+        return map(*this, rhs, std::plus());
     };
 
     // subtract vectors
     template <typename R>
-        requires operable_VV<D, R, std::minus<>>
-    D operator-(const R &rhs) const {
+        requires operable<R, T, std::minus<>>
+    Matrix operator-(const Matrix<R, N, M> &rhs) const {
         // we can't just add the negation because that's invalid for unsigned types
-        return map(_derived(), rhs, std::minus());
+        return map(*this, rhs, std::minus());
     };
 
-    // multiply vector with a vector or scalar
+    // multiply matrix with a matrix
     template <typename R>
-        requires operable_VV<D, R, std::multiplies<>> || operable_Vs<D, R, std::multiplies<>>
-    D operator*(const R &rhs) const {
-        return map(_derived(), rhs, std::multiplies());
+        requires operable<R, T, std::multiplies<>>
+    Matrix operator*(const Matrix<R, N, M> &rhs) const {
+        return map(*this, rhs, std::multiplies());
     };
 
-    // multiply a scalar by a vector
+    // multiply matrix with a scalar
+    template <typename R>
+        requires scalar_operable<R, T, std::multiplies<>>
+    Matrix operator*(const R &rhs) const {
+        return map(*this, rhs, std::multiplies());
+    };
+
+    // multiply a scalar by a matrix
     template <typename L>
-        requires operable_Vs<D, L, std::multiplies<>>
-    friend D operator*(const L &lhs, const D &rhs) {
+        requires scalar_operable<L, T, std::multiplies<>>
+    friend Matrix operator*(const L &lhs, const Matrix &rhs) {
         return rhs * lhs;
     }
 
-    // divides vector with a vector or scalar
+    // divides a matrix by a matrix
     template <typename R>
-        requires operable_VV<D, R, std::divides<>> || operable_Vs<D, R, std::divides<>>
-    D operator/(const R &rhs) const {
-        return map(_derived(), rhs, std::divides());
+        requires operable<R, T, std::divides<>>
+    Matrix operator/(const Matrix<R, N, M> &rhs) const {
+        return map(*this, rhs, std::divides());
+    };
+
+    // divides a matrix by a scalar
+    template <typename R>
+        requires scalar_operable<R, T, std::divides<>>
+    Matrix operator/(const R &rhs) const {
+        return map(*this, rhs, std::divides());
     };
 
     template <typename R>
-        requires operable_VV<D, R, std::plus<>>
-    D &operator+=(const R &rhs) {
-        return _derived() = _derived() + rhs;
+        requires operable<Matrix, R, std::plus<>>
+    Matrix &operator+=(const R &rhs) {
+        return *this = *this + rhs;
     }
 
     template <typename R>
-        requires operable_VV<D, R, std::minus<>>
-    D &operator-=(const R &rhs) {
-        return _derived() = _derived() - rhs;
+        requires operable<Matrix, R, std::minus<>>
+    Matrix &operator-=(const R &rhs) {
+        return *this = *this - rhs;
     }
 
     template <typename R>
-        requires operable_VV<D, R, std::multiplies<>> || operable_Vs<D, R, std::multiplies<>>
-    D &operator*=(const R &rhs) {
-        return _derived() = _derived() * rhs;
+        requires operable<Matrix, R, std::multiplies<>>
+    Matrix &operator*=(const R &rhs) {
+        return *this = *this * rhs;
     }
 
     template <typename R>
-        requires operable_VV<D, R, std::divides<>> || operable_Vs<D, R, std::divides<>>
-    D &operator/=(const R &rhs) {
-        return _derived() = _derived() / rhs;
+        requires operable<Matrix, R, std::divides<>>
+    Matrix &operator/=(const R &rhs) {
+        return *this = *this / rhs;
     }
 
-    auto hsum() const {
-        make_matrix<vector_stype<D>, vector_height<D>> acc;
-        for (unsigned n = 0; n < N; n++) { acc += get_column(n); }
-        return acc;
+    template <typename S = T>
+        requires(N == 1 && M == 1)
+    operator S &() {
+        return this->at(0);
+    }
+    template <typename S = T>
+        requires(N == 1 && M == 1)
+    operator const S &() const {
+        return this->at(0);
     }
 
-    template <typename V>
-        requires vector_like<V> && (vector_dims<V> == vector_dims<D>) && (vector_width<V> == vector_width<D>) &&
-                 (vector_height<V> == vector_height<D>)
-    auto dot(const V &rhs) const {
-        auto product = _derived() * rhs;
-        return product.hsum();
+    column_type hsum() const { return std::accumulate(column_begin(), column_end(), column_type{}); }
+
+    row_type vsum() const { return std::accumulate(row_begin(), row_end(), row_type{}); }
+
+    template <typename R>
+        requires operable<T, R, std::multiplies<>> && operable<T, T, std::plus<>>
+    row_type dot(const Matrix<R, N, M> &rhs) const {
+        Matrix product = *this * rhs;
+        return product.vsum();
     }
 
-    auto sqr_mag() const { return this->dot(_derived()); }
+    row_type sqr_mag() const { return this->dot(*this); }
 
-    D abs() const {
-        return map(_derived(), [](T val) { return quicktex::abs(val); });
+    Matrix abs() const {
+        Matrix ret;
+        for (unsigned i = 0; i < N * M; i++) { ret.element(i) = quicktex::abs(element(i)); }
+        return ret;
     }
 
-    D clamp(T low, T high) {
-        return map(_derived(), [&low, &high](T val) { return quicktex::clamp(val, low, high); });
+    Matrix clamp(T low, T high) {
+        Matrix ret;
+        for (unsigned i = 0; i < N * M; i++) { ret.element(i) = quicktex::clamp(element(i), low, high); }
+        return ret;
     }
 
-    template <typename L, typename H>
-        requires vector_like<L> && vector_like<H> && (L::size() == H::size())
-    D clamp(const L &low, const H &high) {
-        D r;
-        for (unsigned i = 0; i < N; i++) { r[i] = quicktex::clamp(at(i), low[i], high[i]); }
-        return r;
+    Matrix clamp(const Matrix &low, const Matrix &high) {
+        Matrix ret;
+        for (unsigned i = 0; i < N * M; i++) {
+            ret.element(i) = quicktex::clamp(element(i), low.element(i), high.element(i));
+        }
+        return ret;
     }
 
    protected:
-    template <typename Op, typename L>
-        requires subscriptable_range<L>
-    static inline D map(const L &lhs, Op f) {
-        D r;
-        for (unsigned i = 0; i < lhs.size(); i++) { r[i] = f(lhs[i]); }
-        return r;
+    template <typename Op> static inline Matrix map(Matrix &lhs, Op f) {
+        Matrix ret;
+        for (unsigned i = 0; i < lhs.size(); i++) { ret[i] = f(lhs[i]); }
+        return ret;
     }
 
-    template <typename Op, typename L, typename R>
-        requires operable_Vs<L, R, Op>
-    static inline D map(const L &lhs, const R &rhs, Op f) {
-        D r;
+    template <typename Op, typename R>
+        requires scalar_operable<R, T, Op>
+    static inline Matrix map(const Matrix &lhs, const R &rhs, Op f) {
+        Matrix r;
         for (unsigned i = 0; i < lhs.size(); i++) { r[i] = f(lhs[i], rhs); }
         return r;
     }
 
-    template <typename Op, typename L, typename R>
-        requires operable_VV<L, R, Op>
-    static inline D map(const L &lhs, const R &rhs, Op f) {
-        D r;
-        for (unsigned i = 0; i < N; i++) { r[i] = f(lhs[i], rhs[i]); }
+    template <typename Op, typename R>
+        requires scalar_operable<R, T, Op>
+    static inline Matrix map(const Matrix &lhs, const Matrix<R, N, M> &rhs, Op f) {
+        Matrix r;
+        for (unsigned i = 0; i < lhs.size(); i++) { r[i] = f(lhs[i], rhs[i]); }
         return r;
     }
 
-   private:
-    // error guard constructor prevents incorrect CRTP usage
-    VecBase() {
-        static_assert(vector_like<D>);  // obviousy a vector is vector-like
+    class column_iterator : public index_iterator_base<column_iterator> {
+       public:
+        using value_type = column_type;
+        using base = index_iterator_base<column_iterator>;
+
+        column_iterator(const Matrix *matrix = nullptr, size_t index = 0) : base(index), _matrix(matrix){};
+
+        column_type operator*() const { return _matrix->get_column(this->_index); }
+        const column_type *operator->() const { &(_matrix->get_column(this->_index)); }
+
+        friend bool operator==(const column_iterator &lhs, const column_iterator &rhs) {
+            return (lhs._matrix == rhs._matrix) && (lhs._index == rhs._index);
+        }
+
+       private:
+        const Matrix *_matrix;
     };
-    friend D;
 
-    D &_derived() { return static_cast<D &>(*this); }
-    D const &_derived() const { return static_cast<D const &>(*this); }
-};
+    class linear_iterator : public index_iterator_base<column_iterator> {
+       public:
+        using value_type = column_type;
+        using base = index_iterator_base<column_iterator>;
 
-#pragma pack(push, 1)
-template <typename T, size_t N> class Vec : public VecBase<T, N, Vec<T, N>> {
-   public:
-    typedef T value_type;
-    typedef VecBase<T, N, Vec<T, N>> base;
+        linear_iterator(const Matrix *matrix = nullptr, size_t index = 0) : base(index), _matrix(matrix){};
 
-    friend base;
-    using base::base;  // import base constructors
+        T &operator*() const { return _matrix->element(this->_index); }
+        T *operator->() const { &(_matrix->element(this->_index)); }
 
-    Vec() : _c() {}  // default constructor
+        friend bool operator==(const column_iterator &lhs, const column_iterator &rhs) {
+            return (lhs._matrix == rhs._matrix) && (lhs._index == rhs._index);
+        }
 
-   protected:
-    const T &_at(size_t i) const { return _c[i]; }
-
-    T &_at(size_t i) { return _c[i]; }
-
-    auto _begin() { return _c.begin(); }
-    auto _begin() const { return _c.begin(); }
-
-    auto _end() { return _c.end(); }
-    auto _end() const { return _c.end(); }
-
-   private:
-    std::array<T, N> _c;  // internal array of components
+       private:
+        const Matrix *_matrix;
+    };
 };
 
 template <typename T, size_t M, typename A = xsimd::default_arch> class BatchVec : Vec<xsimd::batch<T, A>, M> {
     template <size_t N, typename U = xsimd::unaligned_mode>
-    static BatchVec load_columns(const make_matrix<T, N, M> &matrix, size_t column) {
+    static BatchVec load_columns(const Matrix<T, N, M> &matrix, size_t column) {
         const size_t batch_size = xsimd::batch<T, A>::size;
         assert(column + batch_size <= N);
 
@@ -373,13 +417,12 @@ template <typename T, size_t M, typename A = xsimd::default_arch> class BatchVec
     }
 
     template <typename U = xsimd::unaligned_mode, typename V, size_t N>
-    void store_columns(make_matrix<T, N, M> &matrix, size_t column) {
+    void store_columns(Matrix<T, N, M> &matrix, size_t column) {
         const size_t batch_size = xsimd::batch<T, A>::size;
         assert(column + batch_size <= N);
 
         for (unsigned i = 0; i < M; i++) { this->at(i).store((&(matrix[column][i]), U{})); }
     }
 };
-#pragma pack(pop)
 
 }  // namespace quicktex

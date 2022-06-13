@@ -64,9 +64,9 @@ UTEST(Vec_float, div) {
     ASSERT_LT(diff, 0.01f);
 }
 
-UTEST(Vec_float, hsum) {
+UTEST(Vec_float, vsum) {
     auto a = Vec<float, 5>{1.0f, 2.0f, 3.5f, 4.0f, -4.0f};
-    auto diff = abs(a.hsum() - 6.5f);
+    auto diff = abs(a.vsum() - 6.5f);
 
     ASSERT_LT(diff, 0.01f);
 }
