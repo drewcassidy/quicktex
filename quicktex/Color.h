@@ -18,7 +18,7 @@
  */
 
 #pragma once
-#include "Vec.h"
+#include "Matrix.h"
 #include "util/bitbash.h"
 
 namespace quicktex {

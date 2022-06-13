@@ -22,7 +22,7 @@
 #include <cstddef>  // for size_t
 #include <cstdint>  // for uint8_t, uint16_t
 
-#include "Vec.h"
+#include "Matrix.h"
 
 namespace quicktex {
 class Vector4;
