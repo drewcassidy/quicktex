@@ -44,6 +44,7 @@ target_link_libraries(quicktex PUBLIC xsimd)
 # Set library features, like C/C++ standards
 target_compile_features(quicktex PUBLIC cxx_std_20 c_std_11)
 set_property(TARGET quicktex PROPERTY CXX_VISIBILITY_PRESET hidden)
+set_property(TARGET quicktex PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Include source root for project-relative includes
 target_include_directories(quicktex PUBLIC .)
