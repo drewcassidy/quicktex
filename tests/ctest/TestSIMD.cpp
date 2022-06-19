@@ -17,7 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <utest.h>
+#include <gtest/gtest.h>
+#include <util/math.h>
+#include <util/simd.h>
+#include <util/types.h>
 
 #include <array>
 #include <cstdint>
@@ -25,10 +28,6 @@
 #include <numeric>
 #include <vector>
 #include <xsimd/xsimd.hpp>
-
-#include "util/math.h"
-#include "util/simd.h"
-#include "util/types.h"
 
 namespace quicktex::tests {
 
@@ -62,21 +61,21 @@ template <typename T> constexpr auto make_arrays() {
     return arrays;
 }
 
-#define UTEST_WHADD(TYPE)                                                                           \
-    UTEST(simd, whadd_##TYPE) {                                                                     \
+#define TEST_WHADD(TYPE)                                                                            \
+    TEST(simd, whadd_##TYPE) {                                                                      \
         for (auto arr : make_arrays<TYPE>()) {                                                      \
             auto v = xsimd::load_unaligned(&arr[0]);                                                \
             auto vsum = simd::whadd(v);                                                             \
             auto ssum = std::accumulate(arr.begin(), arr.end(), static_cast<next_size_t<TYPE>>(0)); \
-            ASSERT_EQ(vsum, ssum);                                                                  \
+            EXPECT_EQ(vsum, ssum);                                                                  \
         }                                                                                           \
     }
 
-UTEST_WHADD(int8_t)
-UTEST_WHADD(uint8_t)
-UTEST_WHADD(int16_t)
-UTEST_WHADD(uint16_t)
-UTEST_WHADD(int32_t)
-UTEST_WHADD(uint32_t)
+TEST_WHADD(int8_t)
+TEST_WHADD(uint8_t)
+TEST_WHADD(int16_t)
+TEST_WHADD(uint16_t)
+TEST_WHADD(int32_t)
+TEST_WHADD(uint32_t)
 
 }  // namespace quicktex::tests

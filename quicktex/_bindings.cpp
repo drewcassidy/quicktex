@@ -20,7 +20,6 @@
 #include "_bindings.h"
 
 #include <pybind11/pybind11.h>
-#include <utest.h>
 
 #include "Decoder.h"
 #include "Encoder.h"
@@ -31,8 +30,6 @@
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
-
-UTEST_STATE();
 
 namespace py = pybind11;
 
@@ -82,9 +79,6 @@ PYBIND11_MODULE(_quicktex, m) {
         [](RawTexture &self, int x, int y, Color val) { self.pixel(x, y) = val; }, &RawTexture::Size);
 
     InitS3TC(m);
-
-    // CTests
-    m.def("_run_ctests", []() { return utest_main(0, NULL); });
 }
 
 }  // namespace quicktex::bindings
