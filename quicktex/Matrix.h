@@ -107,7 +107,6 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     using base::end;
     using base::operator[];
 
-   public:
     // region constructors
     /**
      * Create a vector from an intializer list
@@ -122,7 +121,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
      * Create a vector from a scalar value
      * @param scalar value to populate with
      */
-    Matrix(const T &scalar) { std::fill(this->begin(), this->end(), scalar); }
+    Matrix(const T &scalar) { std::fill(this->all_begin(), this->all_end(), scalar); }
 
     /**
      * Create a vector from an iterator
@@ -164,6 +163,12 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     auto column_begin() const { return column_iterator(this, 0); }
     auto column_end() const { return column_iterator(this, N); }
 
+    auto all_begin() const { return linear_iterator<const Matrix>(this, 0); }
+    auto all_begin() { return linear_iterator<Matrix>(this, 0); }
+
+    auto all_end() const { return linear_iterator<const Matrix>(this, N * M); }
+    auto all_end() { return linear_iterator<Matrix>(this, N * M); }
+
     const row_type &get_row(size_t y) const { return this->at(y); }
 
     template <typename R> void set_row(size_t y, const R &value) { this->at(y) = value; }
@@ -180,6 +185,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
         return ret;
     }
 
+    // n/m accessors
     const T &element(size_t m, size_t n) const {
         assert(n < N);
         assert(m < M);
@@ -193,8 +199,8 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
 
     T &element(size_t n, size_t m) { return const_cast<T &>(static_cast<const Matrix &>(*this).element(n, m)); }
 
+    // linear accessors
     const T &element(size_t i) const { return element(i / N, i % N); }
-
     T &element(size_t i) { return element(i / N, i % N); }
 
     // RGBA accessors
@@ -320,6 +326,9 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     // sum up all rows
     row_type vsum() const { return std::accumulate(row_begin(), row_end(), row_type{}); }
 
+    // sum up all values
+    T sum() const { return std::accumulate(all_begin(), all_end(), T{}); }
+
     template <typename R, size_t P>
         requires operable<R, T, std::multiplies<>>
     Matrix<T, P, M> mult(const Matrix<R, P, N> &rhs) {
@@ -414,22 +423,22 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
         const Matrix *_matrix;
     };
 
-    class linear_iterator : public index_iterator_base<column_iterator> {
+    template <typename V> class linear_iterator : public index_iterator_base<linear_iterator<V>> {
        public:
         using value_type = column_type;
-        using base = index_iterator_base<column_iterator>;
+        using base = index_iterator_base<linear_iterator<V>>;
 
-        linear_iterator(const Matrix *matrix = nullptr, size_t index = 0) : base(index), _matrix(matrix){};
+        linear_iterator(V *matrix = nullptr, size_t index = 0) : base(index), _matrix(matrix){};
 
-        T &operator*() const { return _matrix->element(this->_index); }
-        T *operator->() const { &(_matrix->element(this->_index)); }
+        auto operator*() const { return _matrix->element(this->_index); }
+        auto *operator->() const { &(_matrix->element(this->_index)); }
 
-        friend bool operator==(const column_iterator &lhs, const column_iterator &rhs) {
+        friend bool operator==(const linear_iterator &lhs, const linear_iterator &rhs) {
             return (lhs._matrix == rhs._matrix) && (lhs._index == rhs._index);
         }
 
        private:
-        const Matrix *_matrix;
+        V *_matrix;
     };
 };
 
