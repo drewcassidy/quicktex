@@ -11,4 +11,4 @@ add_subdirectory(quicktex)
 add_subdirectory(tests)
 
 enable_testing ()
-add_test (NAME MyTest COMMAND Test)
+add_test (NAME QuicktexTest COMMAND Test)

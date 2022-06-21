@@ -35,9 +35,7 @@ template <typename T, size_t M> using Vec = Matrix<T, 1, M>;
 
 // region helper concepts
 template <typename L, typename R, typename Op>
-concept operable = requires(L &l, R &r, Op &op) {
-                       { op(l, r) } -> std::same_as<L>;
-                   };
+concept operable = requires(L &l, R &r, Op &op) { op(l, r); };
 
 template <typename V>
 concept is_matrix = requires(V &v) {
@@ -121,7 +119,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
      * Create a vector from a scalar value
      * @param scalar value to populate with
      */
-    Matrix(const T &scalar) { std::fill(this->all_begin(), this->all_end(), scalar); }
+    Matrix(const T &scalar) { std::fill(this->begin(), this->end(), scalar); }
 
     /**
      * Create a vector from an iterator
@@ -431,7 +429,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
         linear_iterator(V *matrix = nullptr, size_t index = 0) : base(index), _matrix(matrix){};
 
         auto operator*() const { return _matrix->element(this->_index); }
-        auto *operator->() const { &(_matrix->element(this->_index)); }
+        auto *operator->() const { return &(_matrix->element(this->_index)); }
 
         friend bool operator==(const linear_iterator &lhs, const linear_iterator &rhs) {
             return (lhs._matrix == rhs._matrix) && (lhs._index == rhs._index);

@@ -54,6 +54,7 @@ TEST(Vec_float, mul) {
     auto b = Vec<float, 3>{3.0f, 1.5f, 0.0f};
 
     expect_matrix_eq(a * b, {3.0f, 2.25f, 0.0f});
+    expect_matrix_eq(a * 2, {2.0f, 3.00f, 4.0f});
 }
 
 TEST(Vec_float, div) {
@@ -61,6 +62,7 @@ TEST(Vec_float, div) {
     auto b = Vec<float, 3>{2.0f, 1.5f, 1.0f};
 
     expect_matrix_eq(a / b, {0.5f, 1.0f, 2.0f});
+    expect_matrix_eq(a / 2, {0.5f, 0.75f, 1.0f});
 }
 
 TEST(Vec_float, vsum) {
@@ -79,9 +81,8 @@ TEST(Vec_float, dot) {
 
 TEST(Vec_float, abs) {
     auto a = Vec<float, 3>{1.0f, -5.0f, -1.0f};
-    auto expected = Vec<float, 3>{1.0f, 5.0f, 1.0f};
 
-    expect_matrix_eq(a.abs(), expected);
+    expect_matrix_eq(a.abs(), {1.0f, 5.0f, 1.0f});
 }
 
 TEST(Vec_float, clamp) {
@@ -132,7 +133,7 @@ TEST(Vec_int, getters) {
         EXPECT_EQ(a.element(i), a[i]);
     }
 
-    EXPECT_EQ(a.get_column(0), a);  // the 0th column of a column-vector is itself
+    expect_matrix_eq(a.get_column(0), a);  // the 0th column of a column-vector is itself
 }
 
 TEST(Vec_int, copy) {
