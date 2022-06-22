@@ -27,17 +27,49 @@
 #include <type_traits>
 #include <vector>
 
+#include "util/ranges.h"
 #include "xsimd/xsimd.hpp"
 
 namespace quicktex {
 
+namespace detail {
 using std::abs;    // abs overload for builtin types
 using xsimd::abs;  // abs overload for xsimd buffers
+}  // namespace detail
 
-template <typename S> constexpr S clamp(S value, S low, S high) {
+template <typename S>
+    requires requires(S &s) { s.abs(); }
+constexpr S abs(S value) {
+    return value.abs();
+}
+
+template <typename S>
+    requires requires(S &s) { detail::abs(s); }
+constexpr S abs(S value) {
+    return detail::abs(value);
+}
+
+template <typename S>
+    requires requires(S &s) { s.clamp(s, s); }
+constexpr S clamp(S value, S low, S high) {
+    assert(low <= high);
+    return value.clamp(low, high);
+}
+
+template <typename S>
+    requires std::is_scalar_v<S>
+constexpr S clamp(S value, S low, S high) {
     assert(low <= high);
     if (value < low) return low;
     if (value > high) return high;
     return value;
 }
+
+template <typename S, typename A>
+constexpr S clamp(xsimd::batch<S, A> value, const xsimd::batch<S, A> &low, const xsimd::batch<S, A> &high) {
+    value = xsimd::select(xsimd::lt(low), low, value);
+    value = xsimd::select(xsimd::gt(high), high, value);
+    return value;
+}
+
 }  // namespace quicktex

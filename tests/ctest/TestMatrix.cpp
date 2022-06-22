@@ -147,5 +147,31 @@ TEST(Vec_int, copy) {
 
     EXPECT_EQ(out, arr);
 }
+
+TEST(Vec_int, neg) {
+    auto a = Vec<int, 4>{1, 2, 3, 4};
+
+    expect_matrix_eq(-a, {-1, -2, -3, -4});
+}
+
+TEST(Vec_int, add) {
+    auto a = Vec<int, 4>{1, 2, 3, 4};
+    auto b = Vec<int, 4>{5, 6, 7, 8};
+
+    expect_matrix_eq(a + b, {6, 8, 10, 12});
+}
+
+TEST(Vec_int, sub) {
+    auto b = Vec<int, 4>{1, 2, 3, 4};
+    auto a = Vec<int, 4>{5, 6, 7, 8};
+
+    expect_matrix_eq(a - b, {4, 4, 4, 4});
+}
+
+TEST(Vec_int, abs) {
+    auto a = Vec<int, 4>{1, -5, -1, 0};
+
+    expect_matrix_eq(a.abs(), {1, 5, 1, 0});
+}
 // endregion
 }  // namespace quicktex::tests

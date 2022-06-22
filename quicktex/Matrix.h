@@ -361,46 +361,74 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     row_type sqr_mag() const { return dot(*this); }
 
     Matrix abs() const {
-        Matrix ret;
-        for (unsigned i = 0; i < N * M; i++) { ret.element(i) = quicktex::abs(element(i)); }
-        return ret;
-    }
-
-    Matrix clamp(T low, T high) {
-        Matrix ret;
-        for (unsigned i = 0; i < N * M; i++) { ret.element(i) = quicktex::clamp(element(i), low, high); }
-        return ret;
-    }
-
-    Matrix clamp(const Matrix &low, const Matrix &high) {
-        Matrix ret;
-        for (unsigned i = 0; i < N * M; i++) {
-            ret.element(i) = quicktex::clamp(element(i), low.element(i), high.element(i));
+        Matrix res;
+        if constexpr (_batched) {
+            auto lb = _batch_type::load_unaligned(&this->at(0));
+            lb = xsimd::abs(lb);
+            lb.store_unaligned(&res[0]);
+        } else {
+            for (unsigned i = 0; i < N * M; i++) { res.element(i) = quicktex::abs(element(i)); }
         }
-        return ret;
+        return res;
+    }
+
+    Matrix clamp(T low, T high) { return clamp(Matrix(low), Matrix(high)); }
+    Matrix clamp(const Matrix &low, const Matrix &high) {
+        Matrix res;
+        if constexpr (_batched) {
+            auto vb = _batch_type::load_unaligned(&this->at(0));
+            auto lb = _batch_type::load_unaligned(&low[0]);
+            auto hb = _batch_type::load_unaligned(&high[0]);
+            vb = quicktex::clamp(vb, lb, hb);
+            vb.store_unaligned(&res[0]);
+        } else {
+            for (unsigned m = 0; m < M; m++) {
+                res[m] = quicktex::clamp<row_type>(get_row(m), low.get_row(m), high.get_row(m));
+            }
+        }
+        return res;
     }
 
    protected:
-    template <typename Op> static inline Matrix map(Matrix &lhs, Op f) {
-        Matrix ret;
-        for (unsigned i = 0; i < lhs.size(); i++) { ret[i] = f(lhs[i]); }
-        return ret;
+    template <typename Op> static inline Matrix map(const Matrix &lhs, Op f) {
+        Matrix res;
+        if constexpr (_batched) {
+            auto lb = _batch_type::load_unaligned(&lhs[0]);
+            auto resb = f(lb);
+            resb.store_unaligned(&res[0]);
+        } else {
+            for (unsigned i = 0; i < lhs.size(); i++) { res[i] = f(lhs[i]); }
+        }
+        return res;
     }
 
     template <typename Op, typename R>
         requires operable<R, T, Op>
     static inline Matrix map(const Matrix &lhs, const R &rhs, Op f) {
-        Matrix r;
-        for (unsigned i = 0; i < lhs.size(); i++) { r[i] = f(lhs[i], rhs); }
-        return r;
+        Matrix res;
+        if constexpr (_batched && operable<_batch_type, R, Op>) {
+            auto lb = _batch_type::load_unaligned(&lhs[0]);
+            auto resb = f(lb, rhs);
+            resb.store_unaligned(&res[0]);
+        } else {
+            for (unsigned i = 0; i < lhs.size(); i++) { res[i] = f(lhs[i], rhs); }
+        }
+        return res;
     }
 
     template <typename Op, typename R>
         requires operable<R, T, Op>
     static inline Matrix map(const Matrix &lhs, const Matrix<R, N, M> &rhs, Op f) {
-        Matrix r;
-        for (unsigned i = 0; i < lhs.size(); i++) { r[i] = f(lhs[i], rhs[i]); }
-        return r;
+        Matrix res;
+        if constexpr (_batched && operable<_batch_type, _batch_type, Op>) {
+            auto lb = _batch_type::load_unaligned(&lhs[0]);
+            auto rb = xsimd::load_as<T>(&rhs[0], xsimd::unaligned_mode{});
+            auto resb = f(lb, rb);
+            resb.store_unaligned(&res[0]);
+        } else {
+            for (unsigned i = 0; i < lhs.size(); i++) { res[i] = f(lhs[i], rhs[i]); }
+        }
+        return res;
     }
 
     class column_iterator : public index_iterator_base<column_iterator> {
@@ -438,26 +466,32 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
        private:
         V *_matrix;
     };
-};
 
-template <typename T, size_t M, typename A = xsimd::default_arch> class BatchVec : Vec<xsimd::batch<T, A>, M> {
-    template <size_t N, typename U = xsimd::unaligned_mode>
-    static BatchVec load_columns(const Matrix<T, N, M> &matrix, size_t column) {
-        const size_t batch_size = xsimd::batch<T, A>::size;
-        assert(column + batch_size <= N);
+   private:
+    using _batch_type = std::conditional_t<N == 1, typename xsimd::make_sized_batch<T, M>::type, void>;
+    static constexpr bool _batched = !std::is_void_v<_batch_type>;
 
-        BatchVec ret;
-        for (unsigned i = 0; i < M; i++) { ret[i] = xsimd::load<A, T>(&(matrix[column][i]), U{}); }
-        return ret;
+    // right now batched types are always the whole vector but that might change
+    template <bool b = true> using _chunk_type = std::conditional_t<b && _batched, _batch_type, row_type>;
+
+    template <bool b = true> static constexpr size_t _chunk_count = b && _batched ? 1 : M;
+
+    template <bool b = true> inline _chunk_type<b> get_chunk(size_t i) const {
+        assert(i < _chunk_count<b>);
+        if constexpr (b && _batched) {
+            return _chunk_type<b>::load_unaligned(&(this->at(0)));
+        } else {
+            return get_row(i);
+        }
     }
 
-    template <typename U = xsimd::unaligned_mode, typename V, size_t N>
-    void store_columns(Matrix<T, N, M> &matrix, size_t column) {
-        const size_t batch_size = xsimd::batch<T, A>::size;
-        assert(column + batch_size <= N);
-
-        for (unsigned i = 0; i < M; i++) { this->at(i).store((&(matrix[column][i]), U{})); }
+    template <bool b = true> inline void set_chunk(size_t i, _chunk_type<b> &value) const {
+        assert(i < _chunk_count<b>);
+        if constexpr (b && _batched) {
+            xsimd::store_unaligned(&(this->at(0)), value);
+        } else {
+            set_row(i, value);
+        }
     }
 };
-
 }  // namespace quicktex
