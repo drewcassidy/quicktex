@@ -631,19 +631,18 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
 
         // TODO: handle constant blue channel better
 
-        auto min = Vector4::FromColorRGB(metrics.min);
-        auto max = Vector4::FromColorRGB(metrics.max);
-        auto avg = Vector4::FromColorRGB(metrics.avg);
+        Color min = metrics.min;
+        Color max = metrics.max;
+        Color avg = metrics.avg;
 
-        Vector4 axis = {306, 601, 117};  // Luma vector
-        Matrix4x4 covariance = Matrix4x4::Identity();
+        Vec<float, 4> axis = {306, 601, 117, 0};  // Luma vector
+        auto covariance = Matrix<float, 4, 4>::identity();
 
         for (int i = 0; i < 16; i++) {
             auto val = pixels.Get(i);
             if (ignore_black && val.IsBlack()) continue;
 
-            auto color_vec = Vector4::FromColorRGB(val);
-            Vector4 diff = color_vec - avg;
+            auto diff = val - avg;
             for (unsigned c1 = 0; c1 < 3; c1++) {
                 for (unsigned c2 = c1; c2 < 3; c2++) {
                     covariance[c1][c2] += (diff[c1] * diff[c2]);
@@ -653,9 +652,9 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
         }
 
         covariance /= 255.0f;
-        covariance.Mirror();
+        covariance = covariance.mirror();
 
-        Vector4 delta = max - min;
+        Vec<float, 4> delta = max - min;
 
         // realign r and g axes to match
         if (covariance[0][2] < 0) delta[0] = -delta[0];  // r vs b
@@ -664,10 +663,13 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
         // using the covariance matrix, stretch the delta vector towards the primary axis of the data using power
         // iteration the end result of this may actually be the same as the least squares approach, will have to do more
         // research
-        for (unsigned power_iter = 0; power_iter < _power_iterations; power_iter++) { delta = covariance * delta; }
+        for (unsigned power_iter = 0; power_iter < _power_iterations; power_iter++) {
+            delta = covariance.mult(delta);
+        }
 
         // if we found any correlation, then this is our new axis. otherwise we fallback to the luma vector
-        float k = delta.MaxAbs(3);
+        auto delta_abs = delta.abs();
+        float k = *std::max(delta_abs.begin(), delta_abs.end());
         if (k >= 2) { axis = delta * (2048.0f / k); }
 
         axis *= 16;
@@ -678,13 +680,12 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
         int min_index = 0, max_index = 0;
 
         for (int i = 0; i < 16; i++) {
-            auto val = pixels.Get(i);
-            if (ignore_black && val.IsBlack()) continue;
+            Color val = pixels.Get(i); //todo: fix this mess
+            if (ignore_black && (val.r() | val.g() | val.b()) < 4) continue;
 
-            auto color_vec = Vector4::FromColorRGB(val);
             // since axis is constant here, I dont think its magnitude actually matters,
             // since we only care about the min or max dot product
-            float dot = color_vec.Dot(axis);
+            float dot = (Vec<float,4>(val)).dot(axis);
             if (dot > max_dot) {
                 max_dot = dot;
                 max_index = i;

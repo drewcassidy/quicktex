@@ -29,9 +29,9 @@
 
 namespace quicktex {
 
-template <typename T, size_t N, size_t M> class Matrix;
+template <typename T, size_t M, size_t N> class Matrix;
 
-template <typename T, size_t M> using Vec = Matrix<T, 1, M>;
+template <typename T, size_t M> using Vec = Matrix<T, M, 1>;
 
 // region helper concepts
 template <typename L, typename R, typename Op>
@@ -42,7 +42,7 @@ concept is_matrix = requires(V &v) {
                         V::width();
                         V::height();
                         V::value_type;
-                    } && std::same_as < Matrix<typename V::value_type, V::width(), V::height()>,
+                    } && std::same_as < Matrix<typename V::value_type, V::height(), V::width()>,
 std::remove_cvref_t < V >> ;
 
 template <typename V> struct vector_stats {
@@ -66,17 +66,14 @@ template <typename V> constexpr size_t vector_dims = vector_stats<V>::dims;
 // endregion
 
 template <typename T, size_t N> class VecBase {
-   public:
-    const T &operator[](size_t index) const { return _c[index]; }
-    T &operator[](size_t index) { return _c[index]; }
+   protected:
+    const T &_at(size_t index) const { return _c.at(index); }
+    T &_at(size_t index) { return _c.at(index); }
 
-    const T &at(size_t index) const { return _c.at(index); }
-    T &at(size_t index) { return _c.at(index); }
-
-    auto begin() { return _c.begin(); }
-    auto begin() const { return _c.begin(); }
-    auto end() { return _c.end(); }
-    auto end() const { return _c.end(); }
+    auto _begin() { return _c.begin(); }
+    auto _begin() const { return _c.begin(); }
+    auto _end() { return _c.end(); }
+    auto _end() const { return _c.end(); }
 
    private:
     std::array<T, N> _c;
@@ -91,7 +88,7 @@ template <typename T, size_t N, size_t M> using matrix_column_type = std::condit
  * @tparam N Width of the matrix
  * @tparam M Height of the matrix
  */
-template <typename T, size_t N, size_t M>
+template <typename T, size_t M, size_t N>
 class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
    public:
     using base = VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M>;
@@ -101,9 +98,9 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     using column_type = matrix_column_type<T, N, M>;
 
     using base::base;
-    using base::begin;
-    using base::end;
-    using base::operator[];
+    //    using base::begin;
+    //    using base::end;
+    //    using base::operator[];
 
     // region constructors
     /**
@@ -144,6 +141,14 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     : Matrix(input_range.begin()) {
         assert(std::distance(input_range.begin(), input_range.end()) == M);
     }
+
+    template <typename R = T>
+        requires(N == M)
+    static constexpr Matrix identity() {
+        Matrix result = Matrix(0);
+        for (unsigned i = 0; i < N; i++) { result.element(i, i) = 1; }
+        return result;
+    }
     // endregion
 
     // region iterators and accessors
@@ -152,11 +157,17 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     static constexpr size_t height = M;
     static constexpr size_t dims = ((width > 1) ? 1 : 0) + ((height > 1) ? 1 : 0);
 
-    auto row_begin() { return this->begin(); }
-    auto row_begin() const { return this->begin(); }
+    const row_type &at(size_t index) const { return static_cast<const row_type &>(base::_at(index)); }
+    row_type &at(size_t index) { return static_cast<row_type &>(base::_at(index)); }
 
-    auto row_end() { return this->end(); }
-    auto row_end() const { return this->end(); }
+    const row_type &operator[](size_t index) const { return at(index); }
+    row_type &operator[](size_t index) { return at(index); }
+
+    const row_type *begin() const { return static_cast<const row_type *>(base::_begin()); }
+    row_type *begin() { return static_cast<row_type *>(base::_begin()); }
+
+    const row_type *end() const { return static_cast<const row_type *>(base::_end()); }
+    row_type *end() { return static_cast<row_type *>(base::_end()); }
 
     auto column_begin() const { return column_iterator(this, 0); }
     auto column_end() const { return column_iterator(this, N); }
@@ -167,20 +178,32 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     auto all_end() const { return linear_iterator<const Matrix>(this, N * M); }
     auto all_end() { return linear_iterator<Matrix>(this, N * M); }
 
-    const row_type &get_row(size_t y) const { return this->at(y); }
+    const row_type &get_row(size_t m) const {
+        assert(m < M);
+        return static_cast<const row_type &>(this->at(m));
+    }
 
-    template <typename R> void set_row(size_t y, const R &value) { this->at(y) = value; }
+    template <typename R> void set_row(size_t m, const R &value) {
+        assert(m < M);
+        this->at(m) = value;
+    }
 
     template <typename S = T> column_type get_column(size_t n) const {
-        column_type ret;
-        for (unsigned m = 0; m < M; m++) { ret[m] = element(m, n); }
-        return ret;
+        if constexpr (M == 1) {
+            return element(0, n);
+        } else {
+            column_type ret;
+            for (unsigned m = 0; m < M; m++) { ret[m] = element(m, n); }
+            return ret;
+        }
     }
 
     void set_column(size_t n, const column_type &value) {
-        column_type ret;
-        for (unsigned m = 0; m < M; m++) { element(m, n) = value[m]; }
-        return ret;
+        if constexpr (M == 1) {
+            element(0, n) = value;
+        } else {
+            for (unsigned m = 0; m < M; m++) { element(m, n) = value[m]; }
+        }
     }
 
     // n/m accessors
@@ -202,7 +225,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     T &element(size_t i) { return element(i / N, i % N); }
 
     // RGBA accessors
-    const T &r() const { return this->at(0); }
+    const T &r() const { return (*this)[0]; }
     T &r() { return this->at(0); }
     template <typename S = T> std::enable_if_t<M >= 2, const S &> g() const { return this->at(1); }
     template <typename S = T> std::enable_if_t<M >= 2, S &> g() { return this->at(1); }
@@ -224,7 +247,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
 
     template <typename R>
         requires std::equality_comparable_with<T, R> bool
-    operator==(const Matrix<R, N, M> &rhs) const {
+    operator==(const Matrix<R, M, N> &rhs) const {
         return size() == rhs.size() && std::equal(this->begin(), this->end(), rhs.begin());
     };
 
@@ -238,14 +261,14 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     // add vectors
     template <typename R>
         requires operable<R, T, std::plus<>>
-    Matrix operator+(const Matrix<R, N, M> &rhs) const {
+    Matrix operator+(const Matrix<R, M, N> &rhs) const {
         return _map(std::plus(), *this, rhs);
     };
 
     // subtract vectors
     template <typename R>
         requires operable<R, T, std::minus<>>
-    Matrix operator-(const Matrix<R, N, M> &rhs) const {
+    Matrix operator-(const Matrix<R, M, N> &rhs) const {
         // we can't just add the negation because that's invalid for unsigned types
         return _map(std::minus(), *this, rhs);
     };
@@ -253,7 +276,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     // multiply matrix with a matrix or column vector
     template <typename R, size_t NN>
         requires(NN == 1 || NN == N) && operable<R, T, std::multiplies<>>
-    Matrix operator*(const Matrix<R, NN, M> &rhs) const {
+    Matrix operator*(const Matrix<R, M, N> &rhs) const {
         return _map(std::multiplies(), *this, rhs);
     };
 
@@ -267,7 +290,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     // divides a matrix by a matrix or column vector
     template <typename R, size_t NN>
         requires(NN == 1 || NN == N) && operable<R, T, std::divides<>>
-    Matrix operator/(const Matrix<R, NN, M> &rhs) const {
+    Matrix operator/(const Matrix<R, M, NN> &rhs) const {
         return _map(std::divides(), *this, rhs);
     };
 
@@ -322,36 +345,50 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     column_type hsum() const { return std::accumulate(column_begin(), column_end(), column_type{}); }
 
     // sum up all rows
-    row_type vsum() const { return std::accumulate(row_begin(), row_end(), row_type{}); }
+    row_type vsum() const { return std::accumulate(begin(), end(), row_type{}); }
 
     // sum up all values
     T sum() const { return std::accumulate(all_begin(), all_end(), T{}); }
 
     template <typename R, size_t P>
         requires operable<R, T, std::multiplies<>>
-    Matrix<T, P, M> mult(const Matrix<R, P, N> &rhs) {
+    Matrix<T, M, P> mult(const Matrix<R, N, P> &rhs) const {
         auto rt = rhs.transpose();
-        Matrix<T, P, M> res(0);
-        for (unsigned i = 0; i < P; i++) {
+        Matrix<T, M, P> res(0);
+        for (unsigned p = 0; p < P; p++) {
             // for each column of the RHS/Result
-            for (unsigned j = 0; j < M; j++) {
+            for (unsigned m = 0; m < M; m++) {
                 // for each row of the LHS/Result
-                res.element(i, j) = get_row(i).dot(rt.get_row(j));
+                for (unsigned n = 0; n < N; n++) {
+                    res.element(m, p) += element(m, n) * rhs.element(n, p);
+                }
             }
         }
         return res;
     }
 
-    Matrix<T, M, N> transpose() {
-        Matrix<T, M, N> res;
+    Matrix<T, N, M> transpose() const {
+        Matrix<T, N, M> res;
         for (unsigned m = 0; m < M; m++) { res.set_column(m, get_row(m)); }
         return res;
+    }
+
+    template <typename R = T>
+        requires(N == M)
+    Matrix mirror() const {
+        Matrix result = *this;
+        for (unsigned n = 0; n < N - 1; n++) {
+            for (unsigned m = (n + 1); m < M; m++) {
+                result.element(m,n) = result.element(n,m);
+            }
+        }
+        return result;
     }
 
     // dot product of two compatible matrices
     template <typename R>
         requires(N == 1) && operable<T, R, std::multiplies<>> && operable<T, T, std::plus<>>
-    row_type dot(const Matrix<R, N, M> &rhs) const {
+    row_type dot(const Matrix<R, M, N> &rhs) const {
         // technically this is Lt * R, but the vsum method is probably faster/more readable
         // than allocationg a new transpose matrix
         Matrix product = *this * rhs;
