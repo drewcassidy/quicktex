@@ -232,14 +232,14 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     template <typename S = T>
         requires(!std::unsigned_integral<T>) && requires(T &t) { -t; }
     Matrix operator-() const {
-        return map(*this, std::negate());
+        return _map(std::negate(), *this);
     };
 
     // add vectors
     template <typename R>
         requires operable<R, T, std::plus<>>
     Matrix operator+(const Matrix<R, N, M> &rhs) const {
-        return map(*this, rhs, std::plus());
+        return _map(std::plus(), *this, rhs);
     };
 
     // subtract vectors
@@ -247,35 +247,35 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
         requires operable<R, T, std::minus<>>
     Matrix operator-(const Matrix<R, N, M> &rhs) const {
         // we can't just add the negation because that's invalid for unsigned types
-        return map(*this, rhs, std::minus());
+        return _map(std::minus(), *this, rhs);
     };
 
     // multiply matrix with a matrix or column vector
     template <typename R, size_t NN>
         requires(NN == 1 || NN == N) && operable<R, T, std::multiplies<>>
     Matrix operator*(const Matrix<R, NN, M> &rhs) const {
-        return map(*this, rhs, std::multiplies());
+        return _map(std::multiplies(), *this, rhs);
     };
 
     // multiply matrix with a scalar
     template <typename R>
         requires operable<R, T, std::multiplies<>>
     Matrix operator*(const R &rhs) const {
-        return map(*this, rhs, std::multiplies());
+        return _map(std::multiplies(), *this, rhs);
     };
 
     // divides a matrix by a matrix or column vector
     template <typename R, size_t NN>
         requires(NN == 1 || NN == N) && operable<R, T, std::divides<>>
     Matrix operator/(const Matrix<R, NN, M> &rhs) const {
-        return map(*this, rhs, std::divides());
+        return _map(std::divides(), *this, rhs);
     };
 
     // divides a matrix by a scalar
     template <typename R>
         requires operable<R, T, std::divides<>>
     Matrix operator/(const R &rhs) const {
-        return map(*this, rhs, std::divides());
+        return _map(std::divides(), *this, rhs);
     };
 
     // add-assigns a matrix with a matrix
@@ -360,77 +360,14 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
 
     row_type sqr_mag() const { return dot(*this); }
 
-    Matrix abs() const {
-        Matrix res;
-        if constexpr (_batched) {
-            auto lb = _batch_type::load_unaligned(&this->at(0));
-            lb = xsimd::abs(lb);
-            lb.store_unaligned(&res[0]);
-        } else {
-            for (unsigned i = 0; i < N * M; i++) { res.element(i) = quicktex::abs(element(i)); }
-        }
-        return res;
-    }
+    Matrix abs() const { return _map(&quicktex::abs<_chunk_type<>>, *this); }
 
-    Matrix clamp(T low, T high) { return clamp(Matrix(low), Matrix(high)); }
+    Matrix clamp(T low, T high) { return _map(&quicktex::clamp<_chunk_type<>>, *this, low, high); }
     Matrix clamp(const Matrix &low, const Matrix &high) {
-        Matrix res;
-        if constexpr (_batched) {
-            auto vb = _batch_type::load_unaligned(&this->at(0));
-            auto lb = _batch_type::load_unaligned(&low[0]);
-            auto hb = _batch_type::load_unaligned(&high[0]);
-            vb = quicktex::clamp(vb, lb, hb);
-            vb.store_unaligned(&res[0]);
-        } else {
-            for (unsigned m = 0; m < M; m++) {
-                res[m] = quicktex::clamp<row_type>(get_row(m), low.get_row(m), high.get_row(m));
-            }
-        }
-        return res;
+        return _map(&quicktex::clamp<_chunk_type<>>, *this, low, high);
     }
 
    protected:
-    template <typename Op> static inline Matrix map(const Matrix &lhs, Op f) {
-        Matrix res;
-        if constexpr (_batched) {
-            auto lb = _batch_type::load_unaligned(&lhs[0]);
-            auto resb = f(lb);
-            resb.store_unaligned(&res[0]);
-        } else {
-            for (unsigned i = 0; i < lhs.size(); i++) { res[i] = f(lhs[i]); }
-        }
-        return res;
-    }
-
-    template <typename Op, typename R>
-        requires operable<R, T, Op>
-    static inline Matrix map(const Matrix &lhs, const R &rhs, Op f) {
-        Matrix res;
-        if constexpr (_batched && operable<_batch_type, R, Op>) {
-            auto lb = _batch_type::load_unaligned(&lhs[0]);
-            auto resb = f(lb, rhs);
-            resb.store_unaligned(&res[0]);
-        } else {
-            for (unsigned i = 0; i < lhs.size(); i++) { res[i] = f(lhs[i], rhs); }
-        }
-        return res;
-    }
-
-    template <typename Op, typename R>
-        requires operable<R, T, Op>
-    static inline Matrix map(const Matrix &lhs, const Matrix<R, N, M> &rhs, Op f) {
-        Matrix res;
-        if constexpr (_batched && operable<_batch_type, _batch_type, Op>) {
-            auto lb = _batch_type::load_unaligned(&lhs[0]);
-            auto rb = xsimd::load_as<T>(&rhs[0], xsimd::unaligned_mode{});
-            auto resb = f(lb, rb);
-            resb.store_unaligned(&res[0]);
-        } else {
-            for (unsigned i = 0; i < lhs.size(); i++) { res[i] = f(lhs[i], rhs[i]); }
-        }
-        return res;
-    }
-
     class column_iterator : public index_iterator_base<column_iterator> {
        public:
         using value_type = column_type;
@@ -467,31 +404,99 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
         V *_matrix;
     };
 
-   private:
     using _batch_type = std::conditional_t<N == 1, typename xsimd::make_sized_batch<T, M>::type, void>;
     static constexpr bool _batched = !std::is_void_v<_batch_type>;
 
     // right now batched types are always the whole vector but that might change
     template <bool b = true> using _chunk_type = std::conditional_t<b && _batched, _batch_type, row_type>;
 
-    template <bool b = true> static constexpr size_t _chunk_count = b && _batched ? 1 : M;
+    template <bool b = true> static constexpr size_t _chunk_count = b &&_batched ? 1 : M;
 
-    template <bool b = true> inline _chunk_type<b> get_chunk(size_t i) const {
+    template <bool b = true> inline _chunk_type<b> _get_chunk(size_t i) const {
         assert(i < _chunk_count<b>);
         if constexpr (b && _batched) {
             return _chunk_type<b>::load_unaligned(&(this->at(0)));
         } else {
-            return get_row(i);
+            return this->get_row(i);
         }
     }
 
-    template <bool b = true> inline void set_chunk(size_t i, _chunk_type<b> &value) const {
+    template <bool b = true> inline void _set_chunk(size_t i, const _chunk_type<b> &value) {
         assert(i < _chunk_count<b>);
         if constexpr (b && _batched) {
             xsimd::store_unaligned(&(this->at(0)), value);
         } else {
-            set_row(i, value);
+            this->set_row(i, value);
         }
+    }
+
+    /**
+     * Unary map function
+     * @tparam Op Function type
+     * @tparam Args Argument types
+     * @param f function to map
+     * @param lhs matrix
+     * @param args additional scalar arguments
+     * @return vector mapped with f(lhs[i], args)
+     */
+    template <typename Op, typename... Args> inline static Matrix _map(Op f, const Matrix &lhs, Args... args) {
+        Matrix result;
+        constexpr bool b = _batched && std::is_invocable_r_v<_chunk_type<>, Op, _chunk_type<>, Args...>;
+        for (unsigned i = 0; i < _chunk_count<b>; i++) {
+            auto c = lhs._get_chunk<b>(i);
+            auto resultc = f(c, args...);
+            result._set_chunk<b>(i, resultc);
+        }
+        return result;
+    }
+
+    /**
+     * Binary map function
+     * @tparam Op Function type
+     * @tparam Args Argument types
+     * @param f function to map
+     * @param lhs first matrix
+     * @param rhs second matrix argument
+     * @param args additional scalar arguments
+     * @return vector mapped with f(lhs[i], rhs[i], args)
+     */
+    template <typename Op, typename... Args>
+    inline static Matrix _map(Op f, const Matrix &lhs, const Matrix &rhs, Args... args) {
+        Matrix result;
+        constexpr bool b = _batched && std::is_invocable_r_v<_chunk_type<>, Op, _chunk_type<>, _chunk_type<>, Args...>;
+        for (unsigned i = 0; i < _chunk_count<b>; i++) {
+            auto lc = lhs._get_chunk<b>(i);
+            auto rc = rhs._get_chunk<b>(i);
+            auto resultc = f(lc, rc, args...);
+            result._set_chunk<b>(i, resultc);
+        }
+        return result;
+    }
+
+    /**
+     * Ternary map function
+     * @tparam Op Function type
+     * @tparam Args Argument types
+     * @param f function to map
+     * @param lhs first matrix
+     * @param rhs1 second matrix argument
+     * @param rhs2 third matrix argument
+     * @param args additional scalar arguments
+     * @return vector mapped with f(lhs[i], rhs1[i], rhs2[i], args)
+     */
+    template <typename Op, typename... Args>
+    inline static Matrix _map(Op f, const Matrix &lhs, const Matrix &rhs1, const Matrix &rhs2, Args... args) {
+        Matrix result;
+        constexpr bool b =
+            _batched && std::is_invocable_r_v<_chunk_type<>, Op, _chunk_type<>, _chunk_type<>, _chunk_type<>, Args...>;
+        for (unsigned i = 0; i < _chunk_count<b>; i++) {
+            auto lc = lhs._get_chunk<b>(i);
+            auto r1c = rhs1._get_chunk<b>(i);
+            auto r2c = rhs2._get_chunk<b>(i);
+            auto resultc = f(lc, r1c, r2c, args...);
+            result._set_chunk<b>(i, resultc);
+        }
+        return result;
     }
 };
 }  // namespace quicktex
