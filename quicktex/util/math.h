@@ -32,28 +32,13 @@
 
 namespace quicktex {
 
-namespace detail {
 using std::abs;    // abs overload for builtin types
 using xsimd::abs;  // abs overload for xsimd buffers
-}  // namespace detail
 
 template <typename S>
     requires requires(S &s) { s.abs(); }
 constexpr S abs(S value) {
     return value.abs();
-}
-
-template <typename S>
-    requires requires(S &s) { detail::abs(s); }
-constexpr S abs(S value) {
-    return detail::abs(value);
-}
-
-template <typename S>
-    requires requires(S &s) { s.clamp(s, s); }
-constexpr S clamp(S value, S low, S high) {
-    assert(low <= high);
-    return value.clamp(low, high);
 }
 
 template <typename S>
@@ -66,10 +51,28 @@ constexpr S clamp(S value, S low, S high) {
 }
 
 template <typename S, typename A>
-constexpr S clamp(xsimd::batch<S, A> value, const xsimd::batch<S, A> &low, const xsimd::batch<S, A> &high) {
-    value = xsimd::select(xsimd::lt(low), low, value);
-    value = xsimd::select(xsimd::gt(high), high, value);
-    return value;
+constexpr xsimd::batch<S, A> clamp(xsimd::batch<S, A> value, const xsimd::batch<S, A> &low,
+                                   const xsimd::batch<S, A> &high) {
+    return xsimd::clip(value, low, high);
 }
 
+template <typename S, typename A>
+constexpr xsimd::batch<S, A> clamp(xsimd::batch<S, A> value, const S &low, const S &high) {
+    return clamp(value, xsimd::broadcast(low), xsimd::broadcast(high));
+}
+
+template <typename S>
+    requires requires(S &s) { s.sum(); }
+constexpr auto sum(S value) {
+    return value.sum();
+}
+
+template <typename S>
+    requires std::is_scalar_v<S>
+constexpr auto sum(S value) {
+    return value;
+    // horizontally adding a scalar is a noop
+}
+
+template <typename S, typename A> constexpr auto sum(xsimd::batch<S, A> value) { return xsimd::hadd(value); }
 }  // namespace quicktex

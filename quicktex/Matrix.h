@@ -342,26 +342,48 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     }
 
     // sum up all columns
-    column_type hsum() const { return std::accumulate(column_begin(), column_end(), column_type{}); }
+    column_type hsum() const {
+        if constexpr (N == 1) { return *this; }
+        if constexpr (M == 1) { return sum(); }
+        for (unsigned i = 0; i < M; i++) {}
+        return _map<column_type>([](auto row) { return quicktex::sum(row); }, *this);
+    }
 
     // sum up all rows
-    row_type vsum() const { return std::accumulate(begin(), end(), row_type{}); }
+    row_type vsum() const {
+        if constexpr (N == 1) { return sum(); }
+        if constexpr (M == 1) { return *this; }
+        return std::accumulate(begin(), end(), row_type{});
+    }
 
     // sum up all values
-    T sum() const { return std::accumulate(all_begin(), all_end(), T{}); }
+    T sum() const {
+        constexpr bool b = _batched && operable<_chunk_type<>, _chunk_type<>, std::plus<>>;
+        _chunk_type<b> s = _get_chunk<b>(0);
+
+        // add up all chunks in parallel
+        // chunk is scalar -> this is doing the actual sum
+        // chunk is vector -> this is doing a vadd
+        // chunk is simd -> this is doing an add across the simd
+        for (unsigned i = 1; i < _chunk_count<b>; i++) {
+            auto c = _get_chunk<b>(i);
+            s += c;
+        }
+
+        // now hadd the sum
+        // if chunk is scalar, this is a noop
+        return quicktex::sum(s);
+    }
 
     template <typename R, size_t P>
         requires operable<R, T, std::multiplies<>>
     Matrix<T, M, P> mult(const Matrix<R, N, P> &rhs) const {
-        auto rt = rhs.transpose();
         Matrix<T, M, P> res(0);
         for (unsigned p = 0; p < P; p++) {
             // for each column of the RHS/Result
             for (unsigned m = 0; m < M; m++) {
                 // for each row of the LHS/Result
-                for (unsigned n = 0; n < N; n++) {
-                    res.element(m, p) += element(m, n) * rhs.element(n, p);
-                }
+                for (unsigned n = 0; n < N; n++) { res.element(m, p) += element(m, n) * rhs.element(n, p); }
             }
         }
         return res;
@@ -378,9 +400,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     Matrix mirror() const {
         Matrix result = *this;
         for (unsigned n = 0; n < N - 1; n++) {
-            for (unsigned m = (n + 1); m < M; m++) {
-                result.element(m,n) = result.element(n,m);
-            }
+            for (unsigned m = (n + 1); m < M; m++) { result.element(m, n) = result.element(n, m); }
         }
         return result;
     }
@@ -388,19 +408,23 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     // dot product of two compatible matrices
     template <typename R>
         requires(N == 1) && operable<T, R, std::multiplies<>> && operable<T, T, std::plus<>>
-    row_type dot(const Matrix<R, M, N> &rhs) const {
+    inline row_type dot(const Matrix<R, M, N> &rhs) const {
         // technically this is Lt * R, but the vsum method is probably faster/more readable
         // than allocationg a new transpose matrix
         Matrix product = *this * rhs;
         return product.vsum();
     }
 
-    row_type sqr_mag() const { return dot(*this); }
+    inline row_type sqr_mag() const { return dot(*this); }
 
-    Matrix abs() const { return _map(&quicktex::abs<_chunk_type<>>, *this); }
+    inline Matrix abs() const {
+        return _map([](auto c) { return quicktex::abs(c); }, *this);
+    }
 
-    Matrix clamp(T low, T high) { return _map(&quicktex::clamp<_chunk_type<>>, *this, low, high); }
-    Matrix clamp(const Matrix &low, const Matrix &high) {
+    inline Matrix clamp(T low, T high) {
+        return _map([low, high](_chunk_type<> c) { return quicktex::clamp(c, low, high); }, *this);
+    }
+    inline Matrix clamp(const Matrix &low, const Matrix &high) {
         return _map(&quicktex::clamp<_chunk_type<>>, *this, low, high);
     }
 
@@ -476,13 +500,14 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
      * @param args additional scalar arguments
      * @return vector mapped with f(lhs[i], args)
      */
-    template <typename Op, typename... Args> inline static Matrix _map(Op f, const Matrix &lhs, Args... args) {
-        Matrix result;
-        constexpr bool b = _batched && std::is_invocable_r_v<_chunk_type<>, Op, _chunk_type<>, Args...>;
+    template <typename Result = Matrix, typename Op, typename... Args>
+    inline static Result _map(Op f, const Matrix &lhs, Args... args) {
+        Result result;
+        constexpr bool b = _batched && std::is_invocable_v<_chunk_type<>, Op, _chunk_type<>, Args...>;
         for (unsigned i = 0; i < _chunk_count<b>; i++) {
             auto c = lhs._get_chunk<b>(i);
             auto resultc = f(c, args...);
-            result._set_chunk<b>(i, resultc);
+            result.template _set_chunk<b>(i, resultc);
         }
         return result;
     }
@@ -497,15 +522,15 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
      * @param args additional scalar arguments
      * @return vector mapped with f(lhs[i], rhs[i], args)
      */
-    template <typename Op, typename... Args>
-    inline static Matrix _map(Op f, const Matrix &lhs, const Matrix &rhs, Args... args) {
-        Matrix result;
+    template <typename Result = Matrix, typename Op, typename... Args>
+    inline static Result _map(Op f, const Matrix &lhs, const Matrix &rhs, Args... args) {
+        Result result;
         constexpr bool b = _batched && std::is_invocable_r_v<_chunk_type<>, Op, _chunk_type<>, _chunk_type<>, Args...>;
         for (unsigned i = 0; i < _chunk_count<b>; i++) {
             auto lc = lhs._get_chunk<b>(i);
             auto rc = rhs._get_chunk<b>(i);
             auto resultc = f(lc, rc, args...);
-            result._set_chunk<b>(i, resultc);
+            result.template _set_chunk<b>(i, resultc);
         }
         return result;
     }
@@ -521,9 +546,9 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
      * @param args additional scalar arguments
      * @return vector mapped with f(lhs[i], rhs1[i], rhs2[i], args)
      */
-    template <typename Op, typename... Args>
-    inline static Matrix _map(Op f, const Matrix &lhs, const Matrix &rhs1, const Matrix &rhs2, Args... args) {
-        Matrix result;
+    template <typename Result = Matrix, typename Op, typename... Args>
+    inline static Result _map(Op f, const Matrix &lhs, const Matrix &rhs1, const Matrix &rhs2, Args... args) {
+        Result result;
         constexpr bool b =
             _batched && std::is_invocable_r_v<_chunk_type<>, Op, _chunk_type<>, _chunk_type<>, _chunk_type<>, Args...>;
         for (unsigned i = 0; i < _chunk_count<b>; i++) {
@@ -531,7 +556,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
             auto r1c = rhs1._get_chunk<b>(i);
             auto r2c = rhs2._get_chunk<b>(i);
             auto resultc = f(lc, r1c, r2c, args...);
-            result._set_chunk<b>(i, resultc);
+            result.template _set_chunk<b>(i, resultc);
         }
         return result;
     }
