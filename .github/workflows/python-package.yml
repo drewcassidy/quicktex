@@ -50,11 +50,14 @@ jobs:
       - name: Build C code
         run: |
           ls
-          cmake . -DQUICKTEX_NOPYTHON=TRUE
+          cmake -S . -B cmake-build -DQUICKTEX_NOPYTHON=TRUE
           cmake --build .
 
       - name: Test C code
-        run: ctest -V
+        run: |
+          cd cmake-build
+          ctest -V 
+          cd ..
 
   build-sdist:
     name: Build SDist
