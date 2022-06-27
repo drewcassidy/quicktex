@@ -240,7 +240,7 @@ inline constexpr P pack(II start, II end, WI widths, bool little_endian = true) 
     P packed = 0;
     unsigned offset = 0;
     while (start < end) {
-        auto val = static_cast<P>(*(start++));
+        P val = static_cast<P>(*(start++));
         auto w = *(widths++);
 
         val &= ((1 << w) - 1);

@@ -41,6 +41,12 @@ constexpr S abs(S value) {
     return value.abs();
 }
 
+template <typename S, typename R>
+    requires requires(S s, R r) { s.clamp(r, r); }
+constexpr S clamp(S value, R low, R high) {
+    return value.clamp(low, high);
+}
+
 template <typename S>
     requires std::is_scalar_v<S>
 constexpr S clamp(S value, S low, S high) {

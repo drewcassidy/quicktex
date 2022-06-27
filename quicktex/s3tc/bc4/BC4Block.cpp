@@ -22,16 +22,17 @@
 #include <algorithm>
 #include <stdexcept>
 
-#include "util/ranges.h"
 #include "util/bitbash.h"
+#include "util/map.h"
 #include "util/math.h"
+#include "util/ranges.h"
 
 namespace quicktex::s3tc {
 
 BC4Block::SelectorArray BC4Block::GetSelectors() const {
     auto packed = pack<uint64_t>(_selectors, 8);
     auto rows = unpack<uint16_t, Height>(packed, SelectorBits * Width);
-    return map(rows, [](auto row) { return unpack<uint8_t, Width>(row, SelectorBits); });
+    return map([](auto row) { return unpack<uint8_t, Width>(row, SelectorBits); }, rows);
 }
 
 void BC4Block::SetSelectors(const BC4Block::SelectorArray& unpacked) {
@@ -39,7 +40,7 @@ void BC4Block::SetSelectors(const BC4Block::SelectorArray& unpacked) {
         if (std::any_of(unpacked[y].begin(), unpacked[y].end(), [](uint8_t i) { return i > SelectorMax; }))
             throw std::invalid_argument("Selector value out of bounds.");
     }
-    auto rows = map(unpacked, [](auto r) { return pack<uint16_t>(r, SelectorBits); });
+    auto rows = map([](auto r) { return pack<uint16_t>(r, SelectorBits); }, unpacked);
     auto packed = pack<uint64_t>(rows, SelectorBits * Width);
     _selectors = unpack<uint8_t, SelectorSize>(packed, 8);
 }

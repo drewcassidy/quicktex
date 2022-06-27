@@ -99,16 +99,6 @@ class view {
     II _end;
 };
 
-template <typename Seq, typename Fn> constexpr auto map(const Seq &input, Fn op) {
-    using I = typename Seq::value_type;
-    using O = decltype(op(I{}));
-    constexpr size_t N = std::tuple_size<Seq>::value;
-
-    std::array<O, N> output;
-    for (unsigned i = 0; i < N; i++) { output[i] = op(input[i]); }
-    return output;
-}
-
 template <typename D> class index_iterator_base {
    public:
     typedef long long difference_type;
