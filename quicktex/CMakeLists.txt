@@ -1,7 +1,9 @@
 
 # Find dependencies
-find_package(Python COMPONENTS Interpreter Development.Module)
-find_package(pybind11 CONFIG REQUIRED)
+if (NOT QUICKTEX_NOPYTHON)
+    find_package(Python COMPONENTS Interpreter Development.Module)
+    find_package(pybind11 CONFIG REQUIRED)
+endif ()
 find_package(OpenMP)
 
 #Collect source files
@@ -13,7 +15,7 @@ set(SOURCE_FILES
         s3tc/bc4/BC4Block.cpp s3tc/bc4/BC4Decoder.cpp s3tc/bc4/BC4Encoder.cpp
         s3tc/bc5/BC5Decoder.cpp s3tc/bc5/BC5Encoder.cpp
         s3tc/interpolator/Interpolator.cpp
-        texture/RawTexture.cpp texture/Window.cpp)
+        texture/RawTexture.cpp texture/Window.cpp test.cpp)
 
 set(BINDING_FILES
         _bindings.cpp
@@ -53,9 +55,11 @@ target_include_directories(quicktex PUBLIC .)
 set_project_warnings(quicktex)
 set_simd_flags(quicktex)
 
-# Declare python module
-pybind11_add_module(_quicktex ${BINDING_FILES} ${HEADER_FILES})
-target_compile_definitions(_quicktex PRIVATE VERSION_INFO=${QUICKTEX_VERSION_INFO})
+if (NOT QUICKTEX_NOPYTHON)
+    # Declare python module
+    pybind11_add_module(_quicktex ${BINDING_FILES} ${HEADER_FILES})
+    target_compile_definitions(_quicktex PRIVATE VERSION_INFO=${QUICKTEX_VERSION_INFO})
 
-# Link python module with implementation
-target_link_libraries(_quicktex PUBLIC quicktex)
+    # Link python module with implementation
+    target_link_libraries(_quicktex PUBLIC quicktex)
+endif ()

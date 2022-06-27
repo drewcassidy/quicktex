@@ -44,7 +44,7 @@ jobs:
       - name: Build C side with cmake
         run: |
           ls
-          cmake .
+          cmake . -DQUICKTEX_NOPYTHON
           cmake --build .
 
       - name: Run C tests
