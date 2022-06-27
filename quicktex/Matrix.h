@@ -71,10 +71,10 @@ template <typename T, size_t N> class VecBase {
     const T &_at(size_t index) const { return _c.at(index); }
     T &_at(size_t index) { return _c.at(index); }
 
-    auto _begin() { return &(*_c.begin()); }
-    auto _begin() const { return &(*_c.begin()); }
-    auto _end() { return &(*(_c.begin() + N)); }
-    auto _end() const { return &(*(_c.begin() + N)); }
+    auto _begin() { return _c.data(); }
+    auto _begin() const { return _c.data(); }
+    auto _end() { return _c.data() + N; }
+    auto _end() const { return _c.data() + N; }
 
    private:
     std::array<T, N> _c;
@@ -158,8 +158,14 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     static constexpr size_t height = M;
     static constexpr size_t dims = ((width > 1) ? 1 : 0) + ((height > 1) ? 1 : 0);
 
-    const row_type &at(size_t index) const { return static_cast<const row_type &>(base::_at(index)); }
-    row_type &at(size_t index) { return static_cast<row_type &>(base::_at(index)); }
+    const row_type &at(size_t index) const {
+        assert(index < M);
+        return static_cast<const row_type &>(base::_at(index));
+    }
+    row_type &at(size_t index) {
+        assert(index < M);
+        return static_cast<row_type &>(base::_at(index));
+    }
 
     const row_type &operator[](size_t index) const { return at(index); }
     row_type &operator[](size_t index) { return at(index); }
@@ -209,9 +215,6 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
 
     // n/m accessors
     const T &element(size_t m, size_t n) const {
-        assert(n < N);
-        assert(m < M);
-
         if constexpr (N == 1) {
             return this->at(m);
         } else {
