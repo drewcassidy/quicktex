@@ -47,14 +47,14 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: Build C side with cmake
+      - name: Build C code
         run: |
           ls
           cmake . -DQUICKTEX_NOPYTHON=TRUE
           cmake --build .
 
-      - name: Run C tests
-        run: ./Test
+      - name: Test C code
+        run: cmake --build . --target test
 
   build-sdist:
     name: Build SDist
