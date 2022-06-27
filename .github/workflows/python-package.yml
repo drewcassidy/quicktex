@@ -54,7 +54,7 @@ jobs:
           cmake --build .
 
       - name: Test C code
-        run: ctest
+        run: ctest -V
 
   build-sdist:
     name: Build SDist
