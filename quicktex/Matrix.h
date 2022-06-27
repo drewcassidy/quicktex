@@ -71,10 +71,10 @@ template <typename T, size_t N> class VecBase {
     const T &_at(size_t index) const { return _c.at(index); }
     T &_at(size_t index) { return _c.at(index); }
 
-    auto _begin() { return &_c[0]; }
-    auto _begin() const { return &_c[0]; }
-    auto _end() { return &_c[N]; }
-    auto _end() const { return &_c[N]; }
+    auto _begin() { return &(*_c.begin()); }
+    auto _begin() const { return &(*_c.begin()); }
+    auto _end() { return &(*(_c.begin() + N)); }
+    auto _end() const { return &(*(_c.begin() + N)); }
 
    private:
     std::array<T, N> _c;
