@@ -22,9 +22,9 @@
 #include <stdexcept>
 
 #include "util/bitbash.h"
+#include "util/map.h"
 #include "util/math.h"
 #include "util/ranges.h"
-#include "util/map.h"
 
 namespace quicktex::s3tc {
 
@@ -35,7 +35,7 @@ void BC1Block::SetColor0Raw(uint16_t c) { _color0 = unpack<uint8_t, EndpointSize
 void BC1Block::SetColor1Raw(uint16_t c) { _color1 = unpack<uint8_t, EndpointSize>(c, 8); }
 
 BC1Block::SelectorArray BC1Block::GetSelectors() const {
-    return old_map(_selectors, [](auto row) { return unpack<uint8_t, Width>(row, SelectorBits); });
+    return map([](auto row) { return unpack<uint8_t, Width>(row, SelectorBits); }, _selectors);
 }
 
 void BC1Block::SetSelectors(const BC1Block::SelectorArray& unpacked) {
