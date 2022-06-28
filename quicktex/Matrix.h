@@ -68,7 +68,7 @@ template <typename V> constexpr size_t vector_dims = vector_stats<V>::dims;
 
 template <typename R, typename T, size_t N> class VecBase {
    public:
-    constexpr VecBase(T scalar = T(0)) { _c.fill(scalar); }
+    constexpr VecBase(T scalar) : _c{} { _c.fill(scalar); }
 
    protected:
     const R &_at(size_t index) const { return _c.at(index); }
