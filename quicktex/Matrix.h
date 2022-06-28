@@ -68,7 +68,7 @@ template <typename V> constexpr size_t vector_dims = vector_stats<V>::dims;
 
 template <typename R, typename T, size_t N> class VecBase {
    public:
-    constexpr VecBase(T scalar) : _c{} { _c.fill(scalar); }
+    constexpr VecBase(T scalar = T()) : _c{} { _c.fill(scalar); }
 
    protected:
     const R &_at(size_t index) const { return _c.at(index); }
@@ -111,7 +111,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
      * Create a vector from an intializer list
      * @param il values to populate with
      */
-    Matrix(std::initializer_list<row_type> il) {
+    Matrix(std::initializer_list<row_type> il) : base() {
         assert(il.size() == M);  // ensure il is of the right size
         std::copy_n(il.begin(), M, this->begin());
     }
@@ -128,9 +128,9 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
      * @param input_iterator iterator to copy from
      */
     template <typename II>
-    Matrix(const II input_iterator)
         requires std::input_iterator<II> && std::convertible_to<std::iter_value_t<II>,
-                                                                const row_type> {
+                                                                const row_type>
+        Matrix(const II input_iterator) : base() {
         std::copy_n(input_iterator, M, this->begin());
     }
 
