@@ -84,9 +84,9 @@ template <typename T> class MatrixTest : public testing::Test {
 using Scalars = ::testing::Types<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, double>;
 TYPED_TEST_SUITE(MatrixTest, Scalars);
 
-#define IOTA(M, start, stride) TestFixture::template iota<M>(start, stride)
-#define SQR(M, start, stride) TestFixture::template sqr<M>(start, stride)
-#define FIB(M, start) TestFixture::template fib<M>(start)
+#define IOTA(M, start, stride) this->TestFixture::template iota<M>(start, stride)
+#define SQR(M, start, stride) this->TestFixture::template sqr<M>(start, stride)
+#define FIB(M, start) this->TestFixture::template fib<M>(start)
 
 TYPED_TEST(MatrixTest, negate) {
     if constexpr (std::unsigned_integral<typename TestFixture::Scalar>) {
@@ -103,7 +103,7 @@ TYPED_TEST(MatrixTest, add) {
     TestFixture::foreach_size([&]<typename M>(M) {
         EXPECT_MATRIX_EQ(IOTA(M, 0, 1) + IOTA(M, 0, 3), IOTA(M, 0, 4));
         EXPECT_MATRIX_EQ(IOTA(M, 0, 2) + IOTA(M, 0, 2), IOTA(M, 0, 4));
-        if constexpr (std::unsigned_integral<typename TestFixture::Scalar>) {
+        if constexpr (std::unsigned_integral<typename M::value_type>) {
             EXPECT_MATRIX_EQ(IOTA(M, 0, 3) + IOTA(M, 0, -1), IOTA(M, 0, 2));
         }
     });
@@ -113,7 +113,7 @@ TYPED_TEST(MatrixTest, subtract) {
     TestFixture::foreach_size([&]<typename M>(M) {
         EXPECT_MATRIX_EQ(IOTA(M, 0, 4) - IOTA(M, 0, 1), IOTA(M, 0, 3));
         EXPECT_MATRIX_EQ(IOTA(M, 0, 2) - IOTA(M, 0, 2), IOTA(M, 0, 0));
-        if constexpr (std::unsigned_integral<typename TestFixture::Scalar>) {
+        if constexpr (std::unsigned_integral<typename M::value_type>) {
             EXPECT_MATRIX_EQ(IOTA(M, 0, 3) - IOTA(M, 0, -1), IOTA(M, 0, 4));
             EXPECT_MATRIX_EQ(IOTA(M, 0, 1) - IOTA(M, 0, 3), IOTA(M, 0, -2));
         }
