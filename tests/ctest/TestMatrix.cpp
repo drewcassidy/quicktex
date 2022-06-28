@@ -26,152 +26,182 @@
 
 namespace quicktex::tests {
 
-template <typename V> inline void expect_matrix_eq(V value, V expected) {
-    if constexpr (std::is_floating_point_v<typename V::value_type>) {
-        EXPECT_FLOAT_EQ((value - expected).sum(), 0);
+#define EXPECT_MATRIX_EQ(value, expected)                                           \
+    {                                                                               \
+        auto v = value;                                                             \
+        auto e = expected;                                                          \
+        if constexpr (std::is_floating_point_v<typename decltype(v)::value_type>) { \
+            for (unsigned i = 0; i < v.elements; i++) {                             \
+                EXPECT_FLOAT_EQ(v.element(i), e.element(i)) << "At index " << i;    \
+            }                                                                       \
+        } else {                                                                    \
+            EXPECT_EQ(v, e);                                                        \
+        }                                                                           \
+    }
+
+constexpr size_t fibn(size_t n) {
+    return (n < 2) ? n : fibn(n - 1) + fibn(n - 2);
+}
+
+template <typename T> constexpr T sqr(T n) { return n * n; }
+
+template <typename Op, typename... Args> constexpr void foreach (Op f, Args... args) { (f(args), ...); }
+
+template <typename T> class MatrixTest : public testing::Test {
+   public:
+    using Scalar = T;
+    template <size_t M> using Vec = quicktex::Vec<T, M>;
+    template <size_t M, size_t N> using Matrix = quicktex::Matrix<T, M, N>;
+
+    template <typename M> constexpr M iota(T start = 0, T stride = 1) {
+        M result(0);
+        for (unsigned i = 0; i < M::elements; i++) { result.element(i) = (static_cast<T>(i) + start) * stride; }
+        return result;
+    }
+
+    template <typename M> constexpr M sqr(T start = 0, T stride = 1) {
+        M result(0);
+        for (unsigned i = 0; i < M::elements; i++) {
+            result.element(i) = static_cast<T>((i + start) * (i + start) * stride);
+        }
+        return result;
+    }
+
+    template <typename M> constexpr M fib(T start = 0) {
+        M result(0);
+        for (unsigned i = 0; i < M::elements; i++) { result.element(i) = fibn(i + start); }
+        return result;
+    }
+
+    static constexpr auto sizes = std::make_tuple(Vec<4>(0), Vec<7>(0), Matrix<4, 4>(0), Matrix<5, 6>(0));
+
+    template <typename Op> constexpr void foreach_size(Op f) {
+        auto foreach = [f]<typename... Args>(Args... args) { (f(args), ...); };
+        std::apply(foreach, sizes);
+    }
+};
+
+using Scalars = ::testing::Types<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, double>;
+TYPED_TEST_SUITE(MatrixTest, Scalars);
+
+#define IOTA(M, start, stride) TestFixture::template iota<M>(start, stride)
+#define SQR(M, start, stride) TestFixture::template sqr<M>(start, stride)
+#define FIB(M, start) TestFixture::template fib<M>(start)
+
+TYPED_TEST(MatrixTest, negate) {
+    if constexpr (std::unsigned_integral<typename TestFixture::Scalar>) {
+        GTEST_SKIP();
     } else {
-        EXPECT_EQ(value, expected);
+        TestFixture::foreach_size([&]<typename M>(M) {
+            EXPECT_MATRIX_EQ(-IOTA(M, 0, 1), IOTA(M, 0, -1));
+            EXPECT_MATRIX_EQ(-IOTA(M, 0, -1), IOTA(M, 0, 1));
+        });
     }
 }
 
-// region Vec_float unit tests
-TEST(Vec_float, add) {
-    auto a = Vec<float, 3>{1.0f, 1.5f, 2.0f};
-    auto b = Vec<float, 3>{2.0f, -2.5f, 3.0f};
-
-    expect_matrix_eq(a + b, {3.0f, -1.0f, 5.0f});
+TYPED_TEST(MatrixTest, add) {
+    TestFixture::foreach_size([&]<typename M>(M) {
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 1) + IOTA(M, 0, 3), IOTA(M, 0, 4));
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 2) + IOTA(M, 0, 2), IOTA(M, 0, 4));
+        if constexpr (std::unsigned_integral<typename TestFixture::Scalar>) {
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 3) + IOTA(M, 0, -1), IOTA(M, 0, 2));
+        }
+    });
 }
 
-TEST(Vec_float, sub) {
-    auto a = Vec<float, 3>{1.0f, 1.5f, 2.0f};
-    auto b = Vec<float, 3>{3.0f, 1.5f, 1.0f};
-
-    expect_matrix_eq(a - b, {-2.0f, 0.0f, 1.0f});
+TYPED_TEST(MatrixTest, subtract) {
+    TestFixture::foreach_size([&]<typename M>(M) {
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 4) - IOTA(M, 0, 1), IOTA(M, 0, 3));
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 2) - IOTA(M, 0, 2), IOTA(M, 0, 0));
+        if constexpr (std::unsigned_integral<typename TestFixture::Scalar>) {
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 3) - IOTA(M, 0, -1), IOTA(M, 0, 4));
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 1) - IOTA(M, 0, 3), IOTA(M, 0, -2));
+        }
+    });
 }
 
-TEST(Vec_float, mul) {
-    auto a = Vec<float, 3>{1.0f, 1.5f, 2.0f};
-    auto b = Vec<float, 3>{3.0f, 1.5f, 0.0f};
+TYPED_TEST(MatrixTest, multiply) {
+    TestFixture::foreach_size([&]<typename M>(M) {
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 2) * 2, IOTA(M, 0, 4));
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 2) * 0, M(0));
 
-    expect_matrix_eq(a * b, {3.0f, 2.25f, 0.0f});
-    expect_matrix_eq(a * 2, {2.0f, 3.00f, 4.0f});
+        if constexpr (!std::is_unsigned_v<typename M::value_type>) {
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 2) * -2, IOTA(M, 0, -4));
+        }
+
+        if constexpr (std::numeric_limits<typename M::value_type>::max() >= sqr(M::elements - 1)) {
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 1) * IOTA(M, 0, 1), SQR(M, 0, 1));
+        }
+
+        if constexpr (std::numeric_limits<typename M::value_type>::max() >= sqr(M::elements - 1) * 3) {
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 1) * IOTA(M, 0, 3), SQR(M, 0, 3));
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 0) * IOTA(M, 0, 3), SQR(M, 0, 0));
+        }
+
+        if constexpr (std::numeric_limits<typename M::value_type>::max() >= sqr(M::elements - 1) * 4) {
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 2) * IOTA(M, 0, 2), SQR(M, 0, 4));
+            if constexpr (!std::is_unsigned_v<typename M::value_type>) {
+                EXPECT_MATRIX_EQ(IOTA(M, 0, 4) * IOTA(M, 0, -1), SQR(M, 0, -4));
+                EXPECT_MATRIX_EQ(IOTA(M, 0, -4) * IOTA(M, 0, -1), SQR(M, 0, 4));
+            }
+        }
+    });
 }
 
-TEST(Vec_float, div) {
-    auto a = Vec<float, 3>{1.0f, 1.5f, 2.0f};
-    auto b = Vec<float, 3>{2.0f, 1.5f, 1.0f};
+TYPED_TEST(MatrixTest, divide) {
+    TestFixture::foreach_size([&]<typename M>(M) {
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 4) / 2, IOTA(M, 0, 2));
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 2) / 1, IOTA(M, 0, 2));
 
-    expect_matrix_eq(a / b, {0.5f, 1.0f, 2.0f});
-    expect_matrix_eq(a / 2, {0.5f, 0.75f, 1.0f});
+        if constexpr (!std::is_unsigned_v<typename M::value_type>) {
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 4) / -2, IOTA(M, 0, -2));
+            EXPECT_MATRIX_EQ(IOTA(M, 0, -4) / -2, IOTA(M, 0, 2));
+        }
+
+        if constexpr (std::numeric_limits<typename M::value_type>::max() >= sqr(M::elements)) {
+            EXPECT_MATRIX_EQ(SQR(M, 1, 1) / IOTA(M, 1, 1), IOTA(M, 1, 1));
+        }
+
+        if constexpr (std::numeric_limits<typename M::value_type>::max() >= sqr(M::elements) * 3) {
+            EXPECT_MATRIX_EQ(SQR(M, 1, 3) / IOTA(M, 1, 1), IOTA(M, 1, 3));
+            EXPECT_MATRIX_EQ(SQR(M, 1, 3) / IOTA(M, 1, 3), IOTA(M, 1, 1));
+        }
+
+        if constexpr (std::numeric_limits<typename M::value_type>::max() >= sqr(M::elements) * 4) {
+            EXPECT_MATRIX_EQ(SQR(M, 1, 4) / IOTA(M, 1, 2), IOTA(M, 1, 2));
+            if constexpr (!std::is_unsigned_v<typename M::value_type>) {
+                EXPECT_MATRIX_EQ(SQR(M, 1, -4) / IOTA(M, 1, -1), IOTA(M, 1, 4));
+                EXPECT_MATRIX_EQ(SQR(M, 1, 4) / IOTA(M, 1, -1), IOTA(M, 1, -4));
+            }
+        }
+    });
 }
 
-TEST(Vec_float, vsum) {
-    auto a = Vec<float, 5>{1.0f, 2.0f, 3.5f, 4.0f, -4.0f};
-
-    EXPECT_FLOAT_EQ(a.vsum(), 6.5f);
-    EXPECT_FLOAT_EQ(a.sum(), 6.5f);  // sum == vsum for a column vector
-}
-
-TEST(Vec_float, dot) {
-    auto a = Vec<float, 3>{1.0f, 1.5f, 2.0f};
-    auto b = Vec<float, 3>{2.0f, 1.5f, 2.0f};
-
-    EXPECT_FLOAT_EQ(a.dot(b), 8.25f);
-}
-
-TEST(Vec_float, abs) {
-    auto a = Vec<float, 3>{1.0f, -5.0f, -1.0f};
-
-    expect_matrix_eq(a.abs(), {1.0f, 5.0f, 1.0f});
-}
-
-TEST(Vec_float, clamp) {
-    auto a = Vec<float, 6>{-1, -1, -1, 1, 1, 1};
-    auto low1 = Vec<float, 6>{-2, -0.5, -2, 0, 2, 0.5};
-    auto high1 = Vec<float, 6>{-1.5, 0, 0, 0.5, 3, 2};
-    expect_matrix_eq(a.clamp(low1, high1), {-1.5, -0.5, -1, 0.5, 2, 1});
-
-    auto b = Vec<float, 6>{-1, -0.5, 0, 0.2, 0.5, 1};
-    expect_matrix_eq(b.clamp(-0.8, 0.3), {-0.8, -0.5, 0, 0.2, 0.3, 0.3});
-}
-// endregion
-
-// region Vec_int unit tests
-TEST(Vec_int, constructor) {
-    // scalar constructor
-    expect_matrix_eq(Vec<int, 4>(1), {1, 1, 1, 1});
-
-    // initializer list construtor
-    expect_matrix_eq(Vec<int, 4>{2, 3, 4, 5}, {2, 3, 4, 5});
-
-    // range constructor
-    std::array<int, 4> arr = {6, 7, 8, 9};
-    expect_matrix_eq(Vec<int, 4>(arr), {6, 7, 8, 9});
-
-    // iterator constructor
-    expect_matrix_eq(Vec<int, 4>(arr.begin()), {6, 7, 8, 9});
-}
-
-TEST(Vec_int, subscript) {
-    auto a = Vec<int, 4>{1, 3, 1, 2};
-
-    EXPECT_EQ(a[0], 1);
-    EXPECT_EQ(a[1], 3);
-    EXPECT_EQ(a[2], 1);
-    EXPECT_EQ(a[3], 2);
-
-    a[2] = 4;
-    EXPECT_EQ(a[2], 4);
-}
-
-TEST(Vec_int, getters) {
-    auto a = Vec<int, 4>{4, 20, 6, 9};
-
-    for (unsigned i = 0; i < a.size(); i++) {
-        EXPECT_EQ(a.get_row(i), a[i]);  // the ith row of a column vector is a scalar
-        EXPECT_EQ(a.element(i, 0), a[i]);
-        EXPECT_EQ(a.element(i), a[i]);
+TYPED_TEST(MatrixTest, abs) {
+    if constexpr (std::unsigned_integral<typename TestFixture::Scalar>) {
+        GTEST_SKIP();
+    } else {
+        TestFixture::foreach_size([&]<typename M>(M) {
+            EXPECT_MATRIX_EQ(IOTA(M, 0, -1).abs(), IOTA(M, 0, 1));
+            EXPECT_MATRIX_EQ(IOTA(M, 0, 1).abs(), IOTA(M, 0, 1));
+        });
     }
-
-    expect_matrix_eq(a.get_column(0), a);  // the 0th column of a column-vector is itself
 }
 
-TEST(Vec_int, copy) {
-    std::array<int, 4> arr{1, 3, 1, 2};
-    Vec<int, 4> a(arr);
-
-    expect_matrix_eq(a, {1, 3, 1, 2});
-
-    std::array<int, 4> out{-1, -3, -1, -2};
-    std::copy(a.begin(), a.end(), out.begin());
-
-    EXPECT_EQ(out, arr);
-}
-
-TEST(Vec_int, neg) {
-    auto a = Vec<int, 4>{1, 2, 3, 4};
-
-    expect_matrix_eq(-a, {-1, -2, -3, -4});
-}
-
-TEST(Vec_int, add) {
-    auto a = Vec<int, 4>{1, 2, 3, 4};
-    auto b = Vec<int, 4>{5, 6, 7, 8};
-
-    expect_matrix_eq(a + b, {6, 8, 10, 12});
-}
-
-TEST(Vec_int, sub) {
-    auto b = Vec<int, 4>{1, 2, 3, 4};
-    auto a = Vec<int, 4>{5, 6, 7, 8};
-
-    expect_matrix_eq(a - b, {4, 4, 4, 4});
-}
-
-TEST(Vec_int, abs) {
-    auto a = Vec<int, 4>{1, -5, -1, 0};
-
-    expect_matrix_eq(a.abs(), {1, 5, 1, 0});
+TYPED_TEST(MatrixTest, clamp) {
+    TestFixture::foreach_size([&]<typename M>(M) {
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 1).clamp(0, M::elements - 1), IOTA(M, 0, 1));
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 1).clamp(M(0), IOTA(M, 0, 1)), IOTA(M, 0, 1));
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 2).clamp(IOTA(M, 0, 1), IOTA(M, 0, 3)), IOTA(M, 0, 2));
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 3).clamp(IOTA(M, 0, 1), IOTA(M, 0, 2)), IOTA(M, 0, 2));
+        EXPECT_MATRIX_EQ(IOTA(M, 0, 1).clamp(M(0), M(0)), M(0));
+        if (std::numeric_limits<typename M::value_type>::max() >= fibn(M::elements)) {
+            EXPECT_MATRIX_EQ(FIB(M, 1).clamp(M(0), IOTA(M, 0, 1)), IOTA(M, 0, 1));
+        }
+        if (std::numeric_limits<typename M::value_type>::max() >= sqr(M::elements - 1)) {
+            EXPECT_MATRIX_EQ(SQR(M, 0, 1).clamp(M(0), IOTA(M, 0, 1)), IOTA(M, 0, 1));
+        }
+    });
 }
 // endregion
 }  // namespace quicktex::tests

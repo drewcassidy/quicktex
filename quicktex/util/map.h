@@ -130,7 +130,7 @@ inline void do_map_step(auto f, T& result, const Args&... args) {
     size_t chunk_count = impl::template chunk_count<step>(result);
 
     for (unsigned i = 0; i < chunk_count; i++) {
-        chunk_type out_chunk = f(impl::template get_chunk<step>(args, i)...);
+        chunk_type out_chunk = f(chunker_impl<Args, serial>::template get_chunk<step>(args, i)...);
         impl::template set_chunk<step>(result, i, out_chunk);
     }
 }

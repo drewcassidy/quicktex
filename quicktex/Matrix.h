@@ -67,14 +67,17 @@ template <typename V> constexpr size_t vector_dims = vector_stats<V>::dims;
 // endregion
 
 template <typename T, size_t N> class VecBase {
+   public:
+    template <typename S = T> constexpr VecBase(S scalar = S(0)) { std::fill(_begin(), _end(), scalar); }
+
    protected:
     const T &_at(size_t index) const { return _c.at(index); }
     T &_at(size_t index) { return _c.at(index); }
 
-    auto _begin() { return _c.data(); }
-    auto _begin() const { return _c.data(); }
-    auto _end() { return _c.data() + N; }
-    auto _end() const { return _c.data() + N; }
+    constexpr auto _begin() const { return _c.data(); }
+    constexpr auto _begin() { return _c.data(); }
+    constexpr auto _end() const { return _c.data() + N; }
+    constexpr auto _end() { return _c.data() + N; }
 
    private:
     std::array<T, N> _c;
@@ -117,7 +120,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
      * Create a vector from a scalar value
      * @param scalar value to populate with
      */
-    Matrix(const T &scalar) { std::fill(this->begin(), this->end(), scalar); }
+    //    constexpr Matrix(const T &scalar) { std::fill(this->begin(), this->end(), scalar); }
 
     /**
      * Create a vector from an iterator
@@ -127,7 +130,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     template <typename II>
     Matrix(const II input_iterator)
         requires std::input_iterator<II> && std::convertible_to<std::iter_value_t<II>,
-                                                                row_type> {
+                                                                const row_type> {
         std::copy_n(input_iterator, M, this->begin());
     }
 
@@ -156,6 +159,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
     static constexpr size_t size() { return M; }
     static constexpr size_t width = N;
     static constexpr size_t height = M;
+    static constexpr size_t elements = N * M;
     static constexpr size_t dims = ((width > 1) ? 1 : 0) + ((height > 1) ? 1 : 0);
 
     const row_type &at(size_t index) const {
@@ -445,7 +449,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
 
         linear_iterator(V *matrix = nullptr, size_t index = 0) : base(index), _matrix(matrix){};
 
-        auto operator*() const { return _matrix->element(this->_index); }
+        auto &operator*() { return _matrix->element(this->_index); }
         auto *operator->() const { return &(_matrix->element(this->_index)); }
 
         friend bool operator==(const linear_iterator &lhs, const linear_iterator &rhs) {
