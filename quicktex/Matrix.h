@@ -66,13 +66,13 @@ template <typename V> constexpr size_t vector_dims = vector_stats<V>::dims;
 
 // endregion
 
-template <typename T, size_t N> class VecBase {
+template <typename R, typename T, size_t N> class VecBase {
    public:
-    template <typename S = T> constexpr VecBase(S scalar = S(0)) { std::fill(_begin(), _end(), scalar); }
+    constexpr VecBase(T scalar = T(0)) { std::fill(_begin(), _end(), scalar); }
 
    protected:
-    const T &_at(size_t index) const { return _c.at(index); }
-    T &_at(size_t index) { return _c.at(index); }
+    const R &_at(size_t index) const { return _c.at(index); }
+    R &_at(size_t index) { return _c.at(index); }
 
     constexpr auto _begin() const { return _c.data(); }
     constexpr auto _begin() { return _c.data(); }
@@ -80,7 +80,7 @@ template <typename T, size_t N> class VecBase {
     constexpr auto _end() { return _c.data() + N; }
 
    private:
-    std::array<T, N> _c;
+    std::array<R, N> _c;
 };
 
 template <typename T, size_t N, size_t M> using matrix_row_type = std::conditional_t<N <= 1, T, Vec<T, N>>;
@@ -93,9 +93,9 @@ template <typename T, size_t N, size_t M> using matrix_column_type = std::condit
  * @tparam M Height of the matrix
  */
 template <typename T, size_t M, size_t N>
-class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M> {
+class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T, M> {
    public:
-    using base = VecBase<std::conditional_t<N == 1, T, VecBase<T, N>>, M>;
+    using base = VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T, M>;
 
     using value_type = T;
     using row_type = matrix_row_type<T, N, M>;
