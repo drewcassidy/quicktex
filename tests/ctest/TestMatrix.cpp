@@ -39,9 +39,7 @@ namespace quicktex::tests {
         }                                                                           \
     }
 
-constexpr size_t fibn(size_t n) {
-    return (n < 2) ? n : fibn(n - 1) + fibn(n - 2);
-}
+constexpr size_t fibn(size_t n) { return (n < 2) ? n : fibn(n - 1) + fibn(n - 2); }
 
 template <typename T> constexpr T sqr(T n) { return n * n; }
 
@@ -103,7 +101,7 @@ TYPED_TEST(MatrixTest, add) {
     TestFixture::foreach_size([&]<typename M>(M) {
         EXPECT_MATRIX_EQ(IOTA(M, 0, 1) + IOTA(M, 0, 3), IOTA(M, 0, 4));
         EXPECT_MATRIX_EQ(IOTA(M, 0, 2) + IOTA(M, 0, 2), IOTA(M, 0, 4));
-        if constexpr (std::unsigned_integral<typename M::value_type>) {
+        if constexpr (!std::unsigned_integral<typename M::value_type>) {
             EXPECT_MATRIX_EQ(IOTA(M, 0, 3) + IOTA(M, 0, -1), IOTA(M, 0, 2));
         }
     });
@@ -113,7 +111,7 @@ TYPED_TEST(MatrixTest, subtract) {
     TestFixture::foreach_size([&]<typename M>(M) {
         EXPECT_MATRIX_EQ(IOTA(M, 0, 4) - IOTA(M, 0, 1), IOTA(M, 0, 3));
         EXPECT_MATRIX_EQ(IOTA(M, 0, 2) - IOTA(M, 0, 2), IOTA(M, 0, 0));
-        if constexpr (std::unsigned_integral<typename M::value_type>) {
+        if constexpr (!std::unsigned_integral<typename M::value_type>) {
             EXPECT_MATRIX_EQ(IOTA(M, 0, 3) - IOTA(M, 0, -1), IOTA(M, 0, 4));
             EXPECT_MATRIX_EQ(IOTA(M, 0, 1) - IOTA(M, 0, 3), IOTA(M, 0, -2));
         }
@@ -200,6 +198,28 @@ TYPED_TEST(MatrixTest, clamp) {
         }
         if (std::numeric_limits<typename M::value_type>::max() >= sqr(M::elements - 1)) {
             EXPECT_MATRIX_EQ(SQR(M, 0, 1).clamp(M(0), IOTA(M, 0, 1)), IOTA(M, 0, 1));
+        }
+    });
+}
+
+TYPED_TEST(MatrixTest, matrix_multiply) {
+    TestFixture::foreach_size([&]<typename M>(M) {
+        auto identity = Matrix<typename M::value_type, M::height, M::height>::identity();
+        EXPECT_MATRIX_EQ(identity.mult(IOTA(M, 0, 1)), IOTA(M, 0, 1));
+    });
+}
+
+TYPED_TEST(MatrixTest, sum) {
+    TestFixture::foreach_size([&]<typename M>(M) {
+        EXPECT_FLOAT_EQ(M(1).sum(), M::elements);
+        EXPECT_FLOAT_EQ(M(0).sum(), 0);
+
+        if (std::numeric_limits<typename M::value_type>::max() >= M::elements * (M::elements + 1) / 2) {
+            EXPECT_FLOAT_EQ(IOTA(M, 1, 1).sum(), M::elements * (M::elements + 1) / 2);
+        }
+
+        if constexpr (!std::unsigned_integral<typename M::value_type>) {
+            EXPECT_FLOAT_EQ(M(-1).sum(), -1 * (int) M::elements);
         }
     });
 }
