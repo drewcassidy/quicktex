@@ -148,7 +148,7 @@ class TestBC1Encoder:
         assert out_tex.size_blocks == (1, 1)
 
         assert not out_block.is_3color
-        assert out_block == BC1Blocks.greyscale.block
+        assert out_block.tobytes() == BC1Blocks.greyscale.block.tobytes()
 
     @pytest.mark.parametrize('level', range(2, 18))  # lowest 2 levels can be improved, but right now choke on this test
     def test_block_3color(self, level, color_mode):
@@ -162,7 +162,7 @@ class TestBC1Encoder:
         if encoder.color_mode != BC1Encoder.ColorMode.FourColor:
             # we only care about the selectors if we are in 3 color mode
             assert out_block.is_3color
-            assert out_block == BC1Blocks.three_color.block
+            assert out_block.tobytes() == BC1Blocks.three_color.block.tobytes()
         else:
             assert not out_block.is_3color
 
@@ -181,7 +181,7 @@ class TestBC1Encoder:
             # we only care about the selectors if we are in 3 color black mode
             assert out_block.is_3color
             assert has_black
-            assert out_block == BC1Blocks.three_color_black.block
+            assert out_block.tobytes() == BC1Blocks.three_color_black.block.tobytes()
         elif color_mode == BC1Encoder.ColorMode.ThreeColor:
             assert not (has_black and out_block.is_3color)
         else:
