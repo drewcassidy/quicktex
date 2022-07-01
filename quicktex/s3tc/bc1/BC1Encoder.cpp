@@ -669,7 +669,7 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
 
         // if we found any correlation, then this is our new axis. otherwise we fallback to the luma vector
         auto delta_abs = delta.abs();
-        float k = *std::max(delta_abs.begin(), delta_abs.end());
+        float k = *std::max_element(delta_abs.begin(), delta_abs.end());
         if (k >= 2) { axis = delta * (2048.0f / k); }
 
         axis *= 16;
