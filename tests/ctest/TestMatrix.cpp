@@ -60,7 +60,7 @@ template <typename T> class MatrixTest : public testing::Test {
     template <typename M> constexpr M sqr(T start = 0, T stride = 1) {
         M result(0);
         for (unsigned i = 0; i < M::elements; i++) {
-            result.element(i) = static_cast<T>((i + start) * (i + start) * stride);
+            result.element(i) = (static_cast<T>(i) + start) * (static_cast<T>(i) + start) * stride;
         }
         return result;
     }
@@ -219,7 +219,7 @@ TYPED_TEST(MatrixTest, sum) {
         }
 
         if constexpr (!std::unsigned_integral<typename M::value_type>) {
-            EXPECT_FLOAT_EQ(M(-1).sum(), -1 * (int) M::elements);
+            EXPECT_FLOAT_EQ(M(-1).sum(), -1 * (int)M::elements);
         }
     });
 }

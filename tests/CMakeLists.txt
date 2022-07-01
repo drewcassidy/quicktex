@@ -16,6 +16,11 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${TEST_SOURCE_FILES} ${TEST_
 
 add_executable(Test ${TEST_SOURCE_FILES} ${TEST_HEADER_FILES})
 
+if ((NOT MSVC) AND (CMAKE_BUILD_TYPE MATCHES Debug))
+    target_compile_options(Test PUBLIC -fsanitize=address,undefined,unsigned-integer-overflow -fno-sanitize-recover=address,undefined,unsigned-integer-overflow -fno-omit-frame-pointer)
+    target_link_options(Test PUBLIC -fsanitize=address,undefined,unsigned-integer-overflow -fno-sanitize-recover=address,undefined,unsigned-integer-overflow -fno-omit-frame-pointer)
+endif ()
+
 target_link_libraries(Test PUBLIC quicktex gtest_main)
 
 include(GoogleTest)
