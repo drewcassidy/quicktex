@@ -62,4 +62,10 @@ if (NOT QUICKTEX_NOPYTHON)
 
     # Link python module with implementation
     target_link_libraries(_quicktex PUBLIC quicktex)
+
+    if ((NOT MSVC) AND (CMAKE_BUILD_TYPE MATCHES Debug) AND ($ENV{QUICKTEX_SANITIZE}))
+        target_compile_options(_quicktex PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=address,undefined -fno-omit-frame-pointer)
+        target_link_options(_quicktex PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=address,undefined -fno-omit-frame-pointer)
+    endif ()
+
 endif ()

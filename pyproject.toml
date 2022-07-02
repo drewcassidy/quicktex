@@ -64,7 +64,7 @@ package-dir = { '' = '.' } # without this line, C++ source files get included in
 [tool.cibuildwheel]
 build = "cp*" # only build wheels for cpython.
 build-frontend = "build"
-test-command = "pytest {project}/tests --verbose"
+test-command = "pytest --verbose"
 test-extras = ["tests"]
 test-skip = "*-macosx_arm64 *-macosx_universal2:arm64" # skip testing on arm macOS because CIBW doesnt support it
 environment = { QUICKTEX_SIMD_MODE = "SSE4" } # SSE4 has a 99% market share and was released under the Bush administration
@@ -85,3 +85,8 @@ manylinux-aarch64-image = "manylinux2014"
 line-length = 120 # 80-column is stupid
 target-version = ['py37', 'py38', 'py39', 'py310']
 skip-string-normalization = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = ["--full-trace", "--capture=tee-sys"]
+testpaths = ["tests"]
