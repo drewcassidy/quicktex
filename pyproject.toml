@@ -64,7 +64,7 @@ package-dir = { '' = '.' } # without this line, C++ source files get included in
 [tool.cibuildwheel]
 build = "cp*" # only build wheels for cpython.
 build-frontend = "build"
-test-command = "pytest --verbose"
+test-command = "pytest {project}/tests --verbose --full-trace --capture=tee-sys"
 test-extras = ["tests"]
 test-skip = "*-macosx_arm64 *-macosx_universal2:arm64" # skip testing on arm macOS because CIBW doesnt support it
 environment = { QUICKTEX_SIMD_MODE = "SSE4" } # SSE4 has a 99% market share and was released under the Bush administration
