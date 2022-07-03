@@ -56,9 +56,7 @@ class Texture {
     virtual uint8_t *data() noexcept = 0;
 
    protected:
-    Texture(unsigned width, unsigned height) : width(width), height(height) {}
+    Texture(unsigned w, unsigned h) : width(w), height(h) {}
 };
-
-
 
 }  // namespace quicktex

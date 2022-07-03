@@ -31,6 +31,7 @@
 
 #include "Histogram.h"
 #include "Vector4.h"
+#include "util/math.h"
 
 namespace quicktex::s3tc {
 template <size_t N> class OrderTable {
@@ -73,7 +74,7 @@ template <size_t N> class OrderTable {
                 for (unsigned sel = 0; sel < N; sel++) factor_matrix += (Weights[sel] * h[sel]);
 
                 float det = factor_matrix.Determinant2x2();
-                if (fabs(det) < 1e-8f) {
+                if (abs(det) < 1e-8f) {
                     factors->at(i) = Vector4(0);
                 } else {
                     std::swap(factor_matrix[0], factor_matrix[3]);

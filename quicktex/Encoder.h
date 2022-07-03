@@ -48,16 +48,16 @@ template <typename T> class BlockEncoder : public Encoder<T> {
     virtual T Encode(const RawTexture &decoded) const override {
         auto encoded = T(decoded.width, decoded.height);
 
-        int blocks_x = encoded.bwidth();
-        int blocks_y = encoded.bheight();
+        unsigned blocks_x = encoded.bwidth();
+        unsigned blocks_y = encoded.bheight();
 
         // from experimentation, multithreading this using OpenMP sometimes actually makes encoding slower
         // due to thread creation/teardown taking longer than the encoding process itself.
         // As a result, this is sometimes left as a serial operation despite being embarassingly parallelizable
         // threshold for number of blocks before multithreading is set by overriding MTThreshold()
 #pragma omp parallel for if (blocks_x * blocks_y >= MTThreshold())
-        for (int y = 0; y < blocks_y; y++) {
-            for (int x = 0; x < blocks_x; x++) {
+        for (unsigned y = 0; y < blocks_y; y++) {
+            for (unsigned x = 0; x < blocks_x; x++) {
                 auto pixels = decoded.get_block<BlockWidth, BlockHeight>(x, y);
                 auto block = EncodeBlock(pixels);
                 encoded.set_block(x, y, block);

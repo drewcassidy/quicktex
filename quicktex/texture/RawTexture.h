@@ -45,7 +45,7 @@ class RawTexture : public Texture {
      * @param width width of the texture in pixels
      * @param height height of the texture in pixels
      */
-    RawTexture(int width, int height) : Base(width, height), _pixels(width * height) {}
+    RawTexture(int w, int h) : Base(w, h), _pixels(w* h) {}
 
     quicktex::Color pixel(unsigned x, unsigned y) const;
 

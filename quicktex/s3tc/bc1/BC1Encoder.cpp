@@ -541,7 +541,7 @@ void BC1Encoder::FindEndpoints(EncodeResults &result, const CBlock &pixels, cons
         float denominator = (float)(16 * sum_xx) - (float)(sum_x * sum_x);
 
         // once per secondary axis, calculate high and low using least squares
-        if (fabs(denominator) > 1e-8f) {
+        if (abs(denominator) > 1e-8f) {
             for (unsigned i = 1; i < 3; i++) {
                 /* each secondary axis is fitted with a linear formula of the form
                  *  y = ax + b
@@ -835,7 +835,7 @@ bool BC1Encoder::RefineEndpointsLS(EncodeResults &result, const CBlock &pixels, 
 
     // invert matrix
     float det = matrix.Determinant2x2();  // z00 * z11 - z01 * z10;
-    if (fabs(det) < 1e-8f) {
+    if (abs(det) < 1e-8f) {
         result.color_mode = ColorMode::Incomplete;
         return false;
     }

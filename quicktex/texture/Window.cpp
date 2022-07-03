@@ -24,8 +24,8 @@
 namespace quicktex {
 
 // Window
-Window::Window(RawTexture& texture, unsigned int width, unsigned int height, unsigned int x, unsigned int y)
-    : width(width), height(height), x(x), y(y), _texture(texture) {
+Window::Window(RawTexture& texture, unsigned w, unsigned h, unsigned px, unsigned py)
+    : width(w), height(h), x(px), y(py), _texture(texture) {
     assert(x < texture.width);
     assert(y < texture.height);
 }
@@ -51,7 +51,7 @@ bool Window::operator==(const Window& rhs) const {
 
 // WindowIterator
 
-WindowIterator::WindowIterator(Window& view, unsigned int x, unsigned int y) : x(x), y(y), _view(&view) {
+WindowIterator::WindowIterator(Window& view, unsigned px, unsigned py) : x(px), y(py), _view(&view) {
     assert(x < view.width);
     assert(y < view.height || (y == view.height && x == 0));
     // if y == the height, and x == 0, then this is a sentinel for the end of iteration, and cannot be dereferenced
@@ -85,6 +85,6 @@ bool WindowIterator::operator==(const WindowIterator& rhs) const {
 }
 
 static_assert(std::forward_iterator<WindowIterator>);
-//static_assert(sized_range<Window>);
+// static_assert(sized_range<Window>);
 
 }  // namespace quicktex

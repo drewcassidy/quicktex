@@ -37,7 +37,7 @@ class Window {
     const unsigned width, height;
     const unsigned x, y;
 
-    Window(RawTexture &texture, unsigned width, unsigned height, unsigned x, unsigned y);
+    Window(RawTexture &texture, unsigned w, unsigned h, unsigned x, unsigned y);
 
     Color &pixel(unsigned px, unsigned py);
     Color pixel(unsigned px, unsigned py) const;

@@ -244,7 +244,7 @@ inline constexpr P pack(II start, II end, WI widths, bool little_endian = true) 
         auto w = *(widths++);
 
         val &= ((1 << w) - 1);
-        assert(val < (1 << w));  // ensure value can fit in W bits
+        assert(val < (1u << w));  // ensure value can fit in W bits
 
         if (little_endian) {
             packed |= static_cast<P>(val) << offset;  // first element is in the least significant place of packed

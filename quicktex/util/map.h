@@ -17,8 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-parameter"
 #pragma once
 
 #include <array>
@@ -97,9 +95,9 @@ struct chunker_impl<T, serial> {
 
     static constexpr std::array<size_t, 1> chunk_sizes = {1};
 
-    template <size_t step> static constexpr size_t chunk_count(const T& r) { return 1; }
-    template <size_t step> static constexpr auto get_chunk(const T& r, size_t i) { return r; }
-    template <size_t step> static constexpr void set_chunk(T& r, size_t i, const T& c) { r = c; }
+    template <size_t step> static constexpr size_t chunk_count(const T&) { return 1; }
+    template <size_t step> static constexpr auto get_chunk(const T& r, size_t) { return r; }
+    template <size_t step> static constexpr void set_chunk(T& r, size_t, const T& c) { r = c; }
 };
 
 template <typename T, bool serial = false, size_t step = 0>
@@ -178,4 +176,3 @@ inline auto map(Op f, const T& in, const Args&... args) {
 }
 
 }  // namespace quicktex
-#pragma clang diagnostic pop

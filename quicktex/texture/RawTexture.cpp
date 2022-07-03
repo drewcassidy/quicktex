@@ -20,14 +20,14 @@
 #include "RawTexture.h"
 
 namespace quicktex {
-Color RawTexture::pixel(unsigned int x, unsigned int y) const {
-    if (x < 0 || x >= width) throw std::invalid_argument("x value out of range.");
-    if (y < 0 || y >= height) throw std::invalid_argument("y value out of range.");
+Color RawTexture::pixel(unsigned x, unsigned y) const {
+    if (x >= width) throw std::invalid_argument("x value out of range.");
+    if (y >= height) throw std::invalid_argument("y value out of range.");
     return _pixels.at(x + (y * width));
 }
-quicktex::Color& RawTexture::pixel(unsigned int x, unsigned int y) {
-    if (x < 0 || x >= width) throw std::invalid_argument("x value out of range.");
-    if (y < 0 || y >= height) throw std::invalid_argument("y value out of range.");
+quicktex::Color& RawTexture::pixel(unsigned x, unsigned y) {
+    if (x >= width) throw std::invalid_argument("x value out of range.");
+    if (y >= height) throw std::invalid_argument("y value out of range.");
     return _pixels.at(x + (y * width));
 }
 }  // namespace quicktex

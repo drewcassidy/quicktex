@@ -40,7 +40,7 @@ template <typename B> class BlockTexture final : public Texture {
      * @param width width of the texture in pixels. must be divisible by B::width
      * @param height height of the texture in pixels. must be divisible by B::height
      */
-    BlockTexture(int width, int height) : Base(width, height) {
+    BlockTexture(int w, int h) : Base(w, h) {
         _width_b = (width + B::Width - 1) / B::Width;
         _height_b = (height + B::Height - 1) / B::Height;
         _blocks = std::vector<B>(_width_b * _height_b);
