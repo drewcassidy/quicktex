@@ -30,9 +30,9 @@
 
 namespace quicktex {
 
-template <typename T, size_t M, size_t N> class Matrix;
+template <typename T, int M, int N> class Matrix;
 
-template <typename T, size_t M> using Vec = Matrix<T, M, 1>;
+template <typename T, int M> using Vec = Matrix<T, M, 1>;
 
 // region helper concepts
 template <typename L, typename R, typename Op>
@@ -47,32 +47,32 @@ concept is_matrix = requires(V &v) {
 std::remove_cvref_t < V >> ;
 
 template <typename V> struct vector_stats {
-    static constexpr size_t width = 1;
-    static constexpr size_t height = 1;
-    static constexpr size_t dims = 0;
+    static constexpr int width = 1;
+    static constexpr int height = 1;
+    static constexpr int dims = 0;
 };
 
 template <typename V>
     requires is_matrix<V>
 struct vector_stats<V> {
-    static constexpr size_t width = V::width;
-    static constexpr size_t height = V::height;
-    static constexpr size_t dims = V::dims;
+    static constexpr int width = V::width;
+    static constexpr int height = V::height;
+    static constexpr int dims = V::dims;
 };
 
-template <typename V> constexpr size_t vector_width = vector_stats<V>::width;
-template <typename V> constexpr size_t vector_height = vector_stats<V>::height;
-template <typename V> constexpr size_t vector_dims = vector_stats<V>::dims;
+template <typename V> constexpr int vector_width = vector_stats<V>::width;
+template <typename V> constexpr int vector_height = vector_stats<V>::height;
+template <typename V> constexpr int vector_dims = vector_stats<V>::dims;
 
 // endregion
 
-template <typename R, typename T, size_t N> class VecBase {
+template <typename R, typename T, int N> class VecBase {
    public:
     constexpr VecBase(T scalar = T()) : _c{} { _c.fill(scalar); }
 
    protected:
-    const R &_at(size_t index) const { return _c.at(index); }
-    R &_at(size_t index) { return _c.at(index); }
+    const R &_at(int index) const { return _c.at(index); }
+    R &_at(int index) { return _c.at(index); }
 
     constexpr auto _begin() const { return _c.data(); }
     constexpr auto _begin() { return _c.data(); }
@@ -83,8 +83,8 @@ template <typename R, typename T, size_t N> class VecBase {
     std::array<R, N> _c;
 };
 
-template <typename T, size_t N, size_t M> using matrix_row_type = std::conditional_t<N <= 1, T, Vec<T, N>>;
-template <typename T, size_t N, size_t M> using matrix_column_type = std::conditional_t<M <= 1, T, Vec<T, M>>;
+template <typename T, int N, int M> using matrix_row_type = std::conditional_t<N <= 1, T, Vec<T, N>>;
+template <typename T, int N, int M> using matrix_column_type = std::conditional_t<M <= 1, T, Vec<T, M>>;
 
 /**
  * A matrix of values that can be operated on
@@ -92,7 +92,7 @@ template <typename T, size_t N, size_t M> using matrix_column_type = std::condit
  * @tparam N Width of the matrix
  * @tparam M Height of the matrix
  */
-template <typename T, size_t M, size_t N>
+template <typename T, int M, int N>
 class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T, M> {
    public:
     using base = VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T, M>;
@@ -150,29 +150,29 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
         requires(N == M)
     static constexpr Matrix identity() {
         Matrix result = Matrix(0);
-        for (unsigned i = 0; i < N; i++) { result.element(i, i) = 1; }
+        for (int i = 0; i < N; i++) { result.element(i, i) = 1; }
         return result;
     }
     // endregion
 
     // region iterators and accessors
-    static constexpr size_t size() { return M; }
-    static constexpr size_t width = N;
-    static constexpr size_t height = M;
-    static constexpr size_t elements = N * M;
-    static constexpr size_t dims = ((width > 1) ? 1 : 0) + ((height > 1) ? 1 : 0);
+    static constexpr int size() { return M; }
+    static constexpr int width = N;
+    static constexpr int height = M;
+    static constexpr int elements = N * M;
+    static constexpr int dims = ((width > 1) ? 1 : 0) + ((height > 1) ? 1 : 0);
 
-    const row_type &at(size_t index) const {
-        assert(index < M);
+    const row_type &at(int index) const {
+        assert(index >= 0 && index < M);
         return static_cast<const row_type &>(base::_at(index));
     }
-    row_type &at(size_t index) {
-        assert(index < M);
+    row_type &at(int index) {
+        assert(index >= 0 && index < M);
         return static_cast<row_type &>(base::_at(index));
     }
 
-    const row_type &operator[](size_t index) const { return at(index); }
-    row_type &operator[](size_t index) { return at(index); }
+    const row_type &operator[](int index) const { return at(index); }
+    row_type &operator[](int index) { return at(index); }
 
     const row_type *begin() const { return static_cast<const row_type *>(base::_begin()); }
     row_type *begin() { return static_cast<row_type *>(base::_begin()); }
@@ -189,36 +189,29 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
     auto all_end() const { return linear_iterator<const Matrix>(this, N * M); }
     auto all_end() { return linear_iterator<Matrix>(this, N * M); }
 
-    const row_type &get_row(size_t m) const {
-        assert(m < M);
-        return static_cast<const row_type &>(this->at(m));
-    }
+    const row_type &get_row(int m) const { return static_cast<const row_type &>(this->at(m)); }
+    template <typename R> void set_row(int m, const R &value) { this->at(m) = value; }
 
-    template <typename R> void set_row(size_t m, const R &value) {
-        assert(m < M);
-        this->at(m) = value;
-    }
-
-    template <typename S = T> column_type get_column(size_t n) const {
+    template <typename S = T> column_type get_column(int n) const {
         if constexpr (M == 1) {
             return element(0, n);
         } else {
             column_type ret;
-            for (unsigned m = 0; m < M; m++) { ret[m] = element(m, n); }
+            for (int m = 0; m < M; m++) { ret[m] = element(m, n); }
             return ret;
         }
     }
 
-    void set_column(size_t n, const column_type &value) {
+    void set_column(int n, const column_type &value) {
         if constexpr (M == 1) {
             element(0, n) = value;
         } else {
-            for (unsigned m = 0; m < M; m++) { element(m, n) = value[m]; }
+            for (int m = 0; m < M; m++) { element(m, n) = value[m]; }
         }
     }
 
     // n/m accessors
-    const T &element(size_t m, size_t n) const {
+    const T &element(int m, int n) const {
         if constexpr (N == 1) {
             return this->at(m);
         } else {
@@ -226,11 +219,11 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
         }
     }
 
-    T &element(size_t n, size_t m) { return const_cast<T &>(static_cast<const Matrix &>(*this).element(n, m)); }
+    T &element(int n, int m) { return const_cast<T &>(static_cast<const Matrix &>(*this).element(n, m)); }
 
     // linear accessors
-    const T &element(size_t i) const { return element(i / N, i % N); }
-    T &element(size_t i) { return element(i / N, i % N); }
+    const T &element(int i) const { return element(i / N, i % N); }
+    T &element(int i) { return element(i / N, i % N); }
 
     // RGBA accessors
     const T &r() const { return (*this)[0]; }
@@ -277,12 +270,12 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
     template <typename R>
         requires operable<R, T, std::minus<>>
     Matrix operator-(const Matrix<R, M, N> &rhs) const {
-        // we can't just add the negation because that's invalid for unsigned types
+        // we can't just add the negation because that's invalid for int types
         return map(std::minus(), *this, rhs);
     };
 
     // multiply matrix with a matrix or column vector
-    template <typename R, size_t P>
+    template <typename R, int P>
         requires(P == 1 || P == N) && operable<R, T, std::multiplies<>>
     Matrix operator*(const Matrix<R, M, P> &rhs) const {
         return map(std::multiplies(), *this, rhs);
@@ -296,7 +289,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
     };
 
     // divides a matrix by a matrix or column vector
-    template <typename R, size_t NN>
+    template <typename R, int NN>
         requires(NN == 1 || NN == N) && operable<R, T, std::divides<>>
     Matrix operator/(const Matrix<R, M, NN> &rhs) const {
         return map(std::divides(), *this, rhs);
@@ -353,7 +346,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
     column_type hsum() const {
         if constexpr (N == 1) { return *this; }
         if constexpr (M == 1) { return sum(); }
-        for (unsigned i = 0; i < M; i++) {}
+        for (int i = 0; i < M; i++) {}
         return _map<column_type>([](auto row) { return quicktex::sum(row); }, *this);
     }
 
@@ -370,15 +363,15 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
         return std::accumulate(all_begin(), all_end(), T(0));
     }
 
-    template <typename R, size_t P>
+    template <typename R, int P>
         requires operable<R, T, std::multiplies<>>
     Matrix<T, M, P> mult(const Matrix<R, N, P> &rhs) const {
         Matrix<T, M, P> res(0);
-        for (unsigned p = 0; p < P; p++) {
+        for (int p = 0; p < P; p++) {
             // for each column of the RHS/Result
-            for (unsigned m = 0; m < M; m++) {
+            for (int m = 0; m < M; m++) {
                 // for each row of the LHS/Result
-                for (unsigned n = 0; n < N; n++) { res.element(m, p) += element(m, n) * rhs.element(n, p); }
+                for (int n = 0; n < N; n++) { res.element(m, p) += element(m, n) * rhs.element(n, p); }
             }
         }
         return res;
@@ -386,7 +379,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
 
     Matrix<T, N, M> transpose() const {
         Matrix<T, N, M> res;
-        for (unsigned m = 0; m < M; m++) { res.set_column(m, get_row(m)); }
+        for (int m = 0; m < M; m++) { res.set_column(m, get_row(m)); }
         return res;
     }
 
@@ -394,8 +387,8 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
         requires(N == M)
     Matrix mirror() const {
         Matrix result = *this;
-        for (unsigned n = 0; n < N - 1; n++) {
-            for (unsigned m = (n + 1); m < M; m++) { result.element(m, n) = result.element(n, m); }
+        for (int n = 0; n < N - 1; n++) {
+            for (int m = (n + 1); m < M; m++) { result.element(m, n) = result.element(n, m); }
         }
         return result;
     }
@@ -429,7 +422,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
         using value_type = column_type;
         using base = index_iterator_base<column_iterator>;
 
-        column_iterator(const Matrix *matrix = nullptr, size_t index = 0) : base(index), _matrix(matrix){};
+        column_iterator(const Matrix *matrix = nullptr, int index = 0) : base(index), _matrix(matrix){};
 
         column_type operator*() const { return _matrix->get_column(this->_index); }
         const column_type *operator->() const { &(_matrix->get_column(this->_index)); }
@@ -447,7 +440,7 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
         using value_type = column_type;
         using base = index_iterator_base<linear_iterator<V>>;
 
-        linear_iterator(V *matrix = nullptr, size_t index = 0) : base(index), _matrix(matrix){};
+        linear_iterator(V *matrix = nullptr, int index = 0) : base(index), _matrix(matrix){};
 
         auto &operator*() { return _matrix->element(this->_index); }
         auto *operator->() const { return &(_matrix->element(this->_index)); }
