@@ -56,8 +56,9 @@ template <typename T> class BlockEncoder : public Encoder<T> {
         // As a result, this is sometimes left as a serial operation despite being embarassingly parallelizable
         // threshold for number of blocks before multithreading is set by overriding MTThreshold()
 #pragma omp parallel for if (blocks_x * blocks_y >= MTThreshold())
-        for (unsigned y = 0; y < blocks_y; y++) {
-            for (unsigned x = 0; x < blocks_x; x++) {
+        for (int y = 0; y < (int)blocks_y; y++) {
+            for (int x = 0; x < (int)blocks_x; x++) {
+                // index variables have to be signed for MSVC for some reason
                 auto pixels = decoded.get_block<BlockWidth, BlockHeight>(x, y);
                 auto block = EncodeBlock(pixels);
                 encoded.set_block(x, y, block);
