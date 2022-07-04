@@ -35,10 +35,10 @@ namespace quicktex {
 
 // std::ranges::range is not usable by default in libc++ 13
 template <class T>
-concept range = std::is_constructible_v<T> && requires(T &t) {
-                                                  t.begin();
-                                                  t.end();
-                                              };
+concept range = requires(T &t) {
+                    t.begin();
+                    t.end();
+                };
 
 template <class T>
 concept sized = requires(T &t) { std::size(t); };
@@ -83,22 +83,6 @@ size_t distance(T range) {
     return std::distance(range.begin(), range.end());
 }
 
-template <class II>
-    requires std::input_or_output_iterator<II>
-class view {
-   public:
-    view() : _begin(), _end() {}
-    view(II begin, II end) : _begin(begin), _end(end) {}
-
-    inline size_t size() { return distance(_begin, _end); }
-    inline II begin() { return _begin; }
-    inline II end() { return _end; }
-
-   private:
-    II _begin;
-    II _end;
-};
-
 template <typename D> class index_iterator_base {
    public:
     typedef long long difference_type;
@@ -113,12 +97,12 @@ template <typename D> class index_iterator_base {
         return old;
     }
     D &operator--() {
-        _index++;
+        _index--;
         return static_cast<D &>(*this);
     }
     D operator--(int) {
         D old = static_cast<D &>(*this);
-        _index++;
+        _index--;
         return old;
     }
 
