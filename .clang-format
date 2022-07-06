@@ -5,6 +5,7 @@ ColumnLimit: 120
 AllowShortBlocksOnASingleLine: Always
 AllowShortFunctionsOnASingleLine: All
 AlwaysBreakTemplateDeclarations: MultiLine
+#RequiresClausePositionStyle: SingleLine # requires Clang 15 :(
 #AlignConsecutiveDeclarations: true
 ---
 

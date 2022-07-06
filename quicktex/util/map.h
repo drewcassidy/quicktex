@@ -30,7 +30,7 @@ namespace quicktex {
 namespace detail {
 
 template <typename T>
-concept simdable = subscriptable_range<T> && std::contiguous_iterator<decltype(std::declval<T>().begin())> &&
+concept simdable = random_access_range<T> && std::contiguous_iterator<decltype(std::declval<T>().begin())> &&
                    std::is_arithmetic_v<range_value_t<T>>;
 template <typename T, bool serial = false> struct chunker_impl {};
 
@@ -74,7 +74,7 @@ struct chunker_impl<T, serial> {
 };
 
 template <typename T, bool serial>
-    requires subscriptable_range<T> && (!simdable<T> || serial)
+    requires random_access_range<T> && (!simdable<T> || serial)
 struct chunker_impl<T, serial> {
     // range with data that cant be SIMDed
     static constexpr size_t steps = 1;

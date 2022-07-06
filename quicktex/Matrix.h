@@ -24,6 +24,7 @@
 #include <numeric>
 #include <xsimd/xsimd.hpp>
 
+#include "util/iterator.h"
 #include "util/map.h"
 #include "util/math.h"
 #include "util/ranges.h"
@@ -417,10 +418,10 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
     }
 
    protected:
-    class column_iterator : public index_iterator_base<column_iterator> {
+    class column_iterator : public index_iterator_base<column_iterator, column_type> {
        public:
         using value_type = column_type;
-        using base = index_iterator_base<column_iterator>;
+        using base = index_iterator_base<column_iterator, column_type>;
 
         column_iterator(const Matrix *matrix = nullptr, int index = 0) : base(index), _matrix(matrix){};
 
@@ -435,10 +436,10 @@ class Matrix : public VecBase<std::conditional_t<N == 1, T, VecBase<T, T, N>>, T
         const Matrix *_matrix;
     };
 
-    template <typename V> class linear_iterator : public index_iterator_base<linear_iterator<V>> {
+    template <typename V> class linear_iterator : public index_iterator_base<linear_iterator<V>, T> {
        public:
-        using value_type = column_type;
-        using base = index_iterator_base<linear_iterator<V>>;
+        using value_type = T;
+        using base = index_iterator_base<linear_iterator<V>, T>;
 
         linear_iterator(V *matrix = nullptr, int index = 0) : base(index), _matrix(matrix){};
 

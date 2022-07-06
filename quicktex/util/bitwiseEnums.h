@@ -65,4 +65,4 @@ constexpr inline auto operator^=(E& a, E b) noexcept -> E& {
     a = a ^ b;
     return a;
 }
-}  // namespace quicktex::util
+}  // namespace quicktex

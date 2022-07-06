@@ -29,171 +29,46 @@
 #include <numeric>
 #include <string>
 #include <type_traits>
-#include <vector>
 
 namespace quicktex {
 
-// std::ranges::range is not usable by default in libc++ 13
+// std::ranges is not usable by default in libc++ 13
 template <class T>
 concept range = requires(T &t) {
                     t.begin();
                     t.end();
                 };
 
-template <class T>
-concept sized = requires(T &t) { std::size(t); };
+using std::size;
+template <range T> constexpr auto size(const T &range) { return std::distance(range.begin(), range.end()); }
 
 template <class T>
-concept sized_range = range<T> && sized<T>;
+concept sized_range = range<T> && requires(T &t) { size(t); };
 
-template <typename T>
-concept const_subscriptable = requires(T &t) {
-                                  t[0];
-                                  std::size(t);
-                              };
+template <class R> using iterator_t = decltype(std::declval<R &>().begin());
+template <class R> using sentinel_t = decltype(std::declval<R &>().end());
+template <class R> using range_size_t = decltype(size(std::declval<R &>()));
+template <class R> using range_difference_t = std::iter_difference_t<iterator_t<R>>;
+template <class R> using range_value_t = std::iter_value_t<iterator_t<R>>;
+template <class R> using range_reference_t = std::iter_reference_t<iterator_t<R>>;
+template <class R> using range_rvalue_reference_t = std::iter_rvalue_reference_t<iterator_t<R>>;
 
-template <class T>
-concept subscriptable = const_subscriptable<T> && requires(T &t) {
-                                                      t[0] = std::declval<decltype(t[0])>();  // subscript is assignable
-                                                  };
+template <class R>
+concept input_range = range<R> && std::input_iterator<iterator_t<R>>;
 
-template <typename T>
-concept subscriptable_range = sized_range<T> && subscriptable<T>;
+template <class R, typename T>
+concept output_range = range<R> && (std::output_iterator<iterator_t<R>, T>);
 
-template <typename T> struct range_value { using type = void; };
+template <class R>
+concept forward_range = range<R> && std::forward_iterator<iterator_t<R>>;
 
-template <typename T>
-    requires requires(T &t) { std::begin(t); }
-struct range_value<T> {
-    using type = std::iter_value_t<decltype((std::declval<T>()).begin())>;
-};
+template <class R>
+concept bidirectional_range = range<R> && std::bidirectional_iterator<iterator_t<R>>;
 
-template <typename T> using range_value_t = typename range_value<T>::type;
+template <class R>
+concept random_access_range = range<R> && std::random_access_iterator<iterator_t<R>>;
 
-// some quick inline checks
-static_assert(const_subscriptable<const std::array<int, 4>>);  // const array can be subscripted
-static_assert(!subscriptable<const std::array<int, 4>>);       // const array cannot be assigned to
-static_assert(subscriptable_range<std::array<int, 4>>);  // array is subscriptable, sized, and has begin() and end()
-static_assert(sized_range<std::initializer_list<int>>);  // initializer list is a range and has size()
-static_assert(std::same_as<range_value_t<int>, void>);
+template <class R>
+concept contiguous_range = range<R> && std::contiguous_iterator<iterator_t<R>>;
 
-template <class T>
-    requires range<T>
-size_t distance(T range) {
-    return std::distance(range.begin(), range.end());
-}
-
-template <typename D> class index_iterator_base {
-   public:
-    typedef long long difference_type;
-
-    D &operator++() {
-        _index++;
-        return static_cast<D &>(*this);
-    }
-    D operator++(int) {
-        D old = static_cast<D &>(*this);
-        _index++;
-        return old;
-    }
-    D &operator--() {
-        _index--;
-        return static_cast<D &>(*this);
-    }
-    D operator--(int) {
-        D old = static_cast<D &>(*this);
-        _index--;
-        return old;
-    }
-
-    D operator+(difference_type rhs) const {
-        D d = static_cast<const D &>(*this);
-        d._index += rhs;
-        return d;
-    }
-
-    D operator-(difference_type rhs) const {
-        D d = static_cast<const D &>(*this);
-        d._index -= rhs;
-        return d;
-    }
-
-    D &operator+=(difference_type rhs) {
-        *this = *this + rhs;
-        return *this;
-    }
-
-    D &operator-=(difference_type rhs) {
-        *this = *this - rhs;
-        return *this;
-    }
-
-    difference_type operator-(const D &rhs) const { return (difference_type)_index - rhs._index; }
-
-    friend D operator+(difference_type lhs, const D &rhs) { return rhs + lhs; }
-
-    friend auto operator<=>(const D &lhs, const D &rhs) { return lhs._index <=> rhs._index; }
-
-    auto &operator[](difference_type i) { return *(static_cast<D &>(*this) + i); }
-    auto operator[](difference_type i) const { return *(static_cast<const D &>(*this) + i); }
-
-   protected:
-    size_t _index;
-
-   private:
-    friend D;
-    index_iterator_base(size_t index = 0) : _index(index) {}
-};
-
-template <typename T> class const_iterator : public index_iterator_base<const_iterator<T>> {
-   public:
-    typedef index_iterator_base<const_iterator<T>> base;
-    typedef long long difference_type;
-    typedef T value_type;
-
-    const_iterator() : base(0), _value(T{}) {}
-    const_iterator(T value, size_t index = 0) : base(index), _value(value) {}
-
-    T operator*() const { return _value; }
-    const T *operator->() const { return &_value; }
-
-    friend bool operator==(const const_iterator &lhs, const const_iterator &rhs) {
-        return (lhs._value == rhs._value) && (lhs._index == rhs._index);
-    }
-
-   private:
-    T _value;
-};
-
-// const_iterator is guaranteed to be a random access iterator. it is not writable for obvious reasons
-static_assert(std::random_access_iterator<const_iterator<int>>);
-
-template <typename R>
-    requires subscriptable<R>
-class index_iterator : public index_iterator_base<index_iterator<R>> {
-   public:
-    using base = index_iterator_base<index_iterator<R>>;
-    using difference_type = long long;
-    using value_type = range_value_t<R>;
-
-    index_iterator() : base(0), _range(nullptr) {}
-    index_iterator(R &range, size_t index) : base(index), _range(&range) {}
-
-    auto operator*() const {
-        // if we have the information, do a bounds check
-        if constexpr (sized<R>) { assert(this->_index < std::size(*_range)); }
-        return (*_range)[this->_index];
-    }
-    auto *operator->() const { return &((*_range)[this->_index]); }
-
-    friend bool operator==(const index_iterator &lhs, const index_iterator &rhs) {
-        return (lhs._range == rhs._range) && (lhs._index == rhs._index);
-    }
-
-   private:
-    R *_range;
-};
-
-// index_iterator satisfied forward_iterator
-static_assert(std::random_access_iterator<index_iterator<std::array<int, 4>>>);
 }  // namespace quicktex

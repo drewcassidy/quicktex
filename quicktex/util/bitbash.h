@@ -26,6 +26,7 @@
 #include <numeric>
 #include <type_traits>
 
+#include "iterator.h"
 #include "util/math.h"
 #include "util/ranges.h"
 
@@ -125,7 +126,7 @@ size_t unpack_into(P packed, OI begin, OI end, WI widths, bool little_endian = t
 template <typename P, typename OR, typename WR>
     requires std::unsigned_integral<P> && range<OR> && range<WR>
 size_t unpack_into(P packed, OR &dest, const WR &widths, bool little_endian = true) {
-    assert(distance(widths) == distance(dest));
+    assert(size(widths) == size(dest));
     return unpack_into(packed, dest.begin(), dest.end(), widths.begin(), little_endian);
 }
 
@@ -201,7 +202,7 @@ std::array<U, N> unpack(P packed, const std::array<size_t, N> &widths, bool litt
 template <typename U, size_t N, typename P, typename WR>
     requires std::unsigned_integral<P> && range<WR>
 std::array<U, N> unpack(P packed, const WR &widths, bool little_endian = true) {
-    assert(distance(widths) == N);
+    assert(size(widths) == N);
     return unpack<U, N>(packed, widths.begin(), little_endian);
 }
 
@@ -273,7 +274,7 @@ inline constexpr P pack(II start, II end, WI widths, bool little_endian = true) 
 template <typename P, typename IR, typename WR>
     requires std::unsigned_integral<P> && range<IR> && range<WR>
 inline constexpr P pack(IR r, WR widths, bool little_endian = true) {
-    assert(distance(widths) == distance(r));
+    assert(size(widths) == size(r));
     return pack<P>(r.begin(), r.end(), widths.start(), little_endian);
 }
 
