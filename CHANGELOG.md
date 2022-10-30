@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file
 
+## Unreleased
+
+### Changed
+
+- Updated Pybind11 to version 3.10, adding Python 3.11 support
+
+
 ## 0.1.3 - 2022-04-13
 
 ### Fixed
