@@ -9,15 +9,32 @@ comparable to the original library.
 
 ## Installation
 
-To install, first clone this repo and cd into it, then run:
+### From Wheel (Easiest)
+
+To install, run
+
+```shell
+pip install quicktex
+```
+
+If you are on macOS, You need to install openMP from homebrew:
+
+```shell
+brew install libomp
+```
+
+### From Source
+
+To build from source, first clone this repo and cd into it, then run:
 
 ```shell
 git submodule update --init
 pip install .
 ```
+
 and setuptools will take care of any dependencies for you.
 
-If you are on macOS, it is recommended to first install openMP from homebrew to enable 
+If you are on macOS, it is recommended to first install openMP from homebrew to enable
 multithreading, since it is not included in the default Apple Clang install:
 
 ```shell
@@ -30,8 +47,6 @@ required dependencies for them, install with options like so:
 ```shell
 pip install .[tests,stubs,docs]
 ```
-
-Quicktex will be available on Pypi once it is out of alpha.
 
 ## Usage
 
