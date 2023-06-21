@@ -46,7 +46,7 @@ docs = [
 stubs = ["pybind11-stubgen"]
 
 [project.urls]
-Docs = "https://quicktex.readthedocs.io/en/"
+Docs = "https://quicktex.readthedocs.io/en/latest/"
 Source = "https://github.com/drewcassidy/quicktex"
 Changelog = "https://github.com/drewcassidy/quicktex/blob/main/CHANGELOG.md"
 
