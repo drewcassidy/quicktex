@@ -2,11 +2,17 @@
 
 All notable changes to this project will be documented in this file
 
-## 0.1.4 - 2022-10-30
+## 0.2.0 - 2023-06-21
 
 ### Changed
 
 - Updated Pybind11 to version 3.10, adding Python 3.11 support
+- Updated install instructions in readme to reflect availability on PyPI
+- Encode now skips .dds files in its input to prevent needless re-encoding
+
+### Added
+
+- Added the `-n` option for bc3 encoding to perform a BC3nm swizzle
 
 
 ## 0.1.3 - 2022-04-13
