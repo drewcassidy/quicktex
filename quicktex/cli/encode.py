@@ -37,6 +37,7 @@ def encode():
 )
 @click.argument('filenames', nargs=-1, type=click.Path(exists=True, readable=True, dir_okay=False))
 def encode_format(encoder, four_cc, flip, remove, suffix, output, filenames, swizzle=False):
+    filenames = [f for f in filenames if not f.endswith('.dds')]
     path_pairs = common.path_pairs(filenames, output, suffix, '.dds')
 
     with click.progressbar(
@@ -112,7 +113,10 @@ def encode_auto(level, black, threecolor, flip, remove, suffix, output, filename
 
     bc1_encoder = quicktex.s3tc.bc1.BC1Encoder(level, mode)
     bc3_encoder = quicktex.s3tc.bc3.BC3Encoder(level)
+    filenames = [f for f in filenames if not f.endswith('.dds')]
     path_pairs = common.path_pairs(filenames, output, suffix, '.dds')
+
+    assert len(filenames) > 0
 
     with click.progressbar(
         path_pairs, show_eta=False, show_pos=True, item_show_func=lambda x: str(x[0]) if x else ''
