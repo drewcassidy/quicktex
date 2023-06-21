@@ -40,7 +40,7 @@ def path_pairs(inputs, output, suffix, extension):
     """
 
     if len(inputs) < 1:
-        raise click.BadArgumentUsage('No input files were provided.')
+        raise click.BadArgumentUsage('No valid input files were provided.')
 
     inpaths = [pathlib.Path(i) for i in inputs]
 
