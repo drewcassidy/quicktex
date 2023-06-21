@@ -36,7 +36,7 @@ def encode():
     help="Output file or directory. If outputting to a file, input filenames must be only a single item. By default, files are decoded in place.",
 )
 @click.argument('filenames', nargs=-1, type=click.Path(exists=True, readable=True, dir_okay=False))
-def encode_format(encoder, four_cc, flip, remove, suffix, output, filenames):
+def encode_format(encoder, four_cc, flip, remove, suffix, output, filenames, swizzle=False):
     path_pairs = common.path_pairs(filenames, output, suffix, '.dds')
 
     with click.progressbar(
@@ -47,6 +47,11 @@ def encode_format(encoder, four_cc, flip, remove, suffix, output, filenames):
 
             if flip:
                 image = image.transpose(Image.FLIP_TOP_BOTTOM)
+
+            if swizzle:
+                bands = image.split()
+                one = Image.new('L', image.size, 0xFF)
+                image = Image.merge('RGBA', (one, bands[1], bands[1], bands[0]))
 
             dds.encode(image, encoder, four_cc).save(outpath)
 
@@ -175,9 +180,16 @@ def encode_bc1(level, black, threecolor, **kwargs):
     default=18,
     help='Quality level to use. Higher values = higher quality, but slower.',
 )
-def encode_bc3(level, **kwargs):
+@click.option(
+    '-n/-N',
+    '--normal/--no-normal',
+    type=bool,
+    default=False,
+    help='Perform a BC3nm swizzle, copying the red channel into the alpha [default: no-normal]',
+)
+def encode_bc3(level, normal, **kwargs):
     """Encode images to BC4 (RGBA, 8-bit interpolated alpha)."""
-    encode_format.callback(quicktex.s3tc.bc3.BC3Encoder(level), 'DXT5', **kwargs)
+    encode_format.callback(quicktex.s3tc.bc3.BC3Encoder(level), 'DXT5', swizzle=normal, **kwargs)
 
 
 @click.command('bc4')
