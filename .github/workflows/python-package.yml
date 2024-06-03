@@ -45,15 +45,13 @@ jobs:
           path: dist/*.tar.gz
 
   build-wheels:
-    name: Build Wheels on ${{ matrix.os }} ${{ matrix.arch[0] }}
+    name: Build Wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-11, windows-latest, ubuntu-latest ]
-        arch: [ ['x86', 'x86_64', 'AMD64', 'x86_64' ] ] #[suffix, mac, windows, linux] arch names
-        include:
-          - os: ubuntu-latest
-            arch: [ 'ARM', 'arm64', 'ARM64', 'aarch64' ]
+        # macos-13 is an intel runner, macos-14 is apple silicon
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+        linux_arch: [ 'x86_64' ] #[suffix, mac, windows, linux] arch names
 
     steps:
       - uses: actions/checkout@v3
@@ -71,17 +69,17 @@ jobs:
           sudo tar fvxz openmp-*.tar.gz -C /
 
       - name: Install QEMU
-        # install QEMU if building for arm linux
+        # install QEMU if building for linux
         uses: docker/setup-qemu-action@v2
-        if: runner.os == 'linux' && matrix.arch[3] == 'aarch64'
+        if: runner.os == 'linux' 
         with:
           platforms: arm64
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.18.1
         env:
-          MACOSX_DEPLOYMENT_TARGET: "10.15"
-          CIBW_ARCHS_LINUX: ${{ matrix.arch[3] }}
+          MACOSX_DEPLOYMENT_TARGET: "12"
+          CIBW_ARCHS_LINUX: 'x86_64 aarch64'
 
       - name: Upload Wheels
         uses: actions/upload-artifact@v3
