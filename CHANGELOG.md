@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file
 
+## 0.2.1 - 2024-06-03
+
+### Fixed
+
+- Fixed broken transparency on palettized PNG files
+
+### Changed
+
+- Changed which wheels are built by the CI. There are no changes to OS or Python version compatibility if you compile from source.
+	- Stopped building Python 3.7 wheels
+	- Stopped building macOS universal wheels
+	- Wheels for macOS now require macOS 12 or later
+	- Included macOS ARM wheels 
+	- Included Python 3.12 wheels
+
+
 ## 0.2.0 - 2023-06-21
 
 ### Changed

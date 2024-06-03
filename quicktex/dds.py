@@ -275,6 +275,7 @@ def read(path: os.PathLike) -> DDSFile:
 def encode(image: Image.Image, encoder, four_cc: str, mip_count: typing.Optional[int] = None) -> DDSFile:
     if image.mode != 'RGBA' or image.mode != 'RGBX':
         mode = 'RGBA' if 'A' in image.mode else 'RGBX'
+        image.apply_transparency()  # why is this necessary what
         image = image.convert(mode)
 
     sizes = quicktex.image_utils.mip_sizes(image.size, mip_count)
