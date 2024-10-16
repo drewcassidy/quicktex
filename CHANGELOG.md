@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file
 
+## Unreleased
+
+### Changed
+
+- Relicensed code under Apache-2.0 license
+- Removed support for Python 3.7 and 3.8
+- Build binary wheels for python 3.13
+
+
 ## 0.2.1 - 2024-06-03
 
 ### Fixed
