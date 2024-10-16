@@ -64,14 +64,14 @@ test-command = "pytest {project}/tests --verbose"
 test-extras = ["tests"]
 
 [tool.cibuildwheel.macos]
-archs = ["x86_64", "universal2"] # build fat binaries, or x86-64 for python 3.7
-skip = ["cp{38,39,31*}-macosx_x86_64"] # skip x86-only builds where fat binaries are supported
+archs = ["native"] # build both x86 and ARM wheels
 
 [tool.cibuildwheel.windows]
 archs = ["auto64"] # arm64 windows builds not yet supported
 
 [tool.cibuildwheel.linux]
-skip = ["cp37-musllinux*", "*musllinux_aarch64*"] # skip targets without available Pillow wheels
+archs = ["x86_64", "aarch64"]
+skip = ["*musllinux_aarch64*"] # skip targets without available Pillow wheels
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
 
