@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file
 
+## Unreleased
+
+### Fixed
+
+- Fixed incorrect project metadata
+
+
 ## 0.3.0 - 2024-10-17
 
 ### Changed
